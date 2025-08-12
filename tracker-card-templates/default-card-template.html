@@ -4,28 +4,54 @@
 <!-- CARD_TEMPLATE_START -->
 <style>
 @media (max-width: 768px) {
-  .tracker-card { flex: 1 1 100% !important; max-width: 100% !important; }
+  .tracker-card-container { 
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .tracker-card { 
+    flex: 1 1 100% !important; 
+    max-width: 100% !important; 
+    width: 100%;
+  }
+  
   .stat-icon { font-size: 20px !important; }
   .stat-value { font-size: 16px !important; }
   .stat-container { min-height: 70px !important; padding: 6px 3px !important; }
   .stat-title { font-size: 9px !important; }
 }
+
 @media (min-width: 769px) {
-  .tracker-card { flex: 0 0 calc(50% - 10px) !important; max-width: calc(50% - 10px) !important; }
+  .tracker-card-container { 
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  .tracker-card { 
+    flex: 1 1 calc(50% - 10px) !important; 
+    max-width: calc(50% - 10px) !important; 
+  }
+  
   .stat-icon { font-size: 28px !important; margin-bottom: 6px !important; }
   .stat-value { font-size: 20px !important; }
   .stat-container { min-height: 90px !important; padding: 10px 6px !important; }
   .stat-title { font-size: 10px !important; }
 }
+
 @media (min-width: 1400px) {
-  .tracker-card { flex: 0 0 600px !important; max-width: 600px !important; }
+  .tracker-card { 
+    flex: 1 1 600px !important; 
+    max-width: 600px !important; 
+  }
+  
   .stat-icon { font-size: 32px !important; margin-bottom: 8px !important; }
   .stat-value { font-size: 24px !important; }
   .stat-container { min-height: 100px !important; padding: 12px 8px !important; }
   .stat-title { font-size: 11px !important; }
 }
 </style>
-<div style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
+
+<div class="tracker-card-container" style="display:flex;gap:20px;justify-content:center;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;width:100%">
   <div class="tracker-card" style="min-width:320px;height:370px;background:linear-gradient(145deg,{{bgColor}} 0%,{{darkerBgColor}} 50%,{{darkerBgColor}} 100%);border-radius:16px;padding:0;box-sizing:border-box;position:relative;color:#fff;font-size:14px;font-weight:500;box-shadow:0 8px 32px rgba(0,0,0,0.4),0 2px 8px rgba(0,0,0,0.2),inset 0 1px 0 rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.1);overflow:hidden;transition:transform 0.3s ease,box-shadow 0.3s ease" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 12px 40px rgba(0,0,0,0.5),0 4px 12px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.2)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 32px rgba(0,0,0,0.4),0 2px 8px rgba(0,0,0,0.2),inset 0 1px 0 rgba(255,255,255,0.2)'">
     
     <!-- Gradient overlay -->
