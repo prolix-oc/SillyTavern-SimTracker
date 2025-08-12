@@ -85,9 +85,8 @@ const loadDefaultPromptFromFile = async () => {
 };
 
 async function getTemplateFiles() {
-    const serverPathBase = get_extension_directory().replace('/scripts/', '');
-    const defaultDir = `${serverPathBase}/tracker-card-templates`;
-    const customDir = `${serverPathBase}/custom_tracker_templates`;
+    const defaultDir = `${get_extension_directory()}/tracker-card-templates`;
+    const customDir = `${get_extension_directory()}/custom_tracker_templates`;
 
     let defaultFiles = [];
     let customFiles = [];
