@@ -56,30 +56,67 @@ const loadTemplate = async () => {
 
     try {
         const response = await $.get(templatePath);
+        log(`Raw template response length: ${response.length}`);
         
         // Remove HTML comments first
-        let cleanedResponse = response.replace(/<!--[\s\S]*?-->/g, '');
+        let cleanedResponse = response.replace(/<!--[\s\S]*?-->/g, '').trim();
+        log(`Cleaned response length: ${cleanedResponse.length}`);
         
-        // Find the wrapper div (contains display:flex;flex-wrap:wrap)
-        const wrapperMatch = cleanedResponse.match(/<div[^>]*display:flex;flex-wrap:wrap[^>]*>([\s\S]*?)<\/div>\s*$/);
-        
-        if (wrapperMatch) {
-            // Extract content inside wrapper
-            const wrapperContent = wrapperMatch[1].trim();
-            
-            // Find the card div (starts with flex:1 1 100%)
-            const cardMatch = wrapperContent.match(/(<div[^>]*flex:1 1 100%[^>]*>[\s\S]*?<\/div>)/);
-            
-            if (cardMatch) {
-                const cardTemplate = cardMatch[1];
-                compiledCardTemplate = Handlebars.compile(cardTemplate);
-                log(`Template loaded successfully from: ${templateFile}`);
-            } else {
-                throw new Error('Could not find card template inside wrapper');
-            }
-        } else {
-            throw new Error('Could not find wrapper div in template file');
+        // Simple approach: find the start of the card div and manually count nesting
+        const cardStartIndex = cleanedResponse.indexOf('flex:1 1 100%');
+        if (cardStartIndex === -1) {
+            throw new Error('Could not find flex:1 1 100% in template');
         }
+        
+        // Find the opening div tag that contains this style
+        let divStart = cleanedResponse.lastIndexOf('<div', cardStartIndex);
+        if (divStart === -1) {
+            throw new Error('Could not find opening div tag');
+        }
+        
+        // Now count div nesting to find the matching closing tag
+        let divCount = 1; // Start with 1 since we already found the opening div
+        let currentPos = divStart;
+        
+        // Find the end of the opening div tag first
+        const openTagEnd = cleanedResponse.indexOf('>', divStart);
+        if (openTagEnd === -1) {
+            throw new Error('Could not find end of opening div tag');
+        }
+        
+        currentPos = openTagEnd + 1;
+        let cardTemplate = '';
+        
+        while (currentPos < cleanedResponse.length && divCount > 0) {
+            const nextOpenDiv = cleanedResponse.indexOf('<div', currentPos);
+            const nextCloseDiv = cleanedResponse.indexOf('</div>', currentPos);
+            
+            if (nextCloseDiv === -1) break;
+            
+            if (nextOpenDiv !== -1 && nextOpenDiv < nextCloseDiv) {
+                // Found opening div
+                divCount++;
+                currentPos = nextOpenDiv + 4;
+            } else {
+                // Found closing div
+                divCount--;
+                if (divCount === 0) {
+                    // This is our matching closing tag
+                    cardTemplate = cleanedResponse.substring(divStart, nextCloseDiv + 6);
+                    break;
+                }
+                currentPos = nextCloseDiv + 6;
+            }
+        }
+        
+        if (cardTemplate) {
+            log(`Extracted card template, length: ${cardTemplate.length}`);
+            compiledCardTemplate = Handlebars.compile(cardTemplate);
+            log(`Template compiled successfully from: ${templateFile}`);
+        } else {
+            throw new Error('Could not extract complete card template');
+        }
+        
     } catch (error) {
         log(`Error loading template from ${templateFile}: ${error.message}. Using fallback template.`);
         // Fallback to basic template
