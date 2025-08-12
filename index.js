@@ -1,4 +1,4 @@
-import { getContext, on, SimpleHandlebarsCompiler, extension_settings } from '../../../extensions.js';
+import { getContext, on, extension_settings } from '../../../extensions.js';
 import { saveSettingsDebounced } from '../../../../script.js';
 
 const MODULE_NAME = 'Tracker';
@@ -77,8 +77,8 @@ const cardTemplate = `
     </div>
     {{/if}}
 </div>`;
-const compiledWrapperTemplate = SimpleHandlebarsCompiler(wrapperTemplate);
-const compiledCardTemplate = SimpleHandlebarsCompiler(cardTemplate);
+const compiledWrapperTemplate = Handlebars.compile(wrapperTemplate);
+const compiledCardTemplate = Handlebars.compile(cardTemplate);
 
 // --- RENDER LOGIC ---
 const renderTracker = (mesId) => {
