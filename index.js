@@ -154,23 +154,51 @@ jQuery(async () => {
     // Step 1: Initialize settings data from storage
     initialize_settings();
 
-    // Step 2: Manually load the settings panel into the UI
-    try {
-        const response = await fetch(`/extensions/${MODULE_NAME}/settings.html`);
-        if (!response.ok) {
-            log(`Failed to load settings HTML: ${response.statusText}`);
-            return;
-        }
-        const html = await response.text();
-        $("#extensions_settings2").append(html);
+    // Step 2: Create and inject the settings HTML directly
+    const settingsHtml = `
+        <div id="${SETTINGS_ID}">
+            <div class="inline-drawer">
+                <div class="inline-drawer-toggle inline-drawer-header">
+                    <b>Silly Sim Tracker</b>
+                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                </div>
+                <div class="inline-drawer-content">
+                    <div class="silly-sim-tracker-settings-content">
+                        <div class="setting">
+                            <label for="isEnabled">Enable Tracker</label>
+                            <div class="control"><input type="checkbox" id="isEnabled"></div>
+                        </div>
+                        <p class="description">The master switch to enable or disable the extension.</p>
+                        <hr>
+                        <div class="setting">
+                            <label for="codeBlockIdentifier">Code Block Identifier</label>
+                            <div class="control"><input type="text" id="codeBlockIdentifier" class="text_pole"></div>
+                        </div>
+                        <p class="description">The keyword the extension looks for after the opening \`\`\` (e.g., "sim").</p>
+                        <hr>
+                        <div class="setting">
+                            <label for="defaultBgColor">Default Card Color</label>
+                            <div class="control"><input type="color" id="defaultBgColor"></div>
+                        </div>
+                        <p class="description">The background color used for cards when one isn't specified in the JSON.</p>
+                        <hr>
+                        <div class="setting">
+                            <label for="showThoughtBubble">Show Thought Bubble</label>
+                            <div class="control"><input type="checkbox" id="showThoughtBubble"></div>
+                        </div>
+                        <p class="description">Whether to display the 'thought' section at the bottom of the card.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
 
-        // Step 3: Bind listeners ONLY after the HTML is loaded
-        initialize_settings_listeners();
-        log("Settings panel loaded and listeners initialized.");
+    // Append settings HTML to the extensions settings container
+    $("#extensions_settings2").append(settingsHtml);
 
-    } catch (error) {
-        log(`Error loading settings panel: ${error}`);
-    }
+    // Step 3: Bind listeners after the HTML is injected
+    initialize_settings_listeners();
+    log("Settings panel loaded and listeners initialized.");
 
     // Step 4: Register the main extension functionality
     on('CHARACTER_MESSAGE_RENDERED', renderTracker);
