@@ -175,26 +175,43 @@ const bind_setting = (selector, key, type) => {
         set_settings(key, value);
     });
 };
+
 const initialize_settings_listeners = () => {
-    // Wait for settings UI to be loaded by SillyTavern
+    // Use a variable to hold the timer to prevent multiple loops
+    let settingsInterval;
+
     const tryBindSettings = () => {
         const settingsContainer = $(`#${SETTINGS_ID}`);
+        
+        // Check if the container has been loaded into the DOM by SillyTavern
         if (settingsContainer.length === 0) {
-            log("[SST] Settings container not found, retrying in 100ms...");
-            setTimeout(tryBindSettings, 100);
+            // If not found, log it. The interval will try again.
+            log("Settings container not found, waiting for SillyTavern loader...");
             return;
         }
-
+        
+        // --- If we get here, the container was found! ---
+        
+        // Stop the timer so we don't keep checking unnecessarily.
+        clearInterval(settingsInterval);
+        
+        log("Settings container found. Binding UI elements.");
+        
+        // Bind all your settings
         bind_setting('#isEnabled', 'isEnabled', 'boolean');
         bind_setting('#codeBlockIdentifier', 'codeBlockIdentifier', 'text');
         bind_setting('#defaultBgColor', 'defaultBgColor', 'color');
         bind_setting('#showThoughtBubble', 'showThoughtBubble', 'boolean');
+        
+        // Refresh the UI with the current values
         refresh_settings_ui();
-        log("[SST] Settings UI successfully bound.");
+        log("Settings UI successfully bound.");
     };
-
-    tryBindSettings();
+    
+    // Start an interval to check for the settings container every 100ms.
+    settingsInterval = setInterval(tryBindSettings, 100);
 };
+
 const initialize_settings = () => {
     extension_settings[MODULE_NAME] = Object.assign({}, default_settings, extension_settings[MODULE_NAME]);
     settings = extension_settings[MODULE_NAME];
