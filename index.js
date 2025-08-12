@@ -200,17 +200,6 @@ const initialize_settings = () => {
     settings = extension_settings[MODULE_NAME];
 };
 
-const load_settings_html_manually = async () => {
-    const settingsHtmlPath = `${get_extension_directory()}/settings.html`;
-    try {
-        const response = await $.get(settingsHtmlPath);
-        $("#extensions_settings2").append(response);
-        log("[SST] Settings HTML manually injected into right-side panel.");
-    } catch (error) {
-        log(`[SST] Error loading settings.html: ${error.statusText}`);
-    }
-};
-
 // --- ENTRY POINT ---
 jQuery(async () => {
     try {
