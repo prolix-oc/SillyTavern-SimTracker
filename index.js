@@ -249,7 +249,7 @@ const renderTracker = (mesId) => {
 };
 
 // --- SETTINGS MANAGEMENT ---
-const sim_intercept_messages = async (data) => {
+async function sim_intercept_messages = async (data) => {
     if (!get_settings('isEnabled')) {
         return data; // Do nothing if the extension is disabled
     }
@@ -394,5 +394,3 @@ jQuery(async () => {
         console.error(`[${MODULE_NAME}] A critical error occurred during initialization. The extension may not work correctly. Error: ${error.stack}`);
     }
 });
-
-export { sim_intercept_messages };
