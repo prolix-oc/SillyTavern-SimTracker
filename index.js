@@ -126,7 +126,7 @@ async function getTemplateFiles() {
 
 async function populateTemplateDropdown() {
     log('Populating template dropdown with default templates...');
-    const defaultDir = `${get_extension_directory()}/tracker-card-templates`;
+    const defaultDir = `${get_extension_directory().replace('/scripts/', '')}/tracker-card-templates`;
     let defaultFiles = [];
 
     // We can use $.get to check the directory listing, which works reliably
