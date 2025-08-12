@@ -16,7 +16,7 @@ let settings = {};
 const settings_ui_map = {};
 
 // --- UTILITY FUNCTIONS ---
-const log = (message) => console.log(`[${MODULE_NAME}]`, message);
+const log = (message) => console.log(`[SST] [${MODULE_NAME}]`, message);
 const get_settings = (key) => settings[key] ?? default_settings[key];
 const set_settings = (key, value) => {
     settings[key] = value;
@@ -77,32 +77,54 @@ const compiledCardTemplate = SimpleHandlebarsCompiler(cardTemplate);
 
 // --- RENDER LOGIC ---
 const renderTracker = (mesId) => {
-    if (!get_settings('isEnabled')) return;
+    try {
+        if (!get_settings('isEnabled')) return;
 
-    // Get the core application context and the specific message object using the provided ID (index)
-    const context = getContext();
-    const message = context.chat[mesId];
+        const context = getContext();
+        const message = context.chat[mesId];
 
-    if (!message) {
-        log(`Could not find message with ID ${mesId}`);
-        return;
-    }
+        if (!message) {
+            log(`[SST] Error: Could not find message with ID ${mesId}. Aborting render.`);
+            return;
+        }
 
-    const messageElement = document.querySelector(`div[mesid="${mesId}"] .mes_text`);
+        const messageElement = document.querySelector(`div[mesid="${mesId}"] .mes_text`);
+        if (!messageElement || messageElement.querySelector(`#${CONTAINER_ID}`)) return;
 
-    if (!messageElement || messageElement.querySelector(`#${CONTAINER_ID}`)) return;
+        const identifier = get_settings('codeBlockIdentifier');
+        const jsonRegex = new RegExp("```" + identifier + "\\s*([\\s\\S]*?)\\s*```");
+        const match = message.mes.match(jsonRegex);
 
-    const identifier = get_settings('codeBlockIdentifier');
-    const jsonRegex = new RegExp("```" + identifier + "\\s*([\\s\\S]*?)\\s*```");
-    const match = message.mes.match(jsonRegex);
-    if (match && match[1]) {
-        try {
-            const jsonData = JSON.parse(match[1]);
+        if (match && match[1]) {
+            let jsonData;
+            // ADDED: Specific try...catch for JSON parsing, the most common failure point.
+            try {
+                jsonData = JSON.parse(match[1]);
+            } catch (jsonError) {
+                log(`[SST] Failed to parse JSON in message ID ${mesId}. Error: ${jsonError.message}`);
+                // Optional: Display an error message to the user in the UI.
+                messageElement.insertAdjacentHTML('beforeend', `<div style="color: red; font-family: monospace;">[SillySimTracker] Error: Invalid JSON in code block.</div>`);
+                return; // Stop execution for this message.
+            }
+
+            // ADDED: Check if the parsed data is an object.
+            if (typeof jsonData !== 'object' || jsonData === null) {
+                log(`[SST] Parsed data in message ID ${mesId} is not a valid object.`);
+                return;
+            }
+
             const currentDate = jsonData.current_date || 'Unknown Date';
             const characterNames = Object.keys(jsonData).filter(key => key !== 'current_date');
+
             if (!characterNames.length) return;
+
             const cardsHtml = characterNames.map(name => {
                 const stats = jsonData[name];
+                // ADDED: Check if stats for a character exist to prevent errors.
+                if (!stats) {
+                    log(`[SST] No stats found for character "${name}" in message ID ${mesId}. Skipping card.`);
+                    return ''; // Return an empty string for this card
+                }
                 const cardData = {
                     characterName: name, currentDate: currentDate,
                     stats: { ...stats, thought: stats.thought || "No thought recorded." },
@@ -114,14 +136,14 @@ const renderTracker = (mesId) => {
                 };
                 return compiledCardTemplate(cardData);
             }).join('');
+
             const finalHtml = compiledWrapperTemplate({ cardsHtml });
-            // Access DOMPurify from the fetched context object
             const { DOMPurify } = context.libs;
             const sanitizedHtml = DOMPurify.sanitize(finalHtml);
             messageElement.insertAdjacentHTML('beforeend', sanitizedHtml);
-        } catch (error) {
-            log(`Error processing tracker JSON: ${error}`);
         }
+    } catch (error) {
+        log(`[SST] A critical error occurred in renderTracker for message ID ${mesId}. Please check the console. Error: ${error.stack}`);
     }
 };
 
@@ -137,7 +159,7 @@ const refresh_settings_ui = () => {
 };
 const bind_setting = (selector, key, type) => {
     const element = $(`#${SETTINGS_ID} ${selector}`);
-    if (element.length === 0) { log(`Could not find settings element: ${selector}`); return; }
+    if (element.length === 0) { log(`[SST] Could not find settings element: ${selector}`); return; }
     settings_ui_map[key] = [element, type];
     element.on('change input', () => {
         let value;
@@ -153,7 +175,7 @@ const initialize_settings_listeners = () => {
     const tryBindSettings = () => {
         const settingsContainer = $(`#${SETTINGS_ID}`);
         if (settingsContainer.length === 0) {
-            log("Settings container not found, retrying in 100ms...");
+            log("[SST] Settings container not found, retrying in 100ms...");
             setTimeout(tryBindSettings, 100);
             return;
         }
@@ -163,7 +185,7 @@ const initialize_settings_listeners = () => {
         bind_setting('#defaultBgColor', 'defaultBgColor', 'color');
         bind_setting('#showThoughtBubble', 'showThoughtBubble', 'boolean');
         refresh_settings_ui();
-        log("Settings UI successfully bound.");
+        log("[SST] Settings UI successfully bound.");
     };
     
     tryBindSettings();
@@ -175,17 +197,21 @@ const initialize_settings = () => {
 
 // --- ENTRY POINT ---
 jQuery(async () => {
-    log(`Initializing extension: ${MODULE_NAME}`);
+    try {
+        log(`[SST] Initializing extension: ${MODULE_NAME}`);
 
-    // Initialize settings data from storage
-    initialize_settings();
+        // Initialize settings data from storage
+        initialize_settings();
 
-    // Initialize settings UI listeners (settings.html is loaded automatically by SillyTavern)
-    initialize_settings_listeners();
-    log("Settings panel listeners initialized.");
+        // Initialize settings UI listeners (settings.html is loaded automatically by SillyTavern)
+        initialize_settings_listeners();
+        log("[SST] Settings panel listeners initialized.");
 
-    // Register the main extension functionality
-    on('CHARACTER_MESSAGE_RENDERED', renderTracker);
+        // Register the main extension functionality
+        on('CHARACTER_MESSAGE_RENDERED', renderTracker);
 
-    log(`${MODULE_NAME} has been successfully loaded.`);
+        log(`[SST] ${MODULE_NAME} has been successfully loaded.`);
+    } catch (error) {
+        console.error(`[${MODULE_NAME}] A critical error occurred during initialization. The extension may not work correctly. Error: ${error.stack}`);
+    }
 });
