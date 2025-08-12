@@ -3,6 +3,7 @@ import { saveSettingsDebounced, messageFormatting } from '../../../../script.js'
 import { MacrosParser } from '../../../macros.js';
 
 const MODULE_NAME = 'SillySimTracker';
+const GIT_MODULE_NAME = 'SillyTavern-DatingSimTracker'
 const CONTAINER_ID = 'silly-sim-tracker-container';
 const SETTINGS_ID = 'silly-sim-tracker-settings';
 
@@ -84,8 +85,8 @@ const loadDefaultPromptFromFile = async () => {
 };
 
 async function getTemplateFiles() {
-    const defaultDir = `extensions/third-party/silly-sim-tracker/tracker-card-templates`;
-    const customDir = `extensions/third-party/silly-sim-tracker/custom_tracker_templates`;
+    const defaultDir = `extensions/third-party/${GIT_MODULE_NAME}/tracker-card-templates`;
+    const customDir = `extensions/third-party/${GIT_MODULE_NAME}/custom_tracker_templates`;
     let defaultFiles = [];
     let customFiles = [];
 
@@ -152,7 +153,7 @@ function handleFileUpload(event) {
 }
 
 async function saveCustomTemplate(fileName, content) {
-    const customDir = `extensions/third-party/silly-sim-tracker/custom_tracker_templates`;
+    const customDir = `extensions/third-party/${GIT_MODULE_NAME}/custom_tracker_templates`;
     const filePath = `${customDir}/${fileName}`;
 
     try {
@@ -200,8 +201,8 @@ const loadTemplate = async () => {
     }
 
     // Use relative paths for $.get, which works from the SillyTavern root
-    const customPath = `extensions/third-party/silly-sim-tracker/custom_tracker_templates/${templateFile}`;
-    const defaultPath = `extensions/third-party/silly-sim-tracker/tracker-card-templates/${templateFile}`;
+    const customPath = `extensions/third-party/${GIT_MODULE_NAME}/custom_tracker_templates/${templateFile}`;
+    const defaultPath = `extensions/third-party/${GIT_MODULE_NAME}/tracker-card-templates/${templateFile}`;
     let templateContent;
     let loadedFrom = '';
 
