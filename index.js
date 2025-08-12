@@ -31,6 +31,14 @@ const darkenColor = (hex) => {
     b = Math.floor(b * 0.7).toString(16).padStart(2, '0');
     return `#${r}${g}${b}`;
 };
+const getContrastColor = (hex) => {
+    if (!hex || hex.length < 7) return 'rgba(255,255,255,0.9)';
+    let r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
+    // Calculate luminance
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    // Return light color for dark backgrounds, dark color for light backgrounds
+    return luminance > 0.5 ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)';
+};
 const getReactionEmoji = (reactValue) => {
     switch (parseInt(reactValue, 10)) {
         case 1: return '👍';
@@ -48,6 +56,23 @@ const get_extension_directory = () => {
 const wrapperTemplate = `<div id="${CONTAINER_ID}" style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">{{{cardsHtml}}}</div>`;
 let compiledWrapperTemplate = Handlebars.compile(wrapperTemplate);
 let compiledCardTemplate = null;
+
+// Register Handlebars helpers for template logic
+Handlebars.registerHelper('eq', function(a, b) {
+    return a === b;
+});
+
+Handlebars.registerHelper('gt', function(a, b) {
+    return a > b;
+});
+
+Handlebars.registerHelper('unless', function(conditional, options) {
+    if (!conditional) {
+        return options.fn(this);
+    } else {
+        return options.inverse(this);
+    }
+});
 
 // Load template from file
 const loadTemplate = async () => {
@@ -190,6 +215,7 @@ const renderTracker = (mesId) => {
                     log(`[SST] No stats found for character "${name}" in message ID ${mesId}. Skipping card.`);
                     return ''; // Return an empty string for this card
                 }
+                const bgColor = stats.bg || get_settings('defaultBgColor');
                 const cardData = {
                     characterName: name,
                     currentDate: currentDate,
@@ -197,8 +223,9 @@ const renderTracker = (mesId) => {
                         ...stats,
                         internal_thought: stats.internal_thought || stats.thought || "No thought recorded."
                     },
-                    bgColor: stats.bg || get_settings('defaultBgColor'),
-                    darkerBgColor: darkenColor(stats.bg || get_settings('defaultBgColor')),
+                    bgColor: bgColor,
+                    darkerBgColor: darkenColor(bgColor),
+                    contrastColor: getContrastColor(bgColor),
                     reactionEmoji: getReactionEmoji(stats.last_react),
                     healthIcon: stats.health === 1 ? '🤕' : stats.health === 2 ? '💀' : null,
                     showThoughtBubble: get_settings('showThoughtBubble'),
