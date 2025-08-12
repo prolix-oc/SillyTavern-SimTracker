@@ -12,6 +12,7 @@ const default_settings = {
     codeBlockIdentifier: "sim",
     defaultBgColor: "#6a5acd",
     showThoughtBubble: true,
+    customTemplateHtml: '',
     templateFile: "default-card-template.html",
     datingSimPrompt: "Default prompt could not be loaded. Please check file path.",
 };
@@ -124,35 +125,54 @@ async function getTemplateFiles() {
 }
 
 async function populateTemplateDropdown() {
-    log('Populating template dropdown...');
-    const templateFiles = await getTemplateFiles();
+    log('Populating template dropdown with default templates...');
+    const defaultDir = `${get_extension_directory()}/tracker-card-templates`;
+    let defaultFiles = [];
+
+    // We can use $.get to check the directory listing, which works reliably
+    try {
+        const response = await $.get(defaultDir);
+        // A simple regex to find hrefs to .html files in the directory listing page
+        const matches = response.match(/href="([^"]+\.html)"/g) || [];
+        defaultFiles = matches.map(href => href.substring(6, href.length - 1));
+    } catch (e) {
+        log('Could not list default template directory. It might be empty or missing.');
+    }
+
     const $select = $('#templateFile');
     const currentSelection = get_settings('templateFile');
 
     $select.empty();
-    templateFiles.forEach(file => {
-        $select.append($('<option>', {
-            value: file,
-            text: file
-        }));
+    defaultFiles.sort().forEach(file => {
+        $select.append($('<option>', { value: file, text: file }));
     });
 
-    // Restore the user's selection
     $select.val(currentSelection);
-    log('Template dropdown populated.');
+    log('Default template dropdown populated.');
 }
 
-function handleFileUpload(event) {
+function handleCustomTemplateUpload(event) {
     const file = event.target.files[0];
-    if (!file) return;
+    if (!file) {
+        return; // User cancelled the dialog
+    }
 
     const reader = new FileReader();
     reader.onload = async (e) => {
         const content = e.target.result;
-        log(`Read file ${file.name}, size: ${content.length}`);
-        await saveCustomTemplate(file.name, content);
+        log(`Read custom template ${file.name}, size: ${content.length}`);
+        set_settings('customTemplateHtml', content);
+        toastr.success(`Custom template "${file.name}" loaded and applied!`);
+
+        // Immediately reload the template logic and refresh all cards
+        await loadTemplate();
+        refreshAllCards();
     };
     reader.readAsText(file);
+
+    // Clear the input's value. This is important so the 'change' event will
+    // fire again if the user selects the same file twice in a row.
+    event.target.value = '';
 }
 
 async function saveCustomTemplate(fileName, content) {
@@ -197,59 +217,32 @@ async function saveCustomTemplate(fileName, content) {
 
 // Load template from file
 const loadTemplate = async () => {
-    const templateFile = get_settings('templateFile');
-    if (!templateFile) {
-        log('No template file selected. Aborting template load.');
-        const fallbackTemplate = `<div>Error: No template file selected in settings.</div>`;
-        compiledCardTemplate = Handlebars.compile(fallbackTemplate);
-        return;
-    }
+    const customTemplateHtml = get_settings('customTemplateHtml');
 
-    // Use relative paths for $.get, which works from the SillyTavern root
-    const customPath = `${get_extension_directory()}/custom_tracker_templates/${templateFile}`;
-    const defaultPath = `${get_extension_directory()}/tracker-card-templates/${templateFile}`;
-    let templateContent;
-    let loadedFrom = '';
-
-    try {
-        templateContent = await $.get(customPath);
-        loadedFrom = `custom directory: ${customPath}`;
-    } catch (customError) {
-        try {
-            templateContent = await $.get(defaultPath);
-            loadedFrom = `default directory: ${defaultPath}`;
-        } catch (defaultError) {
-            log(`Could not find template '${templateFile}' in custom or default directories.`);
-            templateContent = null;
-        }
-    }
-
-    if (templateContent) {
-        log(`Successfully loaded template content from ${loadedFrom}`);
+    if (customTemplateHtml && customTemplateHtml.trim() !== '') {
+        log("Loading template from custom HTML stored in settings.");
         try {
             const cardStartMarker = '<!-- CARD_TEMPLATE_START -->';
             const cardEndMarker = '<!-- CARD_TEMPLATE_END -->';
             let cardTemplate = '';
 
-            const startIndex = templateContent.indexOf(cardStartMarker);
-            const endIndex = templateContent.indexOf(cardEndMarker);
+            const startIndex = customTemplateHtml.indexOf(cardStartMarker);
+            const endIndex = customTemplateHtml.indexOf(cardEndMarker);
 
             if (startIndex !== -1 && endIndex !== -1) {
-                cardTemplate = templateContent.substring(startIndex + cardStartMarker.length, endIndex).trim();
+                cardTemplate = customTemplateHtml.substring(startIndex + cardStartMarker.length, endIndex).trim();
             } else {
-                let cleanedResponse = templateContent.replace(/<!--[\s\S]*?-->/g, '').trim();
+                let cleanedResponse = customTemplateHtml.replace(/<!--[\s\S]*?-->/g, '').trim();
                 const templateVarRegex = /\{\{[^}]+\}\}/;
                 const divMatches = [...cleanedResponse.matchAll(/<div[^>]*>[\s\S]*?<\/div>/g)];
                 let bestMatch = null;
                 let maxLength = 0;
-
                 for (const match of divMatches) {
                     if (templateVarRegex.test(match[0]) && match[0].length > maxLength) {
                         bestMatch = match[0];
                         maxLength = match[0].length;
                     }
                 }
-
                 if (bestMatch) {
                     cardTemplate = bestMatch;
                 } else {
@@ -258,21 +251,61 @@ const loadTemplate = async () => {
             }
 
             compiledCardTemplate = Handlebars.compile(cardTemplate);
-            log(`Template '${templateFile}' compiled successfully.`);
-            return;
-
-        } catch (parsingError) {
-            log(`Error parsing template file '${templateFile}': ${parsingError.message}. Using fallback template.`);
+            log("Custom HTML template compiled successfully.");
+            return; // Exit successfully
+        } catch (error) {
+            log(`Error parsing custom HTML template: ${error.message}. Reverting to default file-based template.`);
+            toastr.error('The custom HTML template could not be parsed. Check its format.', 'Template Error');
         }
     }
 
+    const templateFile = get_settings('templateFile');
+    if (templateFile) {
+        const defaultPath = `${get_extension_directory()}/tracker-card-templates/${templateFile}`;
+        try {
+            const templateContent = await $.get(defaultPath);
+            log(`Loading template from default file: ${defaultPath}`);
+            // Re-run the same parsing logic for the file content
+            const cardStartMarker = '<!-- CARD_TEMPLATE_START -->';
+            const cardEndMarker = '<!-- CARD_TEMPLATE_END -->';
+            let cardTemplate = '';
+            const startIndex = templateContent.indexOf(cardStartMarker);
+            const endIndex = templateContent.indexOf(cardEndMarker);
+            if (startIndex !== -1 && endIndex !== -1) {
+                cardTemplate = templateContent.substring(startIndex + cardStartMarker.length, endIndex).trim();
+            } else {
+                let cleanedResponse = templateContent.replace(/<!--[\s\S]*?-->/g, '').trim();
+                const templateVarRegex = /\{\{[^}]+\}\}/;
+                const divMatches = [...cleanedResponse.matchAll(/<div[^>]*>[\s\S]*?<\/div>/g)];
+                let bestMatch = null;
+                let maxLength = 0;
+                for (const match of divMatches) {
+                    if (templateVarRegex.test(match[0]) && match[0].length > maxLength) {
+                        bestMatch = match[0];
+                        maxLength = match[0].length;
+                    }
+                }
+                if (bestMatch) {
+                    cardTemplate = bestMatch;
+                } else {
+                    throw new Error('Could not find template content with either markers or Handlebars variables.');
+                }
+            }
+            compiledCardTemplate = Handlebars.compile(cardTemplate);
+            log(`Default template '${templateFile}' compiled successfully.`);
+            return; // Exit successfully
+        } catch (error) {
+            log(`Could not load or parse default template file '${templateFile}'. Using hardcoded fallback.`);
+        }
+    }
+
+    log("Using hardcoded fallback template as a last resort.");
     const fallbackTemplate = `
     <div style="flex:1 1 100%;min-width:380px;max-width:500px;background:red;border-radius:16px;padding:16px;color:#fff;">
         <b>Template Error</b><br>
-        Could not load or parse the template file: <b>${templateFile}</b>. Please check the console (F12) for details.
+        No custom template is loaded and the selected default template could not be found or parsed.
     </div>`;
     compiledCardTemplate = Handlebars.compile(fallbackTemplate);
-    log("Compiled a fallback error template.");
 };
 
 // --- RENDER LOGIC ---
@@ -434,22 +467,30 @@ const initialize_settings_listeners = () => {
     bind_setting('#showThoughtBubble', 'showThoughtBubble', 'boolean');
     bind_setting('#datingSimPrompt', 'datingSimPrompt', 'textarea');
 
+    // Listener for the default template dropdown
     const $templateSelect = $('#templateFile');
     if ($templateSelect.length) {
         settings_ui_map['templateFile'] = [$templateSelect, 'text'];
         $templateSelect.on('change', async () => {
-            const value = $templateSelect.val();
-            set_settings('templateFile', value);
+            set_settings('templateFile', $templateSelect.val());
             await loadTemplate();
             refreshAllCards();
         });
     }
 
-    $('#uploadTemplateBtn').on('click', () => {
-        $('#templateUpload').click();
+    $('#uploadCustomTemplateBtn').on('click', () => {
+        $('#customTemplateUpload').click(); // Trigger the hidden file input
     });
 
-    $('#templateUpload').on('change', handleFileUpload);
+    $('#customTemplateUpload').on('change', handleCustomTemplateUpload);
+
+    $('#clearCustomTemplateBtn').on('click', async () => {
+        log("Clearing custom template.");
+        set_settings('customTemplateHtml', '');
+        toastr.info("Custom template cleared. Reverted to default.");
+        await loadTemplate(); // Reload to apply the selected default
+        refreshAllCards();
+    });
 
     refresh_settings_ui();
     log("Settings UI successfully bound.");

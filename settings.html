@@ -46,32 +46,50 @@
           Whether to display the 'thought' section at the bottom of the card.
         </p>
         <hr />
+
         <div class="setting">
-        <label for="templateFile">Tracker Card Template</label>
-        <div class="flex-container flex-grow">
-        <!-- This will be populated by the script -->
-        <select id="templateFile" class="text_pole" style="flex-grow: 1;"></select>
-        <!-- This button will trigger the hidden file input -->
-        <button id="uploadTemplateBtn" class="menu_button" title="Upload a custom .html template file">Upload</button>
-        <!-- This input handles the actual file selection -->
-        <input type="file" id="templateUpload" hidden accept=".html">
+          <label for="templateFile">Default Template</label>
+          <select id="templateFile" class="text_pole"></select>
         </div>
+        <div class="description">
+          Select a built-in template. This is used when no custom template is
+          loaded.
         </div>
-        <div class="description"> 
-        Select a template for the tracker card, or upload your own. Custom templates are saved in the extension's 'custom_tracker_templates' folder.
+
+        <div class="setting">
+          <label>Custom Template</label>
+          <div class="flex-container">
+            <button
+              id="uploadCustomTemplateBtn"
+              class="menu_button"
+              title="Load a .html file from your computer to use as a custom template."
+            >
+              Load from File
+            </button>
+            <button
+              id="clearCustomTemplateBtn"
+              class="menu_button"
+              title="Clear the loaded custom template and revert to using the selected default template."
+            >
+              Clear Custom
+            </button>
+          </div>
         </div>
+        <!-- This hidden input is used to open the file dialog -->
+        <input type="file" id="customTemplateUpload" hidden accept=".html" />
+
         <p class="description">
           Path to the HTML template file relative to tracker-card-templates/
           directory. Default: default-card-template.html
         </p>
-        <hr/>
+        <hr />
         <div class="setting">
           <label for="datingSimPrompt">Dating Sim System Prompt</label>
           <textarea id="datingSimPrompt" class="text_pole" rows="6"></textarea>
         </div>
         <p class="description">
           The base prompt to be injected when you use the {{dating_sim}} macro.
-        </div>
+        </p>
       </div>
     </div>
   </div>
