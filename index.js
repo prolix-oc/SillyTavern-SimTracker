@@ -84,31 +84,35 @@ const loadDefaultPromptFromFile = async () => {
 };
 
 async function getTemplateFiles() {
-    const context = getContext();
-    const defaultDir = `${get_extension_directory()}/tracker-card-templates`;
-    const customDir = `${get_extension_directory()}/custom_tracker_templates`;
+    const defaultDir = `extensions/third-party/silly-sim-tracker/tracker-card-templates`;
+    const customDir = `extensions/third-party/silly-sim-tracker/custom_tracker_templates`;
     let defaultFiles = [];
     let customFiles = [];
 
+    // Ensure the File Browser API is available
+    if (!SillyTavern.extra_api.files) {
+        log("File Browser API not found. Cannot list templates.");
+        toastr.error("The 'File Browser' extension is required to manage templates.", "Dependency Missing");
+        return [];
+    }
+
     try {
-        const defaultResult = await context.executeSlashCommandsWithOptions(`/file-browser-list "${defaultDir}"`);
-        if (defaultResult.pipe) {
-            defaultFiles = JSON.parse(defaultResult.pipe).filter(file => file.endsWith('.html'));
-        }
+        // Correct API call to list files
+        defaultFiles = await SillyTavern.extra_api.files.list(defaultDir);
+        defaultFiles = defaultFiles.filter(file => file.endsWith('.html'));
     } catch (e) {
         log('Default template directory not found or is empty.');
     }
 
     try {
-        const customResult = await context.executeSlashCommandsWithOptions(`/file-browser-list "${customDir}"`);
-        if (customResult.pipe) {
-            customFiles = JSON.parse(customResult.pipe).filter(file => file.endsWith('.html'));
-        }
+        // Correct API call to list files
+        customFiles = await SillyTavern.extra_api.files.list(customDir);
+        customFiles = customFiles.filter(file => file.endsWith('.html'));
     } catch (e) {
+        // This is not an error, the directory might just not exist yet.
         log('Custom template directory not found or is empty.');
     }
 
-    // Combine lists and ensure uniqueness (custom templates can override defaults)
     const allFiles = [...new Set([...defaultFiles, ...customFiles])];
     return allFiles.sort();
 }
@@ -146,26 +150,35 @@ function handleFileUpload(event) {
 }
 
 async function saveCustomTemplate(fileName, content) {
-    const context = getContext();
-    const customDir = `${get_extension_directory()}/custom_tracker_templates`;
+    const customDir = `extensions/third-party/silly-sim-tracker/custom_tracker_templates`;
     const filePath = `${customDir}/${fileName}`;
+
+    // Ensure the File Browser API is available
+    if (!SillyTavern.extra_api.files) {
+        log("File Browser API not found. Cannot save template.");
+        toastr.error("The 'File Browser' extension is required to save templates.", "Dependency Missing");
+        return;
+    }
 
     try {
         log(`Saving template to: ${filePath}`);
-        // Use the file browser save command to write the file on the server
-        await context.executeSlashCommandsWithOptions(`/file-browser-save "${filePath}"`, { pipe: content });
-        toastr.success(`Template "${fileName}" uploaded successfully!`, 'Upload Complete');
+        // Correct API call to save the file
+        const result = await SillyTavern.extra_api.files.save(filePath, content);
 
-        // Refresh the dropdown to include the new template and select it
-        await populateTemplateDropdown();
-        set_settings('templateFile', fileName);
-        $('#templateFile').val(fileName); // Visually update the dropdown
-        await loadTemplate(); // Reload the template to apply the new one immediately
-        refreshAllCards();
+        if (result.ok) {
+            toastr.success(`Template "${fileName}" uploaded successfully!`, 'Upload Complete');
+            await populateTemplateDropdown();
+            set_settings('templateFile', fileName);
+            $('#templateFile').val(fileName);
+            await loadTemplate();
+            refreshAllCards();
+        } else {
+            throw new Error(result.error || 'Unknown error occurred during save.');
+        }
 
     } catch (error) {
         console.error('Failed to save custom template:', error);
-        toastr.error('Failed to save the template file on the server.', 'Upload Failed');
+        toastr.error(`Failed to save template: ${error.message}`, 'Upload Failed');
     }
 }
 
@@ -174,14 +187,14 @@ const loadTemplate = async () => {
     const templateFile = get_settings('templateFile');
     if (!templateFile) {
         log('No template file selected. Aborting template load.');
-        // Fallback to a basic error template if nothing is selected
         const fallbackTemplate = `<div>Error: No template file selected in settings.</div>`;
         compiledCardTemplate = Handlebars.compile(fallbackTemplate);
         return;
     }
 
-    const customPath = `${get_extension_directory()}/custom_tracker_templates/${templateFile}`;
-    const defaultPath = `${get_extension_directory()}/tracker-card-templates/${templateFile}`;
+    // Use relative paths for $.get, which works from the SillyTavern root
+    const customPath = `extensions/third-party/silly-sim-tracker/custom_tracker_templates/${templateFile}`;
+    const defaultPath = `extensions/third-party/silly-sim-tracker/tracker-card-templates/${templateFile}`;
     let templateContent;
     let loadedFrom = '';
 
@@ -205,15 +218,12 @@ const loadTemplate = async () => {
             const cardEndMarker = '<!-- CARD_TEMPLATE_END -->';
             let cardTemplate = '';
 
-            // Primary method: Look for template markers
             const startIndex = templateContent.indexOf(cardStartMarker);
             const endIndex = templateContent.indexOf(cardEndMarker);
 
             if (startIndex !== -1 && endIndex !== -1) {
                 cardTemplate = templateContent.substring(startIndex + cardStartMarker.length, endIndex).trim();
-                log(`Extracted card template using markers, length: ${cardTemplate.length}`);
             } else {
-                // Fallback method: Look for the largest div with Handlebars variables
                 let cleanedResponse = templateContent.replace(/<!--[\s\S]*?-->/g, '').trim();
                 const templateVarRegex = /\{\{[^}]+\}\}/;
                 const divMatches = [...cleanedResponse.matchAll(/<div[^>]*>[\s\S]*?<\/div>/g)];
@@ -229,49 +239,27 @@ const loadTemplate = async () => {
 
                 if (bestMatch) {
                     cardTemplate = bestMatch;
-                    log(`Extracted card template using content analysis, length: ${cardTemplate.length}`);
                 } else {
                     throw new Error('Could not find template content with either markers or Handlebars variables.');
                 }
             }
 
-            // Validate that the template contains expected variables
-            const requiredVars = ['{{characterName}}', '{{stats.ap}}', '{{stats.dp}}', '{{stats.tp}}', '{{stats.cp}}'];
-            const missingVars = requiredVars.filter(varName => !cardTemplate.includes(varName));
-
-            if (missingVars.length > 0) {
-                log(`Warning: Template '${templateFile}' missing required variables: ${missingVars.join(', ')}`);
-            }
-
             compiledCardTemplate = Handlebars.compile(cardTemplate);
             log(`Template '${templateFile}' compiled successfully.`);
-            return; // Exit successfully
+            return;
 
         } catch (parsingError) {
             log(`Error parsing template file '${templateFile}': ${parsingError.message}. Using fallback template.`);
-            // Continue to the final fallback
         }
     }
 
     const fallbackTemplate = `
-    <div style="flex:1 1 100%;min-width:380px;max-width:500px;height:340px;background:linear-gradient(145deg, {{bgColor}} 0%, {{darkerBgColor}} 100%);border-radius:16px;padding:16px;box-sizing:border-box;position:relative;color:#fff;font-size:14px;font-weight:500;">
-        <div style="font-size:24px;font-weight:700;margin-bottom:16px;">{{characterName}}</div>
-        <div style="margin-bottom:8px;">Date: {{currentDate}}</div>
-        <div style="margin-bottom:8px;">Day: {{stats.days_since_first_meeting}}</div>
-        <div style="display:flex;gap:16px;margin-bottom:16px;">
-            <div>❤️ {{stats.ap}}</div>
-            <div>🔥 {{stats.dp}}</div>
-            <div>🤝 {{stats.tp}}</div>
-            <div>💔 {{stats.cp}}</div>
-        </div>
-        {{#if showThoughtBubble}}
-        <div style="background:rgba(255,255,255,0.1);padding:12px;border-radius:8px;">
-            💭 {{stats.internal_thought}}
-        </div>
-        {{/if}}
+    <div style="flex:1 1 100%;min-width:380px;max-width:500px;background:red;border-radius:16px;padding:16px;color:#fff;">
+        <b>Template Error</b><br>
+        Could not load or parse the template file: <b>${templateFile}</b>. Please check the console (F12) for details.
     </div>`;
     compiledCardTemplate = Handlebars.compile(fallbackTemplate);
-    log("Compiled the hardcoded fallback template.");
+    log("Compiled a fallback error template.");
 };
 
 // --- RENDER LOGIC ---
