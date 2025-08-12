@@ -4,3 +4,4 @@ srpc-ui/manifest.json
 srpc-ui/settings.html
 **/*.html
 *.xml
+*.txt

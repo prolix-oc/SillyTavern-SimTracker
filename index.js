@@ -10,6 +10,7 @@ const default_settings = {
     codeBlockIdentifier: "sim",
     defaultBgColor: "#6a5acd",
     showThoughtBubble: true,
+    templateFile: "default-card-template.html",
 };
 
 let settings = {};
@@ -45,40 +46,47 @@ const get_extension_directory = () => {
 
 // --- TEMPLATES ---
 const wrapperTemplate = `<div id="${CONTAINER_ID}" style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">{{{cardsHtml}}}</div>`;
-const cardTemplate = `
-<div style="flex:1 1 100%;min-width:380px;max-width:500px;height:340px;background:linear-gradient(145deg, {{bgColor}} 0%, {{darkerBgColor}} 100%);border-radius:16px;padding:0;box-sizing:border-box;position:relative;color:#fff;font-size:14px;font-weight:500;box-shadow:0 8px 32px rgba(106,90,205,0.3),0 2px 8px rgba(0,0,0,0.1);border:1px solid rgba(255,255,255,0.1);overflow:hidden;">
-    <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent)"></div>
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px 0 20px;font-size:12px;font-weight:500">
-        <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);padding:4px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);">{{currentDate}}</div>
-        <div style="display:flex;gap:8px;">
-            <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);padding:4px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);">Day {{stats.days_since_first_meeting}}</div>
-            {{#if stats.preg}}<div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);padding:4px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);">🤰{{stats.days_preg}}d</div>{{/if}}
-        </div>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px 0 20px">
-        <div style="font-size:26px;font-weight:700;">{{characterName}}</div>
-        <div style="display:flex;align-items:center;gap:12px;font-size:20px;">
-            {{#if healthIcon}}<span>{{healthIcon}}</span>{{/if}}
-            <span>{{reactionEmoji}}</span>
-        </div>
-    </div>
-    <div style="position:absolute;top:110px;bottom:90px;left:0;right:0;display:flex;align-items:center;justify-content:center;padding:0 24px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:8px;">
-            <div style="display:flex;flex-direction:column;align-items:center;flex:1;padding:12px 8px;border-radius:12px;background:rgba(255,255,255,0.08);"><div style="font-size:40px;line-height:1;">❤️</div><div style="font-size:28px;font-weight:700;">{{stats.ap}}</div></div>
-            <div style="display:flex;flex-direction:column;align-items:center;flex:1;padding:12px 8px;border-radius:12px;background:rgba(255,255,255,0.08);"><div style="font-size:40px;line-height:1;">🔥</div><div style="font-size:28px;font-weight:700;">{{stats.dp}}</div></div>
-            <div style="display:flex;flex-direction:column;align-items:center;flex:1;padding:12px 8px;border-radius:12px;background:rgba(255,255,255,0.08);"><div style="font-size:40px;line-h-eight:1;">🤝</div><div style="font-size:28px;font-weight:700;">{{stats.tp}}</div></div>
-            <div style="display:flex;flex-direction:column;align-items:center;flex:1;padding:12px 8px;border-radius:12px;background:rgba(255,255,255,0.08);"><div style="font-size:40px;line-height:1;">💔</div><div style="font-size:28px;font-weight:700;">{{stats.cp}}</div></div>
-        </div>
-    </div>
-    {{#if showThoughtBubble}}
-    <div style="position:absolute;left:16px;right:16px;bottom:16px;min-height:60px;background:rgba(255,255,255,0.12);backdrop-filter:blur(10px);border-radius:12px;display:flex;align-items:center;gap:12px;padding:12px 16px;">
-        <div style="font-size:22px;flex-shrink:0;">💭</div>
-        <div style="flex:1;font-size:13px;font-weight:500;line-height:1.4;">{{stats.thought}}</div>
-    </div>
-    {{/if}}
-</div>`;
-const compiledWrapperTemplate = Handlebars.compile(wrapperTemplate);
-const compiledCardTemplate = Handlebars.compile(cardTemplate);
+let compiledWrapperTemplate = Handlebars.compile(wrapperTemplate);
+let compiledCardTemplate = null;
+
+// Load template from file
+const loadTemplate = async () => {
+    const templateFile = get_settings('templateFile');
+    const templatePath = `${get_extension_directory()}/tracker-card-templates/${templateFile}`;
+    
+    try {
+        const response = await $.get(templatePath);
+        // Extract just the card template (remove wrapper div and comments)
+        const cardTemplateMatch = response.match(/<div style="flex:1 1 100%[^>]*>[\s\S]*?<\/div>\s*<\/div>/);
+        if (cardTemplateMatch) {
+            compiledCardTemplate = Handlebars.compile(cardTemplateMatch[0]);
+            log(`Template loaded successfully from: ${templateFile}`);
+        } else {
+            throw new Error('Could not find card template in file');
+        }
+    } catch (error) {
+        log(`Error loading template from ${templateFile}: ${error.message}. Using fallback template.`);
+        // Fallback to basic template
+        const fallbackTemplate = `
+        <div style="flex:1 1 100%;min-width:380px;max-width:500px;height:340px;background:linear-gradient(145deg, {{bgColor}} 0%, {{darkerBgColor}} 100%);border-radius:16px;padding:16px;box-sizing:border-box;position:relative;color:#fff;font-size:14px;font-weight:500;">
+            <div style="font-size:24px;font-weight:700;margin-bottom:16px;">{{characterName}}</div>
+            <div style="margin-bottom:8px;">Date: {{currentDate}}</div>
+            <div style="margin-bottom:8px;">Day: {{stats.days_since_first_meeting}}</div>
+            <div style="display:flex;gap:16px;margin-bottom:16px;">
+                <div>❤️ {{stats.ap}}</div>
+                <div>🔥 {{stats.dp}}</div>
+                <div>🤝 {{stats.tp}}</div>
+                <div>💔 {{stats.cp}}</div>
+            </div>
+            {{#if showThoughtBubble}}
+            <div style="background:rgba(255,255,255,0.1);padding:12px;border-radius:8px;">
+                💭 {{stats.internal_thought}}
+            </div>
+            {{/if}}
+        </div>`;
+        compiledCardTemplate = Handlebars.compile(fallbackTemplate);
+    }
+};
 
 // --- RENDER LOGIC ---
 const renderTracker = (mesId) => {
@@ -130,12 +138,16 @@ const renderTracker = (mesId) => {
                     return ''; // Return an empty string for this card
                 }
                 const cardData = {
-                    characterName: name, currentDate: currentDate,
-                    stats: { ...stats, thought: stats.thought || "No thought recorded." },
+                    characterName: name, 
+                    currentDate: currentDate,
+                    stats: { 
+                        ...stats, 
+                        internal_thought: stats.internal_thought || stats.thought || "No thought recorded." 
+                    },
                     bgColor: stats.bg || get_settings('defaultBgColor'),
                     darkerBgColor: darkenColor(stats.bg || get_settings('defaultBgColor')),
                     reactionEmoji: getReactionEmoji(stats.last_react),
-                    healthIcon: stats.health > 0 ? '🤕' : null,
+                    healthIcon: stats.health === 1 ? '🤕' : stats.health === 2 ? '💀' : null,
                     showThoughtBubble: get_settings('showThoughtBubble'),
                 };
                 return compiledCardTemplate(cardData);
@@ -171,6 +183,11 @@ const bind_setting = (selector, key, type) => {
             case 'text': case 'color': value = element.val(); break;
         }
         set_settings(key, value);
+        
+        // Reload template if template file setting changed
+        if (key === 'templateFile') {
+            loadTemplate();
+        }
     });
 };
 
@@ -182,6 +199,7 @@ const initialize_settings_listeners = () => {
     bind_setting('#codeBlockIdentifier', 'codeBlockIdentifier', 'text');
     bind_setting('#defaultBgColor', 'defaultBgColor', 'color');
     bind_setting('#showThoughtBubble', 'showThoughtBubble', 'boolean');
+    bind_setting('#templateFile', 'templateFile', 'text');
     
     // Refresh the UI with the current values
     refresh_settings_ui();
@@ -219,9 +237,11 @@ jQuery(async () => {
         initialize_settings_listeners();
         log("Settings panel listeners initialized.");
 
+        // Load the template
+        await loadTemplate();
+
         const context = getContext();
         context.eventSource.on(context.event_types.CHARACTER_MESSAGE_RENDERED, renderTracker);
-
 
         log(`${MODULE_NAME} has been successfully loaded.`);
     } catch (error) {
