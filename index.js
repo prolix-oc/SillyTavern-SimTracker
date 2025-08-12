@@ -1,7 +1,6 @@
 import { getContext, extension_settings } from '../../../extensions.js';
 import { saveSettingsDebounced, messageFormatting } from '../../../../script.js';
 import { MacrosParser } from '../../../macros.js';
-import * as fs from 'fs'
 
 const MODULE_NAME = 'SillySimTracker';
 const GIT_MODULE_NAME = 'SillyTavern-DatingSimTracker'
@@ -518,11 +517,6 @@ jQuery(async () => {
         });
         refreshAllCards();
         log(`${MODULE_NAME} has been successfully loaded.`);
-        fs.writeFileSync(`${get_extension_directory()}/file.txt`, "testing lol")
-        log(`We wrote a file?`);
-        const fileContents = fs.readFileSync(`${get_extension_directory()}/file.txt`)
-        log(`File said: ${fileContents}`);
-
     } catch (error) {
         console.error(`[${MODULE_NAME}] A critical error occurred during initialization. The extension may not work correctly. Error: ${error.stack}`);
     }
