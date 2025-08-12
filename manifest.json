@@ -1,12 +1,13 @@
 {
-    "name": "Silly Sim Tracker",
-    "display_name": "SillySimTracker",
-    "author": "Prolix OCs",
-    "version": "1.0.0",
-    "description": "Displays a dating sim-style tracker card based on a JSON code block in a character's message.",
-    "js": "index.js",
-    "css": "style.css",
-    "requires": [],
-    "optional": [],
-    "loading_order": 1
+  "name": "Silly Sim Tracker",
+  "display_name": "SillySimTracker",
+  "author": "Prolix OCs",
+  "version": "1.0.0",
+  "description": "Displays a dating sim-style tracker card based on a JSON code block in a character's message.",
+  "js": "index.js",
+  "css": "style.css",
+  "settings": "settings.html",
+  "requires": [],
+  "optional": [],
+  "loading_order": 1
 }

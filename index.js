@@ -1,8 +1,7 @@
 import { getContext, on, SimpleHandlebarsCompiler, extension_settings } from '../../../extensions.js';
 import { saveSettingsDebounced } from '../../../../script.js';
 
-// --- MODULE CONSTANTS ---
-const MODULE_NAME = 'SillySimTracker'; // Must match "display_name" in manifest.json
+const MODULE_NAME = 'SillySimTracker';
 const CONTAINER_ID = 'silly-sim-tracker-container';
 const SETTINGS_ID = 'silly-sim-tracker-settings';
 
@@ -76,7 +75,7 @@ const cardTemplate = `
 const compiledWrapperTemplate = SimpleHandlebarsCompiler(wrapperTemplate);
 const compiledCardTemplate = SimpleHandlebarsCompiler(cardTemplate);
 
-// START RENDERTRACKER FUNCTION
+// --- RENDER LOGIC ---
 const renderTracker = (message) => {
     if (!get_settings('isEnabled')) return;
     const messageElement = document.querySelector(`div[data-message-id="${message.id}"] .mes_text`);
@@ -84,9 +83,9 @@ const renderTracker = (message) => {
     const identifier = get_settings('codeBlockIdentifier');
     const jsonRegex = new RegExp("```" + identifier + "\\s*([\\s\\S]*?)\\s*```");
     const match = message.mes.match(jsonRegex);
-    if (match && match[1]) {
+    if (match && match) {
         try {
-            const jsonData = JSON.parse(match[1]);
+            const jsonData = JSON.parse(match);
             const currentDate = jsonData.current_date || 'Unknown Date';
             const characterNames = Object.keys(jsonData).filter(key => key !== 'current_date');
             if (!characterNames.length) return;
@@ -112,7 +111,6 @@ const renderTracker = (message) => {
         }
     }
 };
-// END RENDERTRACKER FUNCTION
 
 // --- SETTINGS MANAGEMENT ---
 const refresh_settings_ui = () => {
@@ -153,55 +151,28 @@ const initialize_settings = () => {
 jQuery(async () => {
     log(`Initializing extension: ${MODULE_NAME}`);
 
-    // Step 1: Initialize settings data
+    // Step 1: Initialize settings data from storage
     initialize_settings();
 
-    // Step 2: Define the settings HTML as a string
-    const settingsHtml = `
-    <div id="${SETTINGS_ID}">
-        <div class="inline-drawer">
-            <div class="inline-drawer-toggle inline-drawer-header">
-                <b>Silly Sim Tracker</b>
-                <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-            </div>
-            <div class="inline-drawer-content">
-                <div class="silly-sim-tracker-settings-content">
-                    <div class="setting">
-                        <label for="isEnabled">Enable Tracker</label>
-                        <div class="control"><input type="checkbox" id="isEnabled"></div>
-                    </div>
-                    <p class="description">The master switch to enable or disable the extension.</p>
-                    <hr>
-                    <div class="setting">
-                        <label for="codeBlockIdentifier">Code Block Identifier</label>
-                        <div class="control"><input type="text" id="codeBlockIdentifier" class="text_pole"></div>
-                    </div>
-                    <p class="description">The keyword the extension looks for after the opening \`\`\` (e.g., "sim").</p>
-                    <hr>
-                    <div class="setting">
-                        <label for="defaultBgColor">Default Card Color</label>
-                        <div class="control"><input type="color" id="defaultBgColor"></div>
-                    </div>
-                    <p class="description">The background color used for cards when one isn't specified in the JSON.</p>
-                    <hr>
-                    <div class="setting">
-                        <label for="showThoughtBubble">Show Thought Bubble</label>
-                        <div class="control"><input type="checkbox" id="showThoughtBubble"></div>
-                    </div>
-                    <p class="description">Whether to display the 'thought' section at the bottom of the card.</p>
-                </div>
-            </div>
-        </div>
-    </div>
-    `;
+    // Step 2: Manually load the settings panel into the UI
+    try {
+        const response = await fetch(`/extensions/${MODULE_NAME}/settings.html`);
+        if (!response.ok) {
+            log(`Failed to load settings HTML: ${response.statusText}`);
+            return;
+        }
+        const html = await response.text();
+        $("#extensions_settings2").append(html);
 
-    // Step 3: Inject the HTML into the DOM
-    $("#extensions_settings2").append(settingsHtml);
+        // Step 3: Bind listeners ONLY after the HTML is loaded
+        initialize_settings_listeners();
+        log("Settings panel loaded and listeners initialized.");
 
-    // Step 4: Bind event listeners to the newly created elements
-    initialize_settings_listeners();
+    } catch (error) {
+        log(`Error loading settings panel: ${error}`);
+    }
 
-    // Step 5: Register the main extension functionality
+    // Step 4: Register the main extension functionality
     on('CHARACTER_MESSAGE_RENDERED', renderTracker);
 
     log(`${MODULE_NAME} has been successfully loaded.`);
