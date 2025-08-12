@@ -83,63 +83,67 @@ const loadTemplate = async () => {
         const response = await $.get(templatePath);
         log(`Raw template response length: ${response.length}`);
         
-        // Remove HTML comments first
+        // Clean the response by removing HTML comments
         let cleanedResponse = response.replace(/<!--[\s\S]*?-->/g, '').trim();
         log(`Cleaned response length: ${cleanedResponse.length}`);
         
-        // Simple approach: find the start of the card div and manually count nesting
-        const cardStartIndex = cleanedResponse.indexOf('flex:1 1 calc(50% - 10px)');
-        if (cardStartIndex === -1) {
-            throw new Error('Could not find flex:1 1 calc(50% - 10px) in template');
-        }
+        // Look for template markers to extract just the card template
+        const cardStartMarker = '<!-- CARD_TEMPLATE_START -->';
+        const cardEndMarker = '<!-- CARD_TEMPLATE_END -->';
         
-        // Find the opening div tag that contains this style
-        let divStart = cleanedResponse.lastIndexOf('<div', cardStartIndex);
-        if (divStart === -1) {
-            throw new Error('Could not find opening div tag');
-        }
-        
-        // Now count div nesting to find the matching closing tag
-        let divCount = 1; // Start with 1 since we already found the opening div
-        let currentPos = divStart;
-        
-        // Find the end of the opening div tag first
-        const openTagEnd = cleanedResponse.indexOf('>', divStart);
-        if (openTagEnd === -1) {
-            throw new Error('Could not find end of opening div tag');
-        }
-        
-        currentPos = openTagEnd + 1;
         let cardTemplate = '';
         
-        while (currentPos < cleanedResponse.length && divCount > 0) {
-            const nextOpenDiv = cleanedResponse.indexOf('<div', currentPos);
-            const nextCloseDiv = cleanedResponse.indexOf('</div>', currentPos);
+        // Check if the template has explicit markers
+        const startIndex = cleanedResponse.indexOf(cardStartMarker);
+        const endIndex = cleanedResponse.indexOf(cardEndMarker);
+        
+        if (startIndex !== -1 && endIndex !== -1) {
+            // Extract content between markers
+            cardTemplate = cleanedResponse.substring(
+                startIndex + cardStartMarker.length, 
+                endIndex
+            ).trim();
+            log(`Extracted card template using markers, length: ${cardTemplate.length}`);
+        } else {
+            // Fallback: Look for the outermost div that contains template variables
+            // This is more robust than looking for specific CSS properties
+            const templateVarRegex = /\{\{[^}]+\}\}/;
             
-            if (nextCloseDiv === -1) break;
+            // Find all div elements and check which ones contain template variables
+            const divMatches = [...cleanedResponse.matchAll(/<div[^>]*>[\s\S]*?<\/div>/g)];
             
-            if (nextOpenDiv !== -1 && nextOpenDiv < nextCloseDiv) {
-                // Found opening div
-                divCount++;
-                currentPos = nextOpenDiv + 4;
-            } else {
-                // Found closing div
-                divCount--;
-                if (divCount === 0) {
-                    // This is our matching closing tag
-                    cardTemplate = cleanedResponse.substring(divStart, nextCloseDiv + 6);
-                    break;
+            // Find the largest div that contains template variables
+            let bestMatch = null;
+            let maxLength = 0;
+            
+            for (const match of divMatches) {
+                if (templateVarRegex.test(match[0]) && match[0].length > maxLength) {
+                    bestMatch = match[0];
+                    maxLength = match[0].length;
                 }
-                currentPos = nextCloseDiv + 6;
+            }
+            
+            if (bestMatch) {
+                cardTemplate = bestMatch;
+                log(`Extracted card template using content analysis, length: ${cardTemplate.length}`);
+            } else {
+                throw new Error('Could not find template content with Handlebars variables');
             }
         }
         
         if (cardTemplate) {
-            log(`Extracted card template, length: ${cardTemplate.length}`);
+            // Validate that the template contains expected variables
+            const requiredVars = ['{{characterName}}', '{{stats.ap}}', '{{stats.dp}}', '{{stats.tp}}', '{{stats.cp}}'];
+            const missingVars = requiredVars.filter(varName => !cardTemplate.includes(varName));
+            
+            if (missingVars.length > 0) {
+                log(`Warning: Template missing required variables: ${missingVars.join(', ')}`);
+            }
+            
             compiledCardTemplate = Handlebars.compile(cardTemplate);
             log(`Template compiled successfully from: ${templateFile}`);
         } else {
-            throw new Error('Could not extract complete card template');
+            throw new Error('Could not extract card template content');
         }
         
     } catch (error) {
