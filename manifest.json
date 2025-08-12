@@ -9,6 +9,5 @@
   "homePage": "https://github.com/prolix-oc/SillyTavern-DatingSimTracker.git",
   "requires": [],
   "optional": [],
-  "generate_interceptor": "sim_intercept_messages",
   "loading_order": 1
 }

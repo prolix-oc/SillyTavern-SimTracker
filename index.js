@@ -1,5 +1,6 @@
 import { getContext, extension_settings } from '../../../extensions.js';
 import { saveSettingsDebounced, messageFormatting } from '../../../../script.js';
+import { MacrosParser } from '../../../macros.js';
 
 const MODULE_NAME = 'SillySimTracker';
 const CONTAINER_ID = 'silly-sim-tracker-container';
@@ -378,6 +379,21 @@ jQuery(async () => {
         initialize_settings_listeners();
         log("Settings panel listeners initialized.");
         await loadTemplate();
+        
+        log("Registering macros...");
+        MacrosParser.registerMacro('dating_sim', () => {
+            if (!get_settings('isEnabled')) return '';
+            log('Processed {{dating_sim}} macro.');
+            return get_settings('datingSimPrompt');
+        });
+
+        MacrosParser.registerMacro('last_sim_stats', () => {
+            if (!get_settings('isEnabled')) return '';
+            log('Processed {{last_sim_stats}} macro.');
+            return lastSimJsonString || '{}';
+        });
+        log("Macros registered successfully.");
+
         const context = getContext();
         const { eventSource, event_types } = context;
         eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, renderTracker);
