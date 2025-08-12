@@ -76,10 +76,22 @@ const compiledWrapperTemplate = SimpleHandlebarsCompiler(wrapperTemplate);
 const compiledCardTemplate = SimpleHandlebarsCompiler(cardTemplate);
 
 // --- RENDER LOGIC ---
-const renderTracker = (message) => {
+const renderTracker = (mesId) => {
     if (!get_settings('isEnabled')) return;
-    const messageElement = document.querySelector(`div[data-message-id="${message.id}"] .mes_text`);
+
+    // Get the core application context and the specific message object using the provided ID (index)
+    const context = getContext();
+    const message = context.chat[mesId];
+
+    if (!message) {
+        log(`Could not find message with ID ${mesId}`);
+        return;
+    }
+
+    const messageElement = document.querySelector(`div[mesid="${mesId}"] .mes_text`);
+
     if (!messageElement || messageElement.querySelector(`#${CONTAINER_ID}`)) return;
+
     const identifier = get_settings('codeBlockIdentifier');
     const jsonRegex = new RegExp("```" + identifier + "\\s*([\\s\\S]*?)\\s*```");
     const match = message.mes.match(jsonRegex);
@@ -103,7 +115,8 @@ const renderTracker = (message) => {
                 return compiledCardTemplate(cardData);
             }).join('');
             const finalHtml = compiledWrapperTemplate({ cardsHtml });
-            const { DOMPurify } = getContext().libs;
+            // Access DOMPurify from the fetched context object
+            const { DOMPurify } = context.libs;
             const sanitizedHtml = DOMPurify.sanitize(finalHtml);
             messageElement.insertAdjacentHTML('beforeend', sanitizedHtml);
         } catch (error) {
