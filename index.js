@@ -89,29 +89,31 @@ async function getTemplateFiles() {
     let defaultFiles = [];
     let customFiles = [];
 
-    // Ensure the File Browser API is available
-    if (!SillyTavern.extra_api.files) {
-        log("File Browser API not found. Cannot list templates.");
-        toastr.error("The 'File Browser' extension is required to manage templates.", "Dependency Missing");
-        return [];
-    }
+    const listFiles = async (path) => {
+        try {
+            const response = await fetch('/api/files/list', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: path }),
+            });
+            if (!response.ok) {
+                // It's normal for the custom directory to not exist initially
+                if (response.status === 404) {
+                    log(`Directory not found (this is okay): ${path}`);
+                    return [];
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const data = await response.json();
+            return data.files.filter(file => file.endsWith('.html'));
+        } catch (error) {
+            console.error(`Error listing files in ${path}:`, error);
+            return [];
+        }
+    };
 
-    try {
-        // Correct API call to list files
-        defaultFiles = await SillyTavern.extra_api.files.list(defaultDir);
-        defaultFiles = defaultFiles.filter(file => file.endsWith('.html'));
-    } catch (e) {
-        log('Default template directory not found or is empty.');
-    }
-
-    try {
-        // Correct API call to list files
-        customFiles = await SillyTavern.extra_api.files.list(customDir);
-        customFiles = customFiles.filter(file => file.endsWith('.html'));
-    } catch (e) {
-        // This is not an error, the directory might just not exist yet.
-        log('Custom template directory not found or is empty.');
-    }
+    defaultFiles = await listFiles(defaultDir);
+    customFiles = await listFiles(customDir);
 
     const allFiles = [...new Set([...defaultFiles, ...customFiles])];
     return allFiles.sort();
@@ -153,19 +155,24 @@ async function saveCustomTemplate(fileName, content) {
     const customDir = `extensions/third-party/silly-sim-tracker/custom_tracker_templates`;
     const filePath = `${customDir}/${fileName}`;
 
-    // Ensure the File Browser API is available
-    if (!SillyTavern.extra_api.files) {
-        log("File Browser API not found. Cannot save template.");
-        toastr.error("The 'File Browser' extension is required to save templates.", "Dependency Missing");
-        return;
-    }
-
     try {
-        log(`Saving template to: ${filePath}`);
-        // Correct API call to save the file
-        const result = await SillyTavern.extra_api.files.save(filePath, content);
+        log(`Attempting to save template to: ${filePath}`);
+        const response = await fetch('/api/files/save', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                path: filePath,
+                data: content, // The API accepts raw text content
+            }),
+        });
 
-        if (result.ok) {
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+        }
+
+        const result = await response.json();
+        if (result.success) {
             toastr.success(`Template "${fileName}" uploaded successfully!`, 'Upload Complete');
             await populateTemplateDropdown();
             set_settings('templateFile', fileName);
@@ -173,7 +180,7 @@ async function saveCustomTemplate(fileName, content) {
             await loadTemplate();
             refreshAllCards();
         } else {
-            throw new Error(result.error || 'Unknown error occurred during save.');
+            throw new Error('Save operation was not successful.');
         }
 
     } catch (error) {
