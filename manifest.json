@@ -1,5 +1,6 @@
 {
-  "display_name": "SillySimTracker",
+  "name": "Tracker",
+  "display_name": "Silly Sim Tracker",
   "author": "Prolix OCs",
   "version": "1.0.0",
   "description": "Displays a dating sim-style tracker card based on a JSON code block in a character's message.",
@@ -7,5 +8,5 @@
   "css": "style.css",
   "requires": [],
   "optional": [],
-  "loading_order": 16
+  "loading_order": 1
 }
