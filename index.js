@@ -63,9 +63,9 @@ const loadTemplate = async () => {
         log(`Cleaned response length: ${cleanedResponse.length}`);
         
         // Simple approach: find the start of the card div and manually count nesting
-        const cardStartIndex = cleanedResponse.indexOf('flex: 1 1 calc(50% - 10px)');
+        const cardStartIndex = cleanedResponse.indexOf('flex:1 1 calc(50% - 10px)');
         if (cardStartIndex === -1) {
-            throw new Error('Could not find flex:1 1 100% in template');
+            throw new Error('Could not find flex:1 1 calc(50% - 10px) in template');
         }
         
         // Find the opening div tag that contains this style
