@@ -70,27 +70,76 @@
     bottom: 110px !important;
   }
 }
+
+/* Minimalist design enhancements */
+.tracker-card {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), 0 1px 4px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+.tracker-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.3), 0 4px 10px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+.stat-container {
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.stat-container:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Minimalist badge styling */
+.tracker-card > div:first-of-type > div,
+.tracker-card > div:nth-child(2) > div:nth-child(2) > div {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(8px) !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.25px !important;
+}
+
+/* Minimalist thought bubble */
+.thought-bubble {
+  background: rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(8px) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Subtle gradient overlay */
+.gradient-overlay {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent) !important;
+}
 </style>
 
 <div class="tracker-card-container" style="display:flex;gap:20px;justify-content:center;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;width:100%">
-  <div class="tracker-card" style="min-width:320px;background:linear-gradient(145deg,{{bgColor}} 0%,{{darkerBgColor}} 50%,{{darkerBgColor}} 100%);border-radius:16px;padding:0;box-sizing:border-box;position:relative;color:#fff;font-size:14px;font-weight:500;box-shadow:0 8px 32px rgba(0,0,0,0.4),0 2px 8px rgba(0,0,0,0.2),inset 0 1px 0 rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.1);overflow:hidden;transition:transform 0.3s ease,box-shadow 0.3s ease" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 12px 40px rgba(0,0,0,0.5),0 4px 12px rgba(0,0,0,0.3),inset 0 1px 0 rgba(255,255,255,0.2)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 32px rgba(0,0,0,0.4),0 2px 8px rgba(0,0,0,0.2),inset 0 1px 0 rgba(255,255,255,0.2)'">
+  <div class="tracker-card" style="min-width:320px;background:linear-gradient(145deg,{{bgColor}} 0%,{{darkerBgColor}} 50%,{{darkerBgColor}} 100%);border-radius:16px;padding:0;box-sizing:border-box;position:relative;color:#fff;font-size:14px;font-weight:500;">
     
     <!-- Gradient overlay -->
-    <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent)"></div>
+    <div class="gradient-overlay" style="position:absolute;top:0;left:0;right:0;height:1px;"></div>
     
     <!-- Header -->
     <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px 0 20px;font-size:12px;font-weight:500">
-      <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);padding:4px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);font-weight:600;letter-spacing:0.5px">{{currentDate}}</div>
+      <div style="padding:4px 10px;border-radius:8px;font-weight:500;letter-spacing:0.25px">{{currentDate}}</div>
       <div style="display:flex;gap:8px">
-        <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);padding:4px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);font-weight:600;letter-spacing:0.5px">Day {{stats.days_since_first_meeting}}</div>
-        {{#if stats.preg}}<div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);padding:4px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);font-weight:600;letter-spacing:0.5px">🤰{{stats.days_preg}}d</div>{{/if}}
+        <div style="padding:4px 10px;border-radius:8px;font-weight:500;letter-spacing:0.25px">Day {{stats.days_since_first_meeting}}</div>
+        {{#if stats.preg}}<div style="padding:4px 10px;border-radius:8px;font-weight:500;letter-spacing:0.25px">🤰{{stats.days_preg}}d</div>{{/if}}
       </div>
     </div>
     
     <!-- Character Info -->
     <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px 0 20px">
-      <div style="font-size:26px;font-weight:700;text-shadow:0 2px 4px rgba(0,0,0,0.3);letter-spacing:-0.5px">{{characterName}}</div>
-      <div style="display:flex;align-items:center;gap:12px;font-size:20px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3))">
+      <div style="font-size:26px;font-weight:600;letter-spacing:-0.25px">{{characterName}}</div>
+      <div style="display:flex;align-items:center;gap:12px;font-size:20px;">
         {{#if healthIcon}}<span>{{healthIcon}}</span>{{/if}}
         <span>{{reactionEmoji}}</span>
       </div>
@@ -101,45 +150,45 @@
       <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:8px;flex-wrap:nowrap">
         <!-- Affection Stat -->
         <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:60px;max-width:120px;position:relative">
-          <div class="stat-title" style="font-size:8px;font-weight:600;opacity:0.7;margin-bottom:3px;text-shadow:0 1px 2px rgba(0,0,0,0.5);color:rgba(255,255,255,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;text-align:center;line-height:1.2">AFFECTION</div>
-          <div class="stat-container" style="padding:6px 3px;border-radius:8px;background:rgba(255,255,255,0.08);backdrop-filter:blur(5px);border:1px solid rgba(255,255,255,0.1);transition:all 0.3s ease;width:100%;display:flex;flex-direction:column;align-items:center;position:relative;min-height:70px;justify-content:center;box-sizing:border-box" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.transform='translateY(0)'">
-            <div class="stat-icon" style="font-size:20px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));margin-bottom:3px">❤️</div>
-            <div class="stat-value" style="font-size:16px;font-weight:700;line-height:1;text-shadow:0 2px 4px rgba(0,0,0,0.3)">{{stats.ap}}</div>
+          <div class="stat-title" style="font-size:8px;font-weight:500;opacity:0.8;margin-bottom:3px;color:rgba(255,255,255,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;text-align:center;line-height:1.2">AFFECTION</div>
+          <div class="stat-container" style="padding:6px 3px;border-radius:10px;width:100%;display:flex;flex-direction:column;align-items:center;position:relative;min-height:70px;justify-content:center;box-sizing:border-box">
+            <div class="stat-icon" style="font-size:20px;line-height:1;margin-bottom:3px">❤️</div>
+            <div class="stat-value" style="font-size:16px;font-weight:600;line-height:1;">{{stats.ap}}</div>
             {{#if stats.apChange}}{{#unless (eq stats.apChange 0)}}
-            <div style="position:absolute;top:-4px;right:-4px;background:{{#if (gt stats.apChange 0)}}rgba(34,197,94,0.9){{else}}rgba(239,68,68,0.9){{/if}};color:white;font-size:8px;font-weight:700;padding:1px 3px;border-radius:4px;border:1px solid rgba(255,255,255,0.3);text-shadow:0 1px 2px rgba(0,0,0,0.5);min-width:14px;text-align:center;line-height:1.2">{{#if (gt stats.apChange 0)}}+{{/if}}{{stats.apChange}}</div>
+            <div style="position:absolute;top:-4px;right:-4px;background:{{#if (gt stats.apChange 0)}}rgba(46, 204, 113, 0.9){{else}}rgba(231, 76, 60, 0.9){{/if}};color:white;font-size:8px;font-weight:600;padding:1px 3px;border-radius:4px;border:1px solid rgba(255,255,255,0.2);min-width:14px;text-align:center;line-height:1.2">{{#if (gt stats.apChange 0)}}+{{/if}}{{stats.apChange}}</div>
             {{/unless}}{{/if}}
           </div>
         </div>
         <!-- Desire Stat -->
         <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:60px;max-width:120px;position:relative">
-          <div class="stat-title" style="font-size:8px;font-weight:600;opacity:0.7;margin-bottom:3px;text-shadow:0 1px 2px rgba(0,0,0,0.5);color:rgba(255,255,255,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;text-align:center;line-height:1.2">DESIRE</div>
-          <div class="stat-container" style="padding:6px 3px;border-radius:8px;background:rgba(255,255,255,0.08);backdrop-filter:blur(5px);border:1px solid rgba(255,255,255,0.1);transition:all 0.3s ease;width:100%;display:flex;flex-direction:column;align-items:center;position:relative;min-height:70px;justify-content:center;box-sizing:border-box" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.transform='translateY(0)'">
-            <div class="stat-icon" style="font-size:20px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));margin-bottom:3px">🔥</div>
-            <div class="stat-value" style="font-size:16px;font-weight:700;line-height:1;text-shadow:0 2px 4px rgba(0,0,0,0.3)">{{stats.dp}}</div>
+          <div class="stat-title" style="font-size:8px;font-weight:500;opacity:0.8;margin-bottom:3px;color:rgba(255,255,255,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;text-align:center;line-height:1.2">DESIRE</div>
+          <div class="stat-container" style="padding:6px 3px;border-radius:10px;width:100%;display:flex;flex-direction:column;align-items:center;position:relative;min-height:70px;justify-content:center;box-sizing:border-box">
+            <div class="stat-icon" style="font-size:20px;line-height:1;margin-bottom:3px">🔥</div>
+            <div class="stat-value" style="font-size:16px;font-weight:600;line-height:1;">{{stats.dp}}</div>
             {{#if stats.dpChange}}{{#unless (eq stats.dpChange 0)}}
-            <div style="position:absolute;top:-4px;right:-4px;background:{{#if (gt stats.dpChange 0)}}rgba(34,197,94,0.9){{else}}rgba(239,68,68,0.9){{/if}};color:white;font-size:8px;font-weight:700;padding:1px 3px;border-radius:4px;border:1px solid rgba(255,255,255,0.3);text-shadow:0 1px 2px rgba(0,0,0,0.5);min-width:14px;text-align:center;line-height:1.2">{{#if (gt stats.dpChange 0)}}+{{/if}}{{stats.dpChange}}</div>
+            <div style="position:absolute;top:-4px;right:-4px;background:{{#if (gt stats.dpChange 0)}}rgba(46, 204, 113, 0.9){{else}}rgba(231, 76, 60, 0.9){{/if}};color:white;font-size:8px;font-weight:600;padding:1px 3px;border-radius:4px;border:1px solid rgba(255,255,255,0.2);min-width:14px;text-align:center;line-height:1.2">{{#if (gt stats.dpChange 0)}}+{{/if}}{{stats.dpChange}}</div>
             {{/unless}}{{/if}}
           </div>
         </div>
         <!-- Trust Stat -->
         <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:60px;max-width:120px;position:relative">
-          <div class="stat-title" style="font-size:8px;font-weight:600;opacity:0.7;margin-bottom:3px;text-shadow:0 1px 2px rgba(0,0,0,0.5);color:rgba(255,255,255,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;text-align:center;line-height:1.2">TRUST</div>
-          <div class="stat-container" style="padding:6px 3px;border-radius:8px;background:rgba(255,255,255,0.08);backdrop-filter:blur(5px);border:1px solid rgba(255,255,255,0.1);transition:all 0.3s ease;width:100%;display:flex;flex-direction:column;align-items:center;position:relative;min-height:70px;justify-content:center;box-sizing:border-box" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.transform='translateY(0)'">
-            <div class="stat-icon" style="font-size:20px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));margin-bottom:3px">🤝</div>
-            <div class="stat-value" style="font-size:16px;font-weight:700;line-height:1;text-shadow:0 2px 4px rgba(0,0,0,0.3)">{{stats.tp}}</div>
+          <div class="stat-title" style="font-size:8px;font-weight:500;opacity:0.8;margin-bottom:3px;color:rgba(255,255,255,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;text-align:center;line-height:1.2">TRUST</div>
+          <div class="stat-container" style="padding:6px 3px;border-radius:10px;width:100%;display:flex;flex-direction:column;align-items:center;position:relative;min-height:70px;justify-content:center;box-sizing:border-box">
+            <div class="stat-icon" style="font-size:20px;line-height:1;margin-bottom:3px">🤝</div>
+            <div class="stat-value" style="font-size:16px;font-weight:600;line-height:1;">{{stats.tp}}</div>
             {{#if stats.tpChange}}{{#unless (eq stats.tpChange 0)}}
-            <div style="position:absolute;top:-4px;right:-4px;background:{{#if (gt stats.tpChange 0)}}rgba(34,197,94,0.9){{else}}rgba(239,68,68,0.9){{/if}};color:white;font-size:8px;font-weight:700;padding:1px 3px;border-radius:4px;border:1px solid rgba(255,255,255,0.3);text-shadow:0 1px 2px rgba(0,0,0,0.5);min-width:14px;text-align:center;line-height:1.2">{{#if (gt stats.tpChange 0)}}+{{/if}}{{stats.tpChange}}</div>
+            <div style="position:absolute;top:-4px;right:-4px;background:{{#if (gt stats.tpChange 0)}}rgba(46, 204, 113, 0.9){{else}}rgba(231, 76, 60, 0.9){{/if}};color:white;font-size:8px;font-weight:600;padding:1px 3px;border-radius:4px;border:1px solid rgba(255,255,255,0.2);min-width:14px;text-align:center;line-height:1.2">{{#if (gt stats.tpChange 0)}}+{{/if}}{{stats.tpChange}}</div>
             {{/unless}}{{/if}}
           </div>
         </div>
         <!-- Contempt Stat -->
         <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:60px;max-width:120px;position:relative">
-          <div class="stat-title" style="font-size:8px;font-weight:600;opacity:0.7;margin-bottom:3px;text-shadow:0 1px 2px rgba(0,0,0,0.5);color:rgba(255,255,255,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;text-align:center;line-height:1.2">CONTEMPT</div>
-          <div class="stat-container" style="padding:6px 3px;border-radius:8px;background:rgba(255,255,255,0.08);backdrop-filter:blur(5px);border:1px solid rgba(255,255,255,0.1);transition:all 0.3s ease;width:100%;display:flex;flex-direction:column;align-items:center;position:relative;min-height:70px;justify-content:center;box-sizing:border-box" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.transform='translateY(0)'">
-            <div class="stat-icon" style="font-size:20px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));margin-bottom:3px">💔</div>
-            <div class="stat-value" style="font-size:16px;font-weight:700;line-height:1;text-shadow:0 2px 4px rgba(0,0,0,0.3)">{{stats.cp}}</div>
+          <div class="stat-title" style="font-size:8px;font-weight:500;opacity:0.8;margin-bottom:3px;color:rgba(255,255,255,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;text-align:center;line-height:1.2">CONTEMPT</div>
+          <div class="stat-container" style="padding:6px 3px;border-radius:10px;width:100%;display:flex;flex-direction:column;align-items:center;position:relative;min-height:70px;justify-content:center;box-sizing:border-box">
+            <div class="stat-icon" style="font-size:20px;line-height:1;margin-bottom:3px">💔</div>
+            <div class="stat-value" style="font-size:16px;font-weight:600;line-height:1;">{{stats.cp}}</div>
             {{#if stats.cpChange}}{{#unless (eq stats.cpChange 0)}}
-            <div style="position:absolute;top:-4px;right:-4px;background:{{#if (gt stats.cpChange 0)}}rgba(239,68,68,0.9){{else}}rgba(34,197,94,0.9){{/if}};color:white;font-size:8px;font-weight:700;padding:1px 3px;border-radius:4px;border:1px solid rgba(255,255,255,0.3);text-shadow:0 1px 2px rgba(0,0,0,0.5);min-width:14px;text-align:center;line-height:1.2">{{#if (gt stats.cpChange 0)}}+{{/if}}{{stats.cpChange}}</div>
+            <div style="position:absolute;top:-4px;right:-4px;background:{{#if (gt stats.cpChange 0)}}rgba(231, 76, 60, 0.9){{else}}rgba(46, 204, 113, 0.9){{/if}};color:white;font-size:8px;font-weight:600;padding:1px 3px;border-radius:4px;border:1px solid rgba(255,255,255,0.2);min-width:14px;text-align:center;line-height:1.2">{{#if (gt stats.cpChange 0)}}+{{/if}}{{stats.cpChange}}</div>
             {{/unless}}{{/if}}
           </div>
         </div>
@@ -148,9 +197,9 @@
     
     <!-- Thought Bubble -->
     {{#if showThoughtBubble}}
-    <div style="position:absolute;left:16px;right:16px;bottom:16px;min-height:60px;background:rgba(255,255,255,0.12);backdrop-filter:blur(10px);border-radius:12px;display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid rgba(255,255,255,0.15);box-shadow:inset 0 1px 0 rgba(255,255,255,0.1)">
-      <div style="font-size:22px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));flex-shrink:0">💭</div>
-      <div style="flex:1;font-size:13px;font-weight:500;line-height:1.4;overflow:hidden;text-shadow:0 1px 2px rgba(0,0,0,0.3)">{{stats.internal_thought}}</div>
+    <div class="thought-bubble" style="position:absolute;left:16px;right:16px;bottom:16px;min-height:60px;border-radius:12px;display:flex;align-items:center;gap:12px;padding:12px 16px;">
+      <div style="font-size:22px;flex-shrink:0">💭</div>
+      <div style="flex:1;font-size:13px;font-weight:400;line-height:1.4;overflow:hidden;">{{stats.internal_thought}}</div>
     </div>
     {{/if}}
   </div>
