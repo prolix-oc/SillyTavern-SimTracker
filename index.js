@@ -1,12 +1,30 @@
-// Import necessary functions from SillyTavern's API
-import { getContext, on, SimpleHandlebarsCompiler } from '../../../../scripts/extensions.js';
+import { getContext, on, SimpleHandlebarsCompiler, extension_settings } from '../../../extensions.js';
+import { saveSettingsDebounced } from '../../../../script.js';
 
-// A unique name for our extension to prevent conflicts
-const extensionName = "DatingSimTracker";
-const extensionContainerId = "dating-sim-tracker-container";
-let settings; // Variable to hold our settings
+const MODULE_NAME = 'SillySimTracker';
+const CONTAINER_ID = 'silly-sim-tracker-container';
+const SETTINGS_ID = 'silly-sim-tracker-settings';
+const SETTINGS_CONTENT_CLASS = 'silly-sim-tracker-settings-content';
 
-// --- HELPER FUNCTIONS (Unchanged) ---
+const default_settings = {
+    isEnabled: true,
+    codeBlockIdentifier: "sim",
+    defaultBgColor: "#6a5acd",
+    showThoughtBubble: true,
+};
+
+let settings = {};
+const settings_ui_map = {};
+
+// --- UTILITY FUNCTIONS ---
+const log = (message) => console.log(`[${MODULE_NAME}]`, message);
+
+const get_settings = (key) => settings[key] ?? default_settings[key];
+
+const set_settings = (key, value) => {
+    settings[key] = value;
+    saveSettingsDebounced();
+};
 
 const darkenColor = (hex) => {
     if (!hex || hex.length < 7) return '#6a5acd';
@@ -19,87 +37,63 @@ const darkenColor = (hex) => {
 
 const getReactionEmoji = (reactValue) => {
     switch (parseInt(reactValue, 10)) {
-        case 1: return '👍'; // Liked
-        case 2: return '👎'; // Disliked
-        default: return '😐'; // Neutral
+        case 1: return '👍';
+        case 2: return '👎';
+        default: return '😐';
     }
 };
 
-// --- HTML TEMPLATES (Corrected) ---
 
-// This is the outer flexbox container from your template.
-// It will wrap all the generated character cards.
-const wrapperTemplate = `
-<div id="${extensionContainerId}" style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">
-  {{{cardsHtml}}}
-</div>
-`;
+// --- HTML TEMPLATES ---
+const wrapperTemplate = `<div id="${CONTAINER_ID}" style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">{{{cardsHtml}}}</div>`;
 
-// This is the inner card element from your template.
-// This part will be repeated for each character in the JSON.
 const cardTemplate = `
-<div style="flex:1 1 100%;min-width:380px;max-width:500px;height:340px;background:linear-gradient(145deg, {{bgColor}} 0%, {{darkerBgColor}} 100%);border-radius:16px;padding:0;box-sizing:border-box;position:relative;color:#fff;font-size:14px;font-weight:500;box-shadow:0 8px 32px rgba(106,90,205,0.3),0 2px 8px rgba(0,0,0,0.1);border:1px solid rgba(255,255,255,0.1);overflow:hidden;transition:transform 0.3s ease,box-shadow 0.3s ease" onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 12px 40px rgba(106,90,205,0.4),0 4px 12px rgba(0,0,0,0.15)'" onmouseout="this.style.transform='translateY(0)';this.style.boxShadow='0 8px 32px rgba(106,90,205,0.3),0 2px 8px rgba(0,0,0,0.1)'">
-    <div style="position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.3),transparent)"></div>
+<div style="flex:1 1 100%;min-width:380px;max-width:500px;height:340px;background:linear-gradient(145deg, {{bgColor}} 0%, {{darkerBgColor}} 100%);border-radius:16px;padding:0;box-sizing:border-box;position:relative;color:#fff;font-size:14px;font-weight:500;box-shadow:0 8px 32px rgba(106,90,205,0.3),0 2px 8px rgba(0,0,0,0.1);border:1px solid rgba(255,255,255,0.1);overflow:hidden;">
+    <!-- Header and Character Info -->
     <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px 0 20px;font-size:12px;font-weight:500">
-        <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);padding:4px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);font-weight:600;letter-spacing:0.5px">{{currentDate}}</div>
-        <div style="display:flex;gap:8px">
-            <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);padding:4px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);font-weight:600;letter-spacing:0.5px">Day {{stats.days_since_first_meeting}}</div>
-            {{#if stats.preg}}
-            <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);padding:4px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);font-weight:600;letter-spacing:0.5px">🤰{{stats.days_preg}}d</div>
-            {{/if}}
+        <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);padding:4px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);">{{currentDate}}</div>
+        <div style="display:flex;gap:8px;">
+            <div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);padding:4px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);">Day {{stats.days_since_first_meeting}}</div>
+            {{#if stats.preg}}<div style="background:rgba(255,255,255,0.15);backdrop-filter:blur(10px);padding:4px 10px;border-radius:8px;border:1px solid rgba(255,255,255,0.1);">🤰{{stats.days_preg}}d</div>{{/if}}
         </div>
     </div>
     <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px 0 20px">
-        <div style="font-size:26px;font-weight:700;text-shadow:0 2px 4px rgba(0,0,0,0.3);letter-spacing:-0.5px">{{characterName}}</div>
-        <div style="display:flex;align-items:center;gap:12px;font-size:20px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3))">
+        <div style="font-size:26px;font-weight:700;">{{characterName}}</div>
+        <div style="display:flex;align-items:center;gap:12px;font-size:20px;">
             {{#if healthIcon}}<span>{{healthIcon}}</span>{{/if}}
             <span>{{reactionEmoji}}</span>
         </div>
     </div>
-    <div style="position:absolute;top:110px;bottom:90px;left:0;right:0;display:flex;align-items:center;justify-content:center;padding:0 24px">
-        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:8px">
-            <div style="display:flex;flex-direction:column;align-items:center;min-width:0;flex:1;padding:12px 8px;border-radius:12px;background:rgba(255,255,255,0.08);backdrop-filter:blur(5px);border:1px solid rgba(255,255,255,0.1);transition:all 0.3s ease" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.transform='translateY(0)'">
-                <div style="font-size:40px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));margin-bottom:6px">❤️</div>
-                <div style="font-size:28px;font-weight:700;line-height:1;text-shadow:0 2px 4px rgba(0,0,0,0.3)">{{stats.ap}}</div>
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:center;min-width:0;flex:1;padding:12px 8px;border-radius:12px;background:rgba(255,255,255,0.08);backdrop-filter:blur(5px);border:1px solid rgba(255,255,255,0.1);transition:all 0.3s ease" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.transform='translateY(0)'">
-                <div style="font-size:40px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));margin-bottom:6px">🔥</div>
-                <div style="font-size:28px;font-weight:700;line-height:1;text-shadow:0 2px 4px rgba(0,0,0,0.3)">{{stats.dp}}</div>
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:center;min-width:0;flex:1;padding:12px 8px;border-radius:12px;background:rgba(255,255,255,0.08);backdrop-filter:blur(5px);border:1px solid rgba(255,255,255,0.1);transition:all 0.3s ease" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.transform='translateY(0)'">
-                <div style="font-size:40px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));margin-bottom:6px">🤝</div>
-                <div style="font-size:28px;font-weight:700;line-height:1;text-shadow:0 2px 4px rgba(0,0,0,0.3)">{{stats.tp}}</div>
-            </div>
-            <div style="display:flex;flex-direction:column;align-items:center;min-width:0;flex:1;padding:12px 8px;border-radius:12px;background:rgba(255,255,255,0.08);backdrop-filter:blur(5px);border:1px solid rgba(255,255,255,0.1);transition:all 0.3s ease" onmouseover="this.style.background='rgba(255,255,255,0.15)';this.style.transform='translateY(-2px)'" onmouseout="this.style.background='rgba(255,255,255,0.08)';this.style.transform='translateY(0)'">
-                <div style="font-size:40px;line-height:1;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));margin-bottom:6px">💔</div>
-                <div style="font-size:28px;font-weight:700;line-height:1;text-shadow:0 2px 4px rgba(0,0,0,0.3)">{{stats.cp}}</div>
-            </div>
+    <!-- Stats Grid -->
+    <div style="position:absolute;top:110px;bottom:90px;left:0;right:0;display:flex;align-items:center;justify-content:center;padding:0 24px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:8px;">
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;padding:12px 8px;border-radius:12px;background:rgba(255,255,255,0.08);"><div style="font-size:40px;line-height:1;">❤️</div><div style="font-size:28px;font-weight:700;">{{stats.ap}}</div></div>
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;padding:12px 8px;border-radius:12px;background:rgba(255,255,255,0.08);"><div style="font-size:40px;line-height:1;">🔥</div><div style="font-size:28px;font-weight:700;">{{stats.dp}}</div></div>
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;padding:12px 8px;border-radius:12px;background:rgba(255,255,255,0.08);"><div style="font-size:40px;line-h-eight:1;">🤝</div><div style="font-size:28px;font-weight:700;">{{stats.tp}}</div></div>
+            <div style="display:flex;flex-direction:column;align-items:center;flex:1;padding:12px 8px;border-radius:12px;background:rgba(255,255,255,0.08);"><div style="font-size:40px;line-height:1;">💔</div><div style="font-size:28px;font-weight:700;">{{stats.cp}}</div></div>
         </div>
     </div>
-    <div style="position:absolute;left:16px;right:16px;bottom:16px;min-height:60px;background:rgba(255,255,255,0.12);backdrop-filter:blur(10px);border-radius:12px;display:flex;align-items:center;gap:12px;padding:12px 16px;border:1px solid rgba(255,255,255,0.15);box-shadow:inset 0 1px 0 rgba(255,255,255,0.1)">
-        <div style="font-size:22px;filter:drop-shadow(0 2px 4px rgba(0,0,0,0.3));flex-shrink:0">💭</div>
-        <div style="flex:1;font-size:13px;font-weight:500;line-height:1.4;overflow:hidden;text-shadow:0 1px 2px rgba(0,0,0,0.3)">{{stats.thought}}</div>
+    <!-- Thought Bubble -->
+    {{#if showThoughtBubble}}
+    <div style="position:absolute;left:16px;right:16px;bottom:16px;min-height:60px;background:rgba(255,255,255,0.12);backdrop-filter:blur(10px);border-radius:12px;display:flex;align-items:center;gap:12px;padding:12px 16px;">
+        <div style="font-size:22px;flex-shrink:0;">💭</div>
+        <div style="flex:1;font-size:13px;font-weight:500;line-height:1.4;">{{stats.thought}}</div>
     </div>
-</div>
-`;
+    {{/if}}
+</div>`;
 
-// Compile both templates once for performance
 const compiledWrapperTemplate = SimpleHandlebarsCompiler(wrapperTemplate);
 const compiledCardTemplate = SimpleHandlebarsCompiler(cardTemplate);
 
-// --- MAIN EXTENSION LOGIC ---
-
+// --- MAIN RENDER LOGIC ---
 const renderTracker = (message) => {
-    // USE SETTING: Master switch to disable the extension
-    if (!settings.isEnabled) return;
+    if (!get_settings('isEnabled')) return;
 
     const messageElement = document.querySelector(`div[data-message-id="${message.id}"] .mes_text`);
-    if (!messageElement || messageElement.querySelector(`#${extensionContainerId}`)) {
-        return;
-    }
+    if (!messageElement || messageElement.querySelector(`#${CONTAINER_ID}`)) return;
 
-    // USE SETTING: Build the regex dynamically from settings
-    const jsonRegex = new RegExp("```" + settings.codeBlockIdentifier + "\\s*([\\s\\S]*?)\\s*```");
+    const identifier = get_settings('codeBlockIdentifier');
+    const jsonRegex = new RegExp("```" + identifier + "\\s*([\\s\\S]*?)\\s*```");
     const match = message.mes.match(jsonRegex);
 
     if (match && match) {
@@ -116,13 +110,11 @@ const renderTracker = (message) => {
                     characterName: name,
                     currentDate: currentDate,
                     stats: { ...stats, thought: stats.thought || "No thought recorded." },
-                    // USE SETTING: Use default background color from settings
-                    bgColor: stats.bg || settings.defaultBgColor,
-                    darkerBgColor: darkenColor(stats.bg || settings.defaultBgColor),
+                    bgColor: stats.bg || get_settings('defaultBgColor'),
+                    darkerBgColor: darkenColor(stats.bg || get_settings('defaultBgColor')),
                     reactionEmoji: getReactionEmoji(stats.last_react),
                     healthIcon: stats.health > 0 ? '🤕' : null,
-                    // USE SETTING: Pass the 'showThoughtBubble' setting to the template
-                    showThoughtBubble: settings.showThoughtBubble,
+                    showThoughtBubble: get_settings('showThoughtBubble'),
                 };
                 return compiledCardTemplate(cardData);
             }).join('');
@@ -133,46 +125,98 @@ const renderTracker = (message) => {
             const sanitizedHtml = DOMPurify.sanitize(finalHtml);
             
             messageElement.insertAdjacentHTML('beforeend', sanitizedHtml);
-
         } catch (error) {
-            console.error(`[${extensionName}] Error processing tracker JSON:`, error);
+            log(`Error processing tracker JSON: ${error}`);
         }
     }
 };
 
-// --- SETTINGS PAGE LOGIC ---
-const onSettingsChange = () => {
-    // This function runs when the settings page is loaded.
-    // It populates the inputs with the saved settings and adds event listeners to save changes.
-    const isEnabledCheckbox = document.getElementById('isEnabled');
-    const identifierInput = document.getElementById('codeBlockIdentifier');
-    const colorInput = document.getElementById('defaultBgColor');
-    const thoughtBubbleCheckbox = document.getElementById('showThoughtBubble');
 
-    // Populate the form with current settings
-    isEnabledCheckbox.checked = settings.isEnabled;
-    identifierInput.value = settings.codeBlockIdentifier;
-    colorInput.value = settings.defaultBgColor;
-    thoughtBubbleCheckbox.checked = settings.showThoughtBubble;
-
-    // Add listeners to update settings when the user changes them
-    isEnabledCheckbox.addEventListener('change', () => { settings.isEnabled = isEnabledCheckbox.checked; });
-    identifierInput.addEventListener('input', () => { settings.codeBlockIdentifier = identifierInput.value; });
-    colorInput.addEventListener('input', () => { settings.defaultBgColor = colorInput.value; });
-    thoughtBubbleCheckbox.addEventListener('change', () => { settings.showThoughtBubble = thoughtBubbleCheckbox.checked; });
+// --- SETTINGS ---
+const refresh_settings_ui = () => {
+    for (const [key, [element, type]] of Object.entries(settings_ui_map)) {
+        const value = get_settings(key);
+        switch (type) {
+            case 'boolean':
+                element.prop('checked', value);
+                break;
+            case 'text':
+            case 'color':
+                element.val(value);
+                break;
+        }
+    }
 };
 
-// This function runs when the extension is first loaded
-const onExtensionLoad = () => {
-    // Load settings from the context
-    settings = getContext().settings;
+const bind_setting = (selector, key, type) => {
+    const element = $(`#${SETTINGS_ID} ${selector}`);
+    if (element.length === 0) {
+        log(`Could not find settings element for selector: ${selector}`);
+        return;
+    }
+
+    settings_ui_map[key] = [element, type];
+
+    element.on('change input', () => {
+        let value;
+        switch (type) {
+            case 'boolean':
+                value = element.prop('checked');
+                break;
+            case 'text':
+            case 'color':
+                value = element.val();
+                break;
+        }
+        set_settings(key, value);
+        refresh_settings_ui();
+    });
+};
+
+const initialize_settings_listeners = () => {
+    bind_setting('#isEnabled', 'isEnabled', 'boolean');
+    bind_setting('#codeBlockIdentifier', 'codeBlockIdentifier', 'text');
+    bind_setting('#defaultBgColor', 'defaultBgColor', 'color');
+    bind_setting('#showThoughtBubble', 'showThoughtBubble', 'boolean');
+    refresh_settings_ui();
+};
+
+const initialize_settings = () => {
+    // Ensure settings are initialized
+    if (Object.keys(extension_settings[MODULE_NAME] ?? {}).length === 0) {
+        log("First time setup. Applying default settings.");
+        extension_settings[MODULE_NAME] = { ...default_settings };
+    } else {
+        // Soft-reset: apply new default settings without overwriting existing user settings
+        const newSettings = Object.assign({}, default_settings, extension_settings[MODULE_NAME]);
+        extension_settings[MODULE_NAME] = newSettings;
+    }
+    settings = extension_settings[MODULE_NAME];
+};
+
+const load_settings_html = async () => {
+    const response = await fetch(`/extensions/${MODULE_NAME}/settings.html`);
+    if (!response.ok) {
+        log("Failed to load settings.html");
+        return;
+    }
+    const html = await response.text();
+    $('#extensions_settings2').append(html);
+    initialize_settings_listeners();
+};
+
+// --- ENTRY POINT ---
+jQuery(async () => {
+    log("Initializing extension...");
     
-    // Register the functions to run on specific events
+    // Load settings data first
+    initialize_settings();
+
+    // Then load the UI and bind listeners
+    await load_settings_html();
+    
+    // Register main extension logic
     on('CHARACTER_MESSAGE_RENDERED', renderTracker);
-    on('EXTENSION_SETTINGS_LOADED', onSettingsChange); // This runs when your settings.html is opened
-
-    console.log(`[${extensionName}] Extension loaded.`);
-};
-
-// Start the extension
-onExtensionLoad();
+    
+    log("Extension loaded successfully.");
+});

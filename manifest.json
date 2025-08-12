@@ -1,14 +1,12 @@
 {
-  "name": "Dating Sim Tracker",
-  "version": "1.0.0",
-  "author": "Prolix OCs",
-  "description": "Displays a dating sim-style tracker card based on a JSON code block in a character's message.",
-  "entry": "index.js",
-  "settings": "settings.html",
-  "default_settings": {
-    "isEnabled": true,
-    "codeBlockIdentifier": "sim",
-    "defaultBgColor": "#6a5acd",
-    "showThoughtBubble": true
-  }
+    "display_name": "dating-sim-tracker",
+    "loading_order": 1,
+    "requires": [],
+    "optional": [],
+    "js": "index.js",
+    "css": "style.css",
+    "author": "prolix-oc",
+    "version": "1.0.0",
+    "homePage": "https://github.com/prolix-oc/Tracker.git",
+    "generate_interceptor": "tracker_intercept_messages"
 }
