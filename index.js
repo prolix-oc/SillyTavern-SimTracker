@@ -1,7 +1,7 @@
 import { getContext, extension_settings } from '../../../extensions.js';
 import { saveSettingsDebounced, messageFormatting } from '../../../../script.js';
 
-const MODULE_NAME = 'Tracker';
+const MODULE_NAME = 'SillySimTracker';
 const CONTAINER_ID = 'silly-sim-tracker-container';
 const SETTINGS_ID = 'silly-sim-tracker-settings';
 

@@ -6,7 +6,7 @@
   "description": "Displays a dating sim-style tracker card based on a JSON code block in a character's message.",
   "js": "index.js",
   "css": "style.css",
-  "homePage": "https://github.com/prolix-oc/Tracker.git",
+  "homePage": "https://github.com/prolix-oc/SillyTavern-DatingSimTracker.git",
   "requires": [],
   "optional": [],
   "generate_interceptor": "memory_intercept_messages",
