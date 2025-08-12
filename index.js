@@ -38,6 +38,11 @@ const getReactionEmoji = (reactValue) => {
     }
 };
 
+const get_extension_directory = () => {
+    const index_path = new URL(import.meta.url).pathname;
+    return index_path.substring(0, index_path.lastIndexOf('/'));
+};
+
 // --- TEMPLATES ---
 const wrapperTemplate = `<div id="${CONTAINER_ID}" style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">{{{cardsHtml}}}</div>`;
 const cardTemplate = `
@@ -179,7 +184,7 @@ const initialize_settings_listeners = () => {
             setTimeout(tryBindSettings, 100);
             return;
         }
-        
+
         bind_setting('#isEnabled', 'isEnabled', 'boolean');
         bind_setting('#codeBlockIdentifier', 'codeBlockIdentifier', 'text');
         bind_setting('#defaultBgColor', 'defaultBgColor', 'color');
@@ -187,12 +192,23 @@ const initialize_settings_listeners = () => {
         refresh_settings_ui();
         log("[SST] Settings UI successfully bound.");
     };
-    
+
     tryBindSettings();
 };
 const initialize_settings = () => {
     extension_settings[MODULE_NAME] = Object.assign({}, default_settings, extension_settings[MODULE_NAME]);
     settings = extension_settings[MODULE_NAME];
+};
+
+const load_settings_html_manually = async () => {
+    const settingsHtmlPath = `${get_extension_directory()}/settings.html`;
+    try {
+        const response = await $.get(settingsHtmlPath);
+        $("#extensions_settings2").append(response);
+        log("[SST] Settings HTML manually injected into right-side panel.");
+    } catch (error) {
+        log(`[SST] Error loading settings.html: ${error.statusText}`);
+    }
 };
 
 // --- ENTRY POINT ---
@@ -203,15 +219,18 @@ jQuery(async () => {
         // Initialize settings data from storage
         initialize_settings();
 
-        // Initialize settings UI listeners (settings.html is loaded automatically by SillyTavern)
+        // ADD THIS CALL to load the settings panel
+        await load_settings_html_manually();
+
+        // Initialize settings UI listeners (this will now find the injected HTML)
         initialize_settings_listeners();
         log("[SST] Settings panel listeners initialized.");
 
         // Register the main extension functionality
-        on('CHARACTER_MESSAGE_RENDERED', renderTracker);
+        on('[SST] CHARACTER_MESSAGE_RENDERED', renderTracker);
 
         log(`[SST] ${MODULE_NAME} has been successfully loaded.`);
     } catch (error) {
-        console.error(`[${MODULE_NAME}] A critical error occurred during initialization. The extension may not work correctly. Error: ${error.stack}`);
+        console.error(`[SST] [${MODULE_NAME}] A critical error occurred during initialization. The extension may not work correctly. Error: ${error.stack}`);
     }
 });
