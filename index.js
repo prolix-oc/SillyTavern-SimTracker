@@ -53,7 +53,7 @@ let compiledCardTemplate = null;
 const loadTemplate = async () => {
     const templateFile = get_settings('templateFile');
     const templatePath = `${get_extension_directory()}/tracker-card-templates/${templateFile}`;
-    
+
     try {
         const response = await $.get(templatePath);
         // Extract just the card template (remove wrapper div and comments)
@@ -138,11 +138,11 @@ const renderTracker = (mesId) => {
                     return ''; // Return an empty string for this card
                 }
                 const cardData = {
-                    characterName: name, 
+                    characterName: name,
                     currentDate: currentDate,
-                    stats: { 
-                        ...stats, 
-                        internal_thought: stats.internal_thought || stats.thought || "No thought recorded." 
+                    stats: {
+                        ...stats,
+                        internal_thought: stats.internal_thought || stats.thought || "No thought recorded."
                     },
                     bgColor: stats.bg || get_settings('defaultBgColor'),
                     darkerBgColor: darkenColor(stats.bg || get_settings('defaultBgColor')),
@@ -155,7 +155,8 @@ const renderTracker = (mesId) => {
 
             const finalHtml = compiledWrapperTemplate({ cardsHtml });
             const formattedContent = messageFormatting(finalHtml);
-            $(messageElement).append(formattedContent);        }
+            $(messageElement).append(formattedContent);
+        }
     } catch (error) {
         log(`[SST] A critical error occurred in renderTracker for message ID ${mesId}. Please check the console. Error: ${error.stack}`);
     }
@@ -172,6 +173,20 @@ const refresh_settings_ui = () => {
         }
     }
 };
+
+const refreshAllCards = () => {
+    log("Refreshing all tracker cards on screen.");
+    // Get all message divs currently in the chat DOM
+    const visibleMessages = document.querySelectorAll('div#chat .mes');
+    visibleMessages.forEach(messageElement => {
+        const mesId = messageElement.getAttribute('mesid');
+        if (mesId) {
+            // Call the existing render function for each visible message
+            renderTracker(parseInt(mesId, 10));
+        }
+    });
+};
+
 const bind_setting = (selector, key, type) => {
     const element = $(`#${SETTINGS_ID} ${selector}`);
     if (element.length === 0) { log(`Could not find settings element: ${selector}`); return; }
@@ -183,7 +198,7 @@ const bind_setting = (selector, key, type) => {
             case 'text': case 'color': value = element.val(); break;
         }
         set_settings(key, value);
-        
+
         // Reload template if template file setting changed
         if (key === 'templateFile') {
             loadTemplate();
@@ -193,14 +208,14 @@ const bind_setting = (selector, key, type) => {
 
 const initialize_settings_listeners = () => {
     log("Binding settings UI elements...");
-    
+
     // Bind all your settings directly
     bind_setting('#isEnabled', 'isEnabled', 'boolean');
     bind_setting('#codeBlockIdentifier', 'codeBlockIdentifier', 'text');
     bind_setting('#defaultBgColor', 'defaultBgColor', 'color');
     bind_setting('#showThoughtBubble', 'showThoughtBubble', 'boolean');
     bind_setting('#templateFile', 'templateFile', 'text');
-    
+
     // Refresh the UI with the current values
     refresh_settings_ui();
     log("Settings UI successfully bound.");
@@ -241,8 +256,13 @@ jQuery(async () => {
         await loadTemplate();
 
         const context = getContext();
-        context.eventSource.on(context.event_types.CHARACTER_MESSAGE_RENDERED, renderTracker);
+        const { eventSource, event_types } = context;
+        
+        eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, renderTracker);
+        eventSource.on(event_types.CHAT_CHANGED, refreshAllCards);
+        eventSource.on(event_types.MORE_MESSAGES_LOADED, refreshAllCards);
 
+        refreshAllCards();
         log(`${MODULE_NAME} has been successfully loaded.`);
     } catch (error) {
         console.error(`[${MODULE_NAME}] A critical error occurred during initialization. The extension may not work correctly. Error: ${error.stack}`);
