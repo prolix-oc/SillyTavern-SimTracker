@@ -322,7 +322,11 @@ jQuery(async () => {
         eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, renderTracker);
         eventSource.on(event_types.CHAT_CHANGED, refreshAllCards);
         eventSource.on(event_types.MORE_MESSAGES_LOADED, refreshAllCards);
-
+        eventSource.on(event_types.MESSAGE_EDITED, (mesId) => {
+            log(`Message ${mesId} was edited. Re-rendering tracker card.`);
+            renderTracker(mesId);
+        });
+        
         refreshAllCards();
         log(`${MODULE_NAME} has been successfully loaded.`);
     } catch (error) {
