@@ -1,0 +1,27 @@
+/* --- Silly Sim Tracker Styles --- */
+
+
+.silly-sim-tracker-settings-content *:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* 
+  General styling for settings labels to ensure consistent alignment and spacing.
+*/
+#silly-sim-tracker-settings .setting {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    padding: 0 5px;
+}
+
+#silly-sim-tracker-settings .description {
+    font-size: 0.9em;
+    color: #6c757d;
+    margin-top: -5px;
+    margin-bottom: 15px;
+    padding: 0 5px;
+}
