@@ -83,23 +83,19 @@ const loadTemplate = async () => {
         const response = await $.get(templatePath);
         log(`Raw template response length: ${response.length}`);
         
-        // Clean the response by removing HTML comments
-        let cleanedResponse = response.replace(/<!--[\s\S]*?-->/g, '').trim();
-        log(`Cleaned response length: ${cleanedResponse.length}`);
-        
-        // Look for template markers to extract just the card template
+        // Look for template markers BEFORE removing HTML comments
         const cardStartMarker = '<!-- CARD_TEMPLATE_START -->';
         const cardEndMarker = '<!-- CARD_TEMPLATE_END -->';
         
         let cardTemplate = '';
         
-        // Check if the template has explicit markers
-        const startIndex = cleanedResponse.indexOf(cardStartMarker);
-        const endIndex = cleanedResponse.indexOf(cardEndMarker);
+        // Check if the template has explicit markers in the raw response
+        const startIndex = response.indexOf(cardStartMarker);
+        const endIndex = response.indexOf(cardEndMarker);
         
         if (startIndex !== -1 && endIndex !== -1) {
             // Extract content between markers
-            cardTemplate = cleanedResponse.substring(
+            cardTemplate = response.substring(
                 startIndex + cardStartMarker.length, 
                 endIndex
             ).trim();
@@ -107,6 +103,11 @@ const loadTemplate = async () => {
         } else {
             // Fallback: Look for the outermost div that contains template variables
             // This is more robust than looking for specific CSS properties
+            
+            // Clean the response by removing HTML comments for fallback analysis
+            let cleanedResponse = response.replace(/<!--[\s\S]*?-->/g, '').trim();
+            log(`Cleaned response length: ${cleanedResponse.length}`);
+            
             const templateVarRegex = /\{\{[^}]+\}\}/;
             
             // Find all div elements and check which ones contain template variables
