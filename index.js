@@ -2,7 +2,7 @@ import { getContext, on, SimpleHandlebarsCompiler, extension_settings } from '..
 import { saveSettingsDebounced } from '../../../../script.js';
 
 // --- MODULE CONSTANTS ---
-const MODULE_NAME = 'SillySimTracker';
+const MODULE_NAME = 'SillySimTracker'; // Must match "display_name" in manifest.json
 const CONTAINER_ID = 'silly-sim-tracker-container';
 const SETTINGS_ID = 'silly-sim-tracker-settings';
 
@@ -18,14 +18,11 @@ const settings_ui_map = {};
 
 // --- UTILITY FUNCTIONS ---
 const log = (message) => console.log(`[${MODULE_NAME}]`, message);
-
 const get_settings = (key) => settings[key] ?? default_settings[key];
-
 const set_settings = (key, value) => {
     settings[key] = value;
     saveSettingsDebounced();
 };
-
 const darkenColor = (hex) => {
     if (!hex || hex.length < 7) return '#6a5acd';
     let r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
@@ -34,7 +31,6 @@ const darkenColor = (hex) => {
     b = Math.floor(b * 0.7).toString(16).padStart(2, '0');
     return `#${r}${g}${b}`;
 };
-
 const getReactionEmoji = (reactValue) => {
     switch (parseInt(reactValue, 10)) {
         case 1: return '👍';
@@ -43,8 +39,7 @@ const getReactionEmoji = (reactValue) => {
     }
 };
 
-
-// --- HTML TEMPLATES ---
+// --- TEMPLATES ---
 const wrapperTemplate = `<div id="${CONTAINER_ID}" style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">{{{cardsHtml}}}</div>`;
 const cardTemplate = `
 <div style="flex:1 1 100%;min-width:380px;max-width:500px;height:340px;background:linear-gradient(145deg, {{bgColor}} 0%, {{darkerBgColor}} 100%);border-radius:16px;padding:0;box-sizing:border-box;position:relative;color:#fff;font-size:14px;font-weight:500;box-shadow:0 8px 32px rgba(106,90,205,0.3),0 2px 8px rgba(0,0,0,0.1);border:1px solid rgba(255,255,255,0.1);overflow:hidden;">
@@ -78,70 +73,46 @@ const cardTemplate = `
     </div>
     {{/if}}
 </div>`;
-
 const compiledWrapperTemplate = SimpleHandlebarsCompiler(wrapperTemplate);
 const compiledCardTemplate = SimpleHandlebarsCompiler(cardTemplate);
 
+// START RENDERTRACKER FUNCTION
 const renderTracker = (message) => {
-    // Check if the extension is enabled in settings
     if (!get_settings('isEnabled')) return;
-
     const messageElement = document.querySelector(`div[data-message-id="${message.id}"] .mes_text`);
-    // Exit if message element not found or if the tracker container is already present for this message
     if (!messageElement || messageElement.querySelector(`#${CONTAINER_ID}`)) return;
-
-    // Get the code block identifier from settings
     const identifier = get_settings('codeBlockIdentifier');
-    // Construct regex dynamically using the identifier
     const jsonRegex = new RegExp("```" + identifier + "\\s*([\\s\\S]*?)\\s*```");
     const match = message.mes.match(jsonRegex);
-
-    if (match && match[1]) { // Ensure a match and content within the block
+    if (match && match[1]) {
         try {
-            const jsonData = JSON.parse(match[1]); // Parse the matched JSON string
+            const jsonData = JSON.parse(match[1]);
             const currentDate = jsonData.current_date || 'Unknown Date';
-            // Filter out 'current_date' to get only character names
             const characterNames = Object.keys(jsonData).filter(key => key !== 'current_date');
-
-            if (!characterNames.length) return; // If no characters, do nothing
-
-            // Map over each character to generate their individual card HTML
+            if (!characterNames.length) return;
             const cardsHtml = characterNames.map(name => {
                 const stats = jsonData[name];
                 const cardData = {
-                    characterName: name,
-                    currentDate: currentDate,
-                    // Use a default thought if none provided, for template safety
+                    characterName: name, currentDate: currentDate,
                     stats: { ...stats, thought: stats.thought || "No thought recorded." },
-                    // Use character's specific background color or default from settings
                     bgColor: stats.bg || get_settings('defaultBgColor'),
-                    // Calculate a darker complementary color for the gradient
                     darkerBgColor: darkenColor(stats.bg || get_settings('defaultBgColor')),
-                    // Get the reaction emoji based on the numeric value
                     reactionEmoji: getReactionEmoji(stats.last_react),
-                    // Show health icon only if health is greater than 0
                     healthIcon: stats.health > 0 ? '🤕' : null,
-                    // Pass the global setting for thought bubble visibility
                     showThoughtBubble: get_settings('showThoughtBubble'),
                 };
-                return compiledCardTemplate(cardData); // Render HTML for one card
-            }).join(''); // Join all generated card HTML strings into a single string
-
-            // Render the main wrapper template with all the character cards inside
+                return compiledCardTemplate(cardData);
+            }).join('');
             const finalHtml = compiledWrapperTemplate({ cardsHtml });
-            
-            // Get DOMPurify from SillyTavern's context for security
             const { DOMPurify } = getContext().libs;
-            const sanitizedHtml = DOMPurify.sanitize(finalHtml); // Sanitize HTML before injecting
-            
-            // Append the sanitized HTML to the end of the message text div
+            const sanitizedHtml = DOMPurify.sanitize(finalHtml);
             messageElement.insertAdjacentHTML('beforeend', sanitizedHtml);
         } catch (error) {
-            // Log any errors during JSON parsing or rendering
             log(`Error processing tracker JSON: ${error}`);
         }
     }
 };
+// END RENDERTRACKER FUNCTION
 
 // --- SETTINGS MANAGEMENT ---
 const refresh_settings_ui = () => {
@@ -149,31 +120,23 @@ const refresh_settings_ui = () => {
         const value = get_settings(key);
         switch (type) {
             case 'boolean': element.prop('checked', value); break;
-            case 'text':
-            case 'color': element.val(value); break;
+            case 'text': case 'color': element.val(value); break;
         }
     }
 };
-
 const bind_setting = (selector, key, type) => {
     const element = $(`#${SETTINGS_ID} ${selector}`);
-    if (element.length === 0) {
-        log(`Could not find settings element: ${selector}`);
-        return;
-    }
+    if (element.length === 0) { log(`Could not find settings element: ${selector}`); return; }
     settings_ui_map[key] = [element, type];
     element.on('change input', () => {
         let value;
         switch (type) {
             case 'boolean': value = element.prop('checked'); break;
-            case 'text':
-            case 'color': value = element.val(); break;
+            case 'text': case 'color': value = element.val(); break;
         }
         set_settings(key, value);
-        refresh_settings_ui();
     });
 };
-
 const initialize_settings_listeners = () => {
     bind_setting('#isEnabled', 'isEnabled', 'boolean');
     bind_setting('#codeBlockIdentifier', 'codeBlockIdentifier', 'text');
@@ -181,51 +144,64 @@ const initialize_settings_listeners = () => {
     bind_setting('#showThoughtBubble', 'showThoughtBubble', 'boolean');
     refresh_settings_ui();
 };
-
 const initialize_settings = () => {
-    if (Object.keys(extension_settings[MODULE_NAME] ?? {}).length === 0) {
-        log("First time setup. Applying defaults.");
-        extension_settings[MODULE_NAME] = { ...default_settings };
-    } else {
-        log("Settings found. Merging with new defaults.");
-        extension_settings[MODULE_NAME] = Object.assign({}, default_settings, extension_settings[MODULE_NAME]);
-    }
+    extension_settings[MODULE_NAME] = Object.assign({}, default_settings, extension_settings[MODULE_NAME]);
     settings = extension_settings[MODULE_NAME];
-};
-
-// NEW: Function to load settings.html into the DOM
-const load_settings_html = async () => {
-    // Construct the path to the settings file within the extension's directory
-    const settingsHtmlPath = `/extensions/${MODULE_NAME}/settings.html`;
-    try {
-        const response = await fetch(settingsHtmlPath);
-        if (!response.ok) {
-            log(`Failed to load settings HTML: ${response.statusText}`);
-            return;
-        }
-        const html = await response.text();
-        // Append the fetched HTML to the main extension settings area
-        $('#extensions_settings2').append(html);
-        
-        // IMPORTANT: Listeners can only be initialized *after* the HTML is in the DOM
-        initialize_settings_listeners();
-        log("Settings panel loaded and listeners initialized.");
-    } catch (error) {
-        log(`Error loading settings panel: ${error}`);
-    }
 };
 
 // --- ENTRY POINT ---
 jQuery(async () => {
     log(`Initializing extension: ${MODULE_NAME}`);
 
-    // Step 1: Initialize the settings data (load from storage or set defaults)
+    // Step 1: Initialize settings data
     initialize_settings();
 
-    // Step 2: Manually load the settings UI from settings.html into the DOM
-    await load_settings_html();
+    // Step 2: Define the settings HTML as a string
+    const settingsHtml = `
+    <div id="${SETTINGS_ID}">
+        <div class="inline-drawer">
+            <div class="inline-drawer-toggle inline-drawer-header">
+                <b>Silly Sim Tracker</b>
+                <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+            </div>
+            <div class="inline-drawer-content">
+                <div class="silly-sim-tracker-settings-content">
+                    <div class="setting">
+                        <label for="isEnabled">Enable Tracker</label>
+                        <div class="control"><input type="checkbox" id="isEnabled"></div>
+                    </div>
+                    <p class="description">The master switch to enable or disable the extension.</p>
+                    <hr>
+                    <div class="setting">
+                        <label for="codeBlockIdentifier">Code Block Identifier</label>
+                        <div class="control"><input type="text" id="codeBlockIdentifier" class="text_pole"></div>
+                    </div>
+                    <p class="description">The keyword the extension looks for after the opening \`\`\` (e.g., "sim").</p>
+                    <hr>
+                    <div class="setting">
+                        <label for="defaultBgColor">Default Card Color</label>
+                        <div class="control"><input type="color" id="defaultBgColor"></div>
+                    </div>
+                    <p class="description">The background color used for cards when one isn't specified in the JSON.</p>
+                    <hr>
+                    <div class="setting">
+                        <label for="showThoughtBubble">Show Thought Bubble</label>
+                        <div class="control"><input type="checkbox" id="showThoughtBubble"></div>
+                    </div>
+                    <p class="description">Whether to display the 'thought' section at the bottom of the card.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    `;
 
-    // Step 3: Register the main extension functionality
+    // Step 3: Inject the HTML into the DOM
+    $("#extensions_settings2").append(settingsHtml);
+
+    // Step 4: Bind event listeners to the newly created elements
+    initialize_settings_listeners();
+
+    // Step 5: Register the main extension functionality
     on('CHARACTER_MESSAGE_RENDERED', renderTracker);
 
     log(`${MODULE_NAME} has been successfully loaded.`);
