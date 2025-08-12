@@ -7,7 +7,6 @@
   "js": "index.js",
   "css": "style.css",
   "homePage": "https://github.com/prolix-oc/Tracker.git",
-  "settings": "settings.html",
   "requires": [],
   "optional": [],
   "generate_interceptor": "memory_intercept_messages",

@@ -102,7 +102,6 @@ const renderTracker = (mesId) => {
 
         if (match && match[1]) {
             let jsonData;
-            // ADDED: Specific try...catch for JSON parsing, the most common failure point.
             try {
                 jsonData = JSON.parse(match[1]);
             } catch (jsonError) {
@@ -153,6 +152,7 @@ const renderTracker = (mesId) => {
 };
 
 // --- SETTINGS MANAGEMENT ---
+
 const refresh_settings_ui = () => {
     for (const [key, [element, type]] of Object.entries(settings_ui_map)) {
         const value = get_settings(key);
@@ -164,7 +164,7 @@ const refresh_settings_ui = () => {
 };
 const bind_setting = (selector, key, type) => {
     const element = $(`#${SETTINGS_ID} ${selector}`);
-    if (element.length === 0) { log(`[SST] Could not find settings element: ${selector}`); return; }
+    if (element.length === 0) { log(`Could not find settings element: ${selector}`); return; }
     settings_ui_map[key] = [element, type];
     element.on('change input', () => {
         let value;
@@ -177,43 +177,37 @@ const bind_setting = (selector, key, type) => {
 };
 
 const initialize_settings_listeners = () => {
-    // Use a variable to hold the timer to prevent multiple loops
-    let settingsInterval;
-
-    const tryBindSettings = () => {
-        const settingsContainer = $(`#${SETTINGS_ID}`);
-        
-        // Check if the container has been loaded into the DOM by SillyTavern
-        if (settingsContainer.length === 0) {
-            // If not found, log it. The interval will try again.
-            log("Settings container not found, waiting for SillyTavern loader...");
-            return;
-        }
-                
-        // Stop the timer so we don't keep checking unnecessarily.
-        clearInterval(settingsInterval);
-        
-        log("Settings container found. Binding UI elements.");
-        
-        // Bind all your settings
-        bind_setting('#isEnabled', 'isEnabled', 'boolean');
-        bind_setting('#codeBlockIdentifier', 'codeBlockIdentifier', 'text');
-        bind_setting('#defaultBgColor', 'defaultBgColor', 'color');
-        bind_setting('#showThoughtBubble', 'showThoughtBubble', 'boolean');
-        
-        // Refresh the UI with the current values
-        refresh_settings_ui();
-        log("Settings UI successfully bound.");
-    };
+    log("Binding settings UI elements...");
     
-    // Start an interval to check for the settings container every 100ms.
-    settingsInterval = setInterval(tryBindSettings, 100);
+    // Bind all your settings directly
+    bind_setting('#isEnabled', 'isEnabled', 'boolean');
+    bind_setting('#codeBlockIdentifier', 'codeBlockIdentifier', 'text');
+    bind_setting('#defaultBgColor', 'defaultBgColor', 'color');
+    bind_setting('#showThoughtBubble', 'showThoughtBubble', 'boolean');
+    
+    // Refresh the UI with the current values
+    refresh_settings_ui();
+    log("Settings UI successfully bound.");
 };
 
 const initialize_settings = () => {
     extension_settings[MODULE_NAME] = Object.assign({}, default_settings, extension_settings[MODULE_NAME]);
     settings = extension_settings[MODULE_NAME];
 };
+
+// ADDED: New function to manually load the settings HTML
+const load_settings_html_manually = async () => {
+    const settingsHtmlPath = `${get_extension_directory()}/settings.html`;
+    try {
+        const response = await $.get(settingsHtmlPath);
+        $("#extensions_settings2").append(response);
+        log("Settings HTML manually injected into right-side panel.");
+    } catch (error) {
+        log(`Error loading settings.html: ${error.statusText}`);
+        console.error(error);
+    }
+};
+
 
 // --- ENTRY POINT ---
 jQuery(async () => {
@@ -222,7 +216,7 @@ jQuery(async () => {
 
         // Initialize settings data from storage
         initialize_settings();
-
+        await load_settings_html_manually();
         // Initialize settings UI listeners
         initialize_settings_listeners();
         log("Settings panel listeners initialized.");
