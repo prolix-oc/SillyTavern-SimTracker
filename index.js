@@ -56,13 +56,29 @@ const loadTemplate = async () => {
 
     try {
         const response = await $.get(templatePath);
-        // Extract just the card template (remove wrapper div and comments)
-        const cardTemplateMatch = response.match(/<div style="flex:1 1 100%[^>]*>[\s\S]*?<\/div>\s*<\/div>/);
-        if (cardTemplateMatch) {
-            compiledCardTemplate = Handlebars.compile(cardTemplateMatch[0]);
-            log(`Template loaded successfully from: ${templateFile}`);
+        
+        // Remove HTML comments first
+        let cleanedResponse = response.replace(/<!--[\s\S]*?-->/g, '');
+        
+        // Find the wrapper div (contains display:flex;flex-wrap:wrap)
+        const wrapperMatch = cleanedResponse.match(/<div[^>]*display:flex;flex-wrap:wrap[^>]*>([\s\S]*?)<\/div>\s*$/);
+        
+        if (wrapperMatch) {
+            // Extract content inside wrapper
+            const wrapperContent = wrapperMatch[1].trim();
+            
+            // Find the card div (starts with flex:1 1 100%)
+            const cardMatch = wrapperContent.match(/(<div[^>]*flex:1 1 100%[^>]*>[\s\S]*?<\/div>)/);
+            
+            if (cardMatch) {
+                const cardTemplate = cardMatch[1];
+                compiledCardTemplate = Handlebars.compile(cardTemplate);
+                log(`Template loaded successfully from: ${templateFile}`);
+            } else {
+                throw new Error('Could not find card template inside wrapper');
+            }
         } else {
-            throw new Error('Could not find card template in file');
+            throw new Error('Could not find wrapper div in template file');
         }
     } catch (error) {
         log(`Error loading template from ${templateFile}: ${error.message}. Using fallback template.`);
@@ -176,6 +192,12 @@ const refresh_settings_ui = () => {
 
 const refreshAllCards = () => {
     log("Refreshing all tracker cards on screen.");
+    
+    // First, remove all existing tracker containers to prevent duplicates
+    document.querySelectorAll(`#${CONTAINER_ID}`).forEach(container => {
+        container.remove();
+    });
+    
     // Get all message divs currently in the chat DOM
     const visibleMessages = document.querySelectorAll('div#chat .mes');
     visibleMessages.forEach(messageElement => {
@@ -201,7 +223,10 @@ const bind_setting = (selector, key, type) => {
 
         // Reload template if template file setting changed
         if (key === 'templateFile') {
-            loadTemplate();
+            loadTemplate().then(() => {
+                // Refresh all cards with the new template
+                refreshAllCards();
+            });
         }
     });
 };
@@ -226,7 +251,6 @@ const initialize_settings = () => {
     settings = extension_settings[MODULE_NAME];
 };
 
-// ADDED: New function to manually load the settings HTML
 const load_settings_html_manually = async () => {
     const settingsHtmlPath = `${get_extension_directory()}/settings.html`;
     try {
