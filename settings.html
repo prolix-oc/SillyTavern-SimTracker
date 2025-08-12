@@ -47,10 +47,18 @@
         </p>
         <hr />
         <div class="setting">
-          <label for="templateFile">Template File</label>
-          <div class="control">
-            <input type="text" id="templateFile" class="text_pole" />
-          </div>
+        <label for="templateFile">Tracker Card Template</label>
+        <div class="flex-container flex-grow">
+        <!-- This will be populated by the script -->
+        <select id="templateFile" class="text_pole" style="flex-grow: 1;"></select>
+        <!-- This button will trigger the hidden file input -->
+        <button id="uploadTemplateBtn" class="menu_button" title="Upload a custom .html template file">Upload</button>
+        <!-- This input handles the actual file selection -->
+        <input type="file" id="templateUpload" hidden accept=".html">
+        </div>
+        </div>
+        <div class="description"> 
+        Select a template for the tracker card, or upload your own. Custom templates are saved in the extension's 'custom_tracker_templates' folder.
         </div>
         <p class="description">
           Path to the HTML template file relative to tracker-card-templates/

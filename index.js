@@ -54,15 +54,15 @@ let compiledWrapperTemplate = Handlebars.compile(wrapperTemplate);
 let compiledCardTemplate = null;
 
 // Register Handlebars helpers for template logic
-Handlebars.registerHelper('eq', function(a, b) {
+Handlebars.registerHelper('eq', function (a, b) {
     return a === b;
 });
 
-Handlebars.registerHelper('gt', function(a, b) {
+Handlebars.registerHelper('gt', function (a, b) {
     return a > b;
 });
 
-Handlebars.registerHelper('unless', function(conditional, options) {
+Handlebars.registerHelper('unless', function (conditional, options) {
     if (!conditional) {
         return options.fn(this);
     } else {
@@ -83,101 +83,195 @@ const loadDefaultPromptFromFile = async () => {
     }
 };
 
+async function getTemplateFiles() {
+    const context = getContext();
+    const defaultDir = `${get_extension_directory()}/tracker-card-templates`;
+    const customDir = `${get_extension_directory()}/custom_tracker_templates`;
+    let defaultFiles = [];
+    let customFiles = [];
+
+    try {
+        const defaultResult = await context.executeSlashCommandsWithOptions(`/file-browser-list "${defaultDir}"`);
+        if (defaultResult.pipe) {
+            defaultFiles = JSON.parse(defaultResult.pipe).filter(file => file.endsWith('.html'));
+        }
+    } catch (e) {
+        log('Default template directory not found or is empty.');
+    }
+
+    try {
+        const customResult = await context.executeSlashCommandsWithOptions(`/file-browser-list "${customDir}"`);
+        if (customResult.pipe) {
+            customFiles = JSON.parse(customResult.pipe).filter(file => file.endsWith('.html'));
+        }
+    } catch (e) {
+        log('Custom template directory not found or is empty.');
+    }
+
+    // Combine lists and ensure uniqueness (custom templates can override defaults)
+    const allFiles = [...new Set([...defaultFiles, ...customFiles])];
+    return allFiles.sort();
+}
+
+async function populateTemplateDropdown() {
+    log('Populating template dropdown...');
+    const templateFiles = await getTemplateFiles();
+    const $select = $('#templateFile');
+    const currentSelection = get_settings('templateFile');
+
+    $select.empty();
+    templateFiles.forEach(file => {
+        $select.append($('<option>', {
+            value: file,
+            text: file
+        }));
+    });
+
+    // Restore the user's selection
+    $select.val(currentSelection);
+    log('Template dropdown populated.');
+}
+
+function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+        const content = e.target.result;
+        log(`Read file ${file.name}, size: ${content.length}`);
+        await saveCustomTemplate(file.name, content);
+    };
+    reader.readAsText(file);
+}
+
+async function saveCustomTemplate(fileName, content) {
+    const context = getContext();
+    const customDir = `${get_extension_directory()}/custom_tracker_templates`;
+    const filePath = `${customDir}/${fileName}`;
+
+    try {
+        log(`Saving template to: ${filePath}`);
+        // Use the file browser save command to write the file on the server
+        await context.executeSlashCommandsWithOptions(`/file-browser-save "${filePath}"`, { pipe: content });
+        toastr.success(`Template "${fileName}" uploaded successfully!`, 'Upload Complete');
+
+        // Refresh the dropdown to include the new template and select it
+        await populateTemplateDropdown();
+        set_settings('templateFile', fileName);
+        $('#templateFile').val(fileName); // Visually update the dropdown
+        await loadTemplate(); // Reload the template to apply the new one immediately
+        refreshAllCards();
+
+    } catch (error) {
+        console.error('Failed to save custom template:', error);
+        toastr.error('Failed to save the template file on the server.', 'Upload Failed');
+    }
+}
+
 // Load template from file
 const loadTemplate = async () => {
     const templateFile = get_settings('templateFile');
-    const templatePath = `${get_extension_directory()}/tracker-card-templates/${templateFile}`;
+    if (!templateFile) {
+        log('No template file selected. Aborting template load.');
+        // Fallback to a basic error template if nothing is selected
+        const fallbackTemplate = `<div>Error: No template file selected in settings.</div>`;
+        compiledCardTemplate = Handlebars.compile(fallbackTemplate);
+        return;
+    }
+
+    const customPath = `${get_extension_directory()}/custom_tracker_templates/${templateFile}`;
+    const defaultPath = `${get_extension_directory()}/tracker-card-templates/${templateFile}`;
+    let templateContent;
+    let loadedFrom = '';
 
     try {
-        const response = await $.get(templatePath);
-        log(`Raw template response length: ${response.length}`);
-        
-        // Look for template markers BEFORE removing HTML comments
-        const cardStartMarker = '<!-- CARD_TEMPLATE_START -->';
-        const cardEndMarker = '<!-- CARD_TEMPLATE_END -->';
-        
-        let cardTemplate = '';
-        
-        // Check if the template has explicit markers in the raw response
-        const startIndex = response.indexOf(cardStartMarker);
-        const endIndex = response.indexOf(cardEndMarker);
-        
-        if (startIndex !== -1 && endIndex !== -1) {
-            // Extract content between markers
-            cardTemplate = response.substring(
-                startIndex + cardStartMarker.length, 
-                endIndex
-            ).trim();
-            log(`Extracted card template using markers, length: ${cardTemplate.length}`);
-        } else {
-            // Fallback: Look for the outermost div that contains template variables
-            // This is more robust than looking for specific CSS properties
-            
-            // Clean the response by removing HTML comments for fallback analysis
-            let cleanedResponse = response.replace(/<!--[\s\S]*?-->/g, '').trim();
-            log(`Cleaned response length: ${cleanedResponse.length}`);
-            
-            const templateVarRegex = /\{\{[^}]+\}\}/;
-            
-            // Find all div elements and check which ones contain template variables
-            const divMatches = [...cleanedResponse.matchAll(/<div[^>]*>[\s\S]*?<\/div>/g)];
-            
-            // Find the largest div that contains template variables
-            let bestMatch = null;
-            let maxLength = 0;
-            
-            for (const match of divMatches) {
-                if (templateVarRegex.test(match[0]) && match[0].length > maxLength) {
-                    bestMatch = match[0];
-                    maxLength = match[0].length;
+        templateContent = await $.get(customPath);
+        loadedFrom = `custom directory: ${customPath}`;
+    } catch (customError) {
+        try {
+            templateContent = await $.get(defaultPath);
+            loadedFrom = `default directory: ${defaultPath}`;
+        } catch (defaultError) {
+            log(`Could not find template '${templateFile}' in custom or default directories.`);
+            templateContent = null;
+        }
+    }
+
+    if (templateContent) {
+        log(`Successfully loaded template content from ${loadedFrom}`);
+        try {
+            const cardStartMarker = '<!-- CARD_TEMPLATE_START -->';
+            const cardEndMarker = '<!-- CARD_TEMPLATE_END -->';
+            let cardTemplate = '';
+
+            // Primary method: Look for template markers
+            const startIndex = templateContent.indexOf(cardStartMarker);
+            const endIndex = templateContent.indexOf(cardEndMarker);
+
+            if (startIndex !== -1 && endIndex !== -1) {
+                cardTemplate = templateContent.substring(startIndex + cardStartMarker.length, endIndex).trim();
+                log(`Extracted card template using markers, length: ${cardTemplate.length}`);
+            } else {
+                // Fallback method: Look for the largest div with Handlebars variables
+                let cleanedResponse = templateContent.replace(/<!--[\s\S]*?-->/g, '').trim();
+                const templateVarRegex = /\{\{[^}]+\}\}/;
+                const divMatches = [...cleanedResponse.matchAll(/<div[^>]*>[\s\S]*?<\/div>/g)];
+                let bestMatch = null;
+                let maxLength = 0;
+
+                for (const match of divMatches) {
+                    if (templateVarRegex.test(match[0]) && match[0].length > maxLength) {
+                        bestMatch = match[0];
+                        maxLength = match[0].length;
+                    }
+                }
+
+                if (bestMatch) {
+                    cardTemplate = bestMatch;
+                    log(`Extracted card template using content analysis, length: ${cardTemplate.length}`);
+                } else {
+                    throw new Error('Could not find template content with either markers or Handlebars variables.');
                 }
             }
-            
-            if (bestMatch) {
-                cardTemplate = bestMatch;
-                log(`Extracted card template using content analysis, length: ${cardTemplate.length}`);
-            } else {
-                throw new Error('Could not find template content with Handlebars variables');
-            }
-        }
-        
-        if (cardTemplate) {
+
             // Validate that the template contains expected variables
             const requiredVars = ['{{characterName}}', '{{stats.ap}}', '{{stats.dp}}', '{{stats.tp}}', '{{stats.cp}}'];
             const missingVars = requiredVars.filter(varName => !cardTemplate.includes(varName));
-            
+
             if (missingVars.length > 0) {
-                log(`Warning: Template missing required variables: ${missingVars.join(', ')}`);
+                log(`Warning: Template '${templateFile}' missing required variables: ${missingVars.join(', ')}`);
             }
-            
+
             compiledCardTemplate = Handlebars.compile(cardTemplate);
-            log(`Template compiled successfully from: ${templateFile}`);
-        } else {
-            throw new Error('Could not extract card template content');
+            log(`Template '${templateFile}' compiled successfully.`);
+            return; // Exit successfully
+
+        } catch (parsingError) {
+            log(`Error parsing template file '${templateFile}': ${parsingError.message}. Using fallback template.`);
+            // Continue to the final fallback
         }
-        
-    } catch (error) {
-        log(`Error loading template from ${templateFile}: ${error.message}. Using fallback template.`);
-        // Fallback to basic template
-        const fallbackTemplate = `
-        <div style="flex:1 1 100%;min-width:380px;max-width:500px;height:340px;background:linear-gradient(145deg, {{bgColor}} 0%, {{darkerBgColor}} 100%);border-radius:16px;padding:16px;box-sizing:border-box;position:relative;color:#fff;font-size:14px;font-weight:500;">
-            <div style="font-size:24px;font-weight:700;margin-bottom:16px;">{{characterName}}</div>
-            <div style="margin-bottom:8px;">Date: {{currentDate}}</div>
-            <div style="margin-bottom:8px;">Day: {{stats.days_since_first_meeting}}</div>
-            <div style="display:flex;gap:16px;margin-bottom:16px;">
-                <div>❤️ {{stats.ap}}</div>
-                <div>🔥 {{stats.dp}}</div>
-                <div>🤝 {{stats.tp}}</div>
-                <div>💔 {{stats.cp}}</div>
-            </div>
-            {{#if showThoughtBubble}}
-            <div style="background:rgba(255,255,255,0.1);padding:12px;border-radius:8px;">
-                💭 {{stats.internal_thought}}
-            </div>
-            {{/if}}
-        </div>`;
-        compiledCardTemplate = Handlebars.compile(fallbackTemplate);
     }
+
+    const fallbackTemplate = `
+    <div style="flex:1 1 100%;min-width:380px;max-width:500px;height:340px;background:linear-gradient(145deg, {{bgColor}} 0%, {{darkerBgColor}} 100%);border-radius:16px;padding:16px;box-sizing:border-box;position:relative;color:#fff;font-size:14px;font-weight:500;">
+        <div style="font-size:24px;font-weight:700;margin-bottom:16px;">{{characterName}}</div>
+        <div style="margin-bottom:8px;">Date: {{currentDate}}</div>
+        <div style="margin-bottom:8px;">Day: {{stats.days_since_first_meeting}}</div>
+        <div style="display:flex;gap:16px;margin-bottom:16px;">
+            <div>❤️ {{stats.ap}}</div>
+            <div>🔥 {{stats.dp}}</div>
+            <div>🤝 {{stats.tp}}</div>
+            <div>💔 {{stats.cp}}</div>
+        </div>
+        {{#if showThoughtBubble}}
+        <div style="background:rgba(255,255,255,0.1);padding:12px;border-radius:8px;">
+            💭 {{stats.internal_thought}}
+        </div>
+        {{/if}}
+    </div>`;
+    compiledCardTemplate = Handlebars.compile(fallbackTemplate);
+    log("Compiled the hardcoded fallback template.");
 };
 
 // --- RENDER LOGIC ---
@@ -250,7 +344,7 @@ const renderTracker = (mesId) => {
 };
 
 // --- SETTINGS MANAGEMENT ---
-globalThis.sim_intercept_messages = async function(data) {
+globalThis.sim_intercept_messages = async function (data) {
     log("SillySimTracker interceptor triggered.");
 
     if (!get_settings('isEnabled')) {
@@ -294,12 +388,12 @@ const refresh_settings_ui = () => {
 
 const refreshAllCards = () => {
     log("Refreshing all tracker cards on screen.");
-    
+
     // First, remove all existing tracker containers to prevent duplicates
     document.querySelectorAll(`#${CONTAINER_ID}`).forEach(container => {
         container.remove();
     });
-    
+
     // Get all message divs currently in the chat DOM
     const visibleMessages = document.querySelectorAll('div#chat .mes');
     visibleMessages.forEach(messageElement => {
@@ -333,17 +427,33 @@ const bind_setting = (selector, key, type) => {
 const initialize_settings_listeners = () => {
     log("Binding settings UI elements...");
 
-    // Bind all your settings directly
     bind_setting('#isEnabled', 'isEnabled', 'boolean');
     bind_setting('#codeBlockIdentifier', 'codeBlockIdentifier', 'text');
     bind_setting('#defaultBgColor', 'defaultBgColor', 'color');
     bind_setting('#showThoughtBubble', 'showThoughtBubble', 'boolean');
-    bind_setting('#templateFile', 'templateFile', 'text');
+    bind_setting('#datingSimPrompt', 'datingSimPrompt', 'textarea');
 
-    // Refresh the UI with the current values
+    const $templateSelect = $('#templateFile');
+    if ($templateSelect.length) {
+        settings_ui_map['templateFile'] = [$templateSelect, 'text'];
+        $templateSelect.on('change', async () => {
+            const value = $templateSelect.val();
+            set_settings('templateFile', value);
+            await loadTemplate();
+            refreshAllCards();
+        });
+    }
+
+    $('#uploadTemplateBtn').on('click', () => {
+        $('#templateUpload').click();
+    });
+
+    $('#templateUpload').on('change', handleFileUpload);
+
     refresh_settings_ui();
     log("Settings UI successfully bound.");
 };
+
 
 const initialize_settings = async () => {
     // Load the prompt from the file first.
@@ -376,10 +486,11 @@ jQuery(async () => {
         log(`Initializing extension: ${MODULE_NAME}`);
         await initialize_settings();
         await load_settings_html_manually();
+        await populateTemplateDropdown();
         initialize_settings_listeners();
         log("Settings panel listeners initialized.");
         await loadTemplate();
-        
+
         log("Registering macros...");
         MacrosParser.registerMacro('dating_sim', () => {
             if (!get_settings('isEnabled')) return '';
