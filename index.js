@@ -85,9 +85,13 @@ const loadDefaultPromptFromFile = async () => {
 };
 
 async function getTemplateFiles() {
-    const defaultDir = `${get_extension_directory()}/tracker-card-templates`;
-    const customDir = `${get_extension_directory()}/custom_tracker_templates`;
+    // Dynamically get the base URL path from the browser side.
+    const browserPathBase = get_extension_directory();
+    // Transform it into a server-side file system path by removing the '/scripts/' prefix.
+    const serverPathBase = browserPathBase.replace('/scripts/', '');
 
+    const defaultDir = `${serverPathBase}/tracker-card-templates`;
+    const customDir = `${serverPathBase}/custom_tracker_templates`;
     let defaultFiles = [];
     let customFiles = [];
 
@@ -153,13 +157,13 @@ function handleFileUpload(event) {
 }
 
 async function saveCustomTemplate(fileName, content) {
-    // Dynamically get the base path and then format it for the server API
     const serverPathBase = get_extension_directory().replace('/scripts/', '');
     const customDir = `${serverPathBase}/custom_tracker_templates`;
     const filePath = `${customDir}/${fileName}`;
 
     try {
         log(`Attempting to save template to: ${filePath}`);
+        // This API call now receives the correct server-side path.
         const response = await fetch('/api/files/save', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
