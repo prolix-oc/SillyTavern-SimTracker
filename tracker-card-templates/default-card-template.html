@@ -23,8 +23,8 @@
   
   /* Mobile-specific adjustments */
   .tracker-card > div:nth-child(3) {  /* Stats container */
-    top: 120px !important;
-    bottom: 120px !important;
+    top: 80px !important;
+    bottom: 110px !important;
   }
 }
 
@@ -47,7 +47,7 @@
   
   /* Desktop-specific adjustments */
   .tracker-card > div:nth-child(3) {  /* Stats container */
-    top: 110px !important;
+    top: 80px !important;
     bottom: 110px !important;
   }
 }
@@ -66,7 +66,7 @@
   
   /* Large screen adjustments */
   .tracker-card > div:nth-child(3) {  /* Stats container */
-    top: 110px !important;
+    top: 80px !important;
     bottom: 110px !important;
   }
 }
@@ -98,6 +98,18 @@
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   backdrop-filter: blur(8px) !important;
   font-weight: 500 !important;
+  letter-spacing: 0.25px !important;
+}
+
+/* Thought label styling */
+.thought-label {
+  position: absolute !important;
+  top: -24px !important;
+  left: 0 !important;
+  font-size: 11px !important;
+  font-weight: 500 !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
   letter-spacing: 0.25px !important;
 }
 
@@ -169,7 +181,7 @@
     </div>
     
     <!-- Stats Container -->
-    <div style="position:absolute;top:110px;bottom:110px;left:0;right:0;display:flex;align-items:center;justify-content:center;padding:0 12px">
+    <div style="position:absolute;top:80px;bottom:110px;left:0;right:0;display:flex;align-items:center;justify-content:center;padding:0 12px">
       <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:8px;flex-wrap:nowrap">
         <!-- Affection Stat -->
         <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:60px;max-width:120px;position:relative">
@@ -229,6 +241,7 @@
     <!-- Thought Bubble -->
     {{#if showThoughtBubble}}
     <div class="thought-bubble" style="position:absolute;left:16px;right:16px;bottom:16px;min-height:60px;border-radius:12px;display:flex;align-items:center;gap:12px;padding:12px 16px;">
+      <div class="thought-label" style="position:absolute;top:-24px;left:0;font-size:11px;font-weight:500;color:rgba(255,255,255,0.7);text-shadow:0 1px 2px rgba(0,0,0,0.3);letter-spacing:0.25px">{{characterName}} thinks:</div>
       <div style="font-size:22px;flex-shrink:0">💭</div>
       <div style="flex:1;font-size:13px;font-weight:400;line-height:1.4;overflow:hidden;">{{stats.internal_thought}}</div>
     </div>

@@ -1,41 +1,70 @@
 <div id="silly-sim-tracker-settings">
-    <div class="inline-drawer">
-        <div class="inline-drawer-toggle inline-drawer-header">
-            <b>Silly Sim Tracker</b>
-            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-        </div>
-        <div class="inline-drawer-content">
-            <div class="silly-sim-tracker-settings-content">
-                <div class="setting">
-                    <label for="isEnabled">Enable Tracker</label>
-                    <div class="control"><input type="checkbox" id="isEnabled"></div>
-                </div>
-                <p class="description">The master switch to enable or disable the extension.</p>
-                <hr>
-                <div class="setting">
-                    <label for="codeBlockIdentifier">Code Block Identifier</label>
-                    <div class="control"><input type="text" id="codeBlockIdentifier" class="text_pole"></div>
-                </div>
-                <p class="description">The keyword the extension looks for after the opening ``` (e.g., "sim").</p>
-                <hr>
-                <div class="setting">
-                    <label for="defaultBgColor">Default Card Color</label>
-                    <div class="control"><input type="color" id="defaultBgColor"></div>
-                </div>
-                <p class="description">The background color used for cards when one isn't specified in the JSON.</p>
-                <hr>
-                <div class="setting">
-                    <label for="showThoughtBubble">Show Thought Bubble</label>
-                    <div class="control"><input type="checkbox" id="showThoughtBubble"></div>
-                </div>
-                <p class="description">Whether to display the 'thought' section at the bottom of the card.</p>
-                <hr>
-                <div class="setting">
-                    <label for="templateFile">Template File</label>
-                    <div class="control"><input type="text" id="templateFile" class="text_pole"></div>
-                </div>
-                <p class="description">Path to the HTML template file relative to tracker-card-templates/ directory. Default: default-card-template.html</p>
-            </div>
-        </div>
+  <div class="inline-drawer">
+    <div class="inline-drawer-toggle inline-drawer-header">
+      <b>Silly Sim Tracker</b>
+      <div
+        class="inline-drawer-icon fa-solid fa-circle-chevron-down down"
+      ></div>
     </div>
+    <div class="inline-drawer-content">
+      <div class="silly-sim-tracker-settings-content">
+        <div class="setting">
+          <label for="isEnabled">Enable Tracker</label>
+          <div class="control"><input type="checkbox" id="isEnabled" /></div>
+        </div>
+        <p class="description">
+          The master switch to enable or disable the extension.
+        </p>
+        <hr />
+        <div class="setting">
+          <label for="codeBlockIdentifier">Code Block Identifier</label>
+          <div class="control">
+            <input type="text" id="codeBlockIdentifier" class="text_pole" />
+          </div>
+        </div>
+        <p class="description">
+          The keyword the extension looks for after the opening ``` (e.g.,
+          "sim").
+        </p>
+        <hr />
+        <div class="setting">
+          <label for="defaultBgColor">Default Card Color</label>
+          <div class="control"><input type="color" id="defaultBgColor" /></div>
+        </div>
+        <p class="description">
+          The background color used for cards when one isn't specified in the
+          JSON.
+        </p>
+        <hr />
+        <div class="setting">
+          <label for="showThoughtBubble">Show Thought Bubble</label>
+          <div class="control">
+            <input type="checkbox" id="showThoughtBubble" />
+          </div>
+        </div>
+        <p class="description">
+          Whether to display the 'thought' section at the bottom of the card.
+        </p>
+        <hr />
+        <div class="setting">
+          <label for="templateFile">Template File</label>
+          <div class="control">
+            <input type="text" id="templateFile" class="text_pole" />
+          </div>
+        </div>
+        <p class="description">
+          Path to the HTML template file relative to tracker-card-templates/
+          directory. Default: default-card-template.html
+        </p>
+        <hr/>
+        <div class="setting">
+          <label for="datingSimPrompt">Dating Sim System Prompt</label>
+          <textarea id="datingSimPrompt" class="text_pole" rows="6"></textarea>
+        </div>
+        <p class="description">
+          The base prompt to be injected when you use the {{dating_sim}} macro.
+        </div>
+      </div>
+    </div>
+  </div>
 </div>

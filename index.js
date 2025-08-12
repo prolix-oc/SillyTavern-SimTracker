@@ -11,10 +11,12 @@ const default_settings = {
     defaultBgColor: "#6a5acd",
     showThoughtBubble: true,
     templateFile: "default-card-template.html",
+    datingSimPrompt: "Default prompt could not be loaded. Please check file path.",
 };
 
 let settings = {};
 const settings_ui_map = {};
+let lastSimJsonString = '';
 
 // --- UTILITY FUNCTIONS ---
 const log = (message) => console.log(`[SST] [${MODULE_NAME}]`, message);
@@ -66,6 +68,19 @@ Handlebars.registerHelper('unless', function(conditional, options) {
         return options.inverse(this);
     }
 });
+
+const loadDefaultPromptFromFile = async () => {
+    const promptPath = `${get_extension_directory()}/prompts/default-prompt.md`;
+    try {
+        const response = await $.get(promptPath);
+        log(`Successfully loaded default prompt from ${promptPath}`);
+        return response;
+    } catch (error) {
+        log(`Error loading default prompt from ${promptPath}. The file might be missing. Error: ${error.statusText}`);
+        console.error(error);
+        return null; // Return null on failure
+    }
+};
 
 // Load template from file
 const loadTemplate = async () => {
@@ -168,15 +183,12 @@ const loadTemplate = async () => {
 const renderTracker = (mesId) => {
     try {
         if (!get_settings('isEnabled')) return;
-
         const context = getContext();
         const message = context.chat[mesId];
-
         if (!message) {
-            log(`[SST] Error: Could not find message with ID ${mesId}. Aborting render.`);
+            log(`Error: Could not find message with ID ${mesId}. Aborting render.`);
             return;
         }
-
         const messageElement = document.querySelector(`div[mesid="${mesId}"] .mes_text`);
         if (!messageElement || messageElement.querySelector(`#${CONTAINER_ID}`)) return;
 
@@ -185,42 +197,39 @@ const renderTracker = (mesId) => {
         const match = message.mes.match(jsonRegex);
 
         if (match && match[1]) {
+            // --- NEW --- Capture the raw JSON string for the {{last_sim_stats}} macro
+            lastSimJsonString = match[1].trim();
+            log(`Captured last sim stats JSON.`);
+
             let jsonData;
             try {
                 jsonData = JSON.parse(match[1]);
             } catch (jsonError) {
-                log(`[SST] Failed to parse JSON in message ID ${mesId}. Error: ${jsonError.message}`);
-                // Optional: Display an error message to the user in the UI.
+                log(`Failed to parse JSON in message ID ${mesId}. Error: ${jsonError.message}`);
                 messageElement.insertAdjacentHTML('beforeend', `<div style="color: red; font-family: monospace;">[SillySimTracker] Error: Invalid JSON in code block.</div>`);
-                return; // Stop execution for this message.
+                return;
             }
 
-            // ADDED: Check if the parsed data is an object.
             if (typeof jsonData !== 'object' || jsonData === null) {
-                log(`[SST] Parsed data in message ID ${mesId} is not a valid object.`);
+                log(`Parsed data in message ID ${mesId} is not a valid object.`);
                 return;
             }
 
             const currentDate = jsonData.current_date || 'Unknown Date';
             const characterNames = Object.keys(jsonData).filter(key => key !== 'current_date');
-
             if (!characterNames.length) return;
 
             const cardsHtml = characterNames.map(name => {
                 const stats = jsonData[name];
-                // ADDED: Check if stats for a character exist to prevent errors.
                 if (!stats) {
-                    log(`[SST] No stats found for character "${name}" in message ID ${mesId}. Skipping card.`);
-                    return ''; // Return an empty string for this card
+                    log(`No stats found for character "${name}" in message ID ${mesId}. Skipping card.`);
+                    return '';
                 }
                 const bgColor = stats.bg || get_settings('defaultBgColor');
                 const cardData = {
                     characterName: name,
                     currentDate: currentDate,
-                    stats: {
-                        ...stats,
-                        internal_thought: stats.internal_thought || stats.thought || "No thought recorded."
-                    },
+                    stats: { ...stats, internal_thought: stats.internal_thought || stats.thought || "No thought recorded." },
                     bgColor: bgColor,
                     darkerBgColor: darkenColor(bgColor),
                     reactionEmoji: getReactionEmoji(stats.last_react),
@@ -235,18 +244,50 @@ const renderTracker = (mesId) => {
             $(messageElement).append(formattedContent);
         }
     } catch (error) {
-        log(`[SST] A critical error occurred in renderTracker for message ID ${mesId}. Please check the console. Error: ${error.stack}`);
+        log(`A critical error occurred in renderTracker for message ID ${mesId}. Please check the console. Error: ${error.stack}`);
     }
 };
 
 // --- SETTINGS MANAGEMENT ---
+const sim_intercept_messages = async (data) => {
+    if (!get_settings('isEnabled')) {
+        return data; // Do nothing if the extension is disabled
+    }
+
+    const datingPrompt = get_settings('datingSimPrompt');
+    const datingSimMacro = /\{\{dating_sim\}\}/g;
+    const lastStatsMacro = /\{\{last_sim_stats\}\}/g;
+
+    const processString = (str) => {
+        let processed = str;
+        if (processed.includes('{{dating_sim}}')) {
+            processed = processed.replace(datingSimMacro, datingPrompt);
+            log('Replaced {{dating_sim}} macro.');
+        }
+        if (processed.includes('{{last_sim_stats}}')) {
+            // Use the stored JSON string, or an empty object string if not found
+            processed = processed.replace(lastStatsMacro, lastSimJsonString || '{}');
+            log('Replaced {{last_sim_stats}} macro.');
+        }
+        return processed;
+    };
+
+    // Process all relevant parts of the prompt data
+    if (data.prompt) {
+        data.prompt = processString(data.prompt);
+    }
+    if (data.system_prompt) {
+        data.system_prompt = processString(data.system_prompt);
+    }
+    return data;
+};
 
 const refresh_settings_ui = () => {
     for (const [key, [element, type]] of Object.entries(settings_ui_map)) {
         const value = get_settings(key);
         switch (type) {
             case 'boolean': element.prop('checked', value); break;
-            case 'text': case 'color': element.val(value); break;
+            case 'text': case 'color': case 'textarea': element.val(value); break;
         }
     }
 };
@@ -278,14 +319,11 @@ const bind_setting = (selector, key, type) => {
         let value;
         switch (type) {
             case 'boolean': value = element.prop('checked'); break;
-            case 'text': case 'color': value = element.val(); break;
+            case 'text': case 'color': case 'textarea': value = element.val(); break;
         }
         set_settings(key, value);
-
-        // Reload template if template file setting changed
         if (key === 'templateFile') {
             loadTemplate().then(() => {
-                // Refresh all cards with the new template
                 refreshAllCards();
             });
         }
@@ -307,11 +345,18 @@ const initialize_settings_listeners = () => {
     log("Settings UI successfully bound.");
 };
 
-const initialize_settings = () => {
+const initialize_settings = async () => {
+    // Load the prompt from the file first.
+    const loadedPrompt = await loadDefaultPromptFromFile();
+    // If the prompt was loaded successfully, update the default_settings object.
+    if (loadedPrompt) {
+        default_settings.datingSimPrompt = loadedPrompt;
+    }
+
+    // Now, merge the defaults with any user-saved settings.
     extension_settings[MODULE_NAME] = Object.assign({}, default_settings, extension_settings[MODULE_NAME]);
     settings = extension_settings[MODULE_NAME];
 };
-
 const load_settings_html_manually = async () => {
     const settingsHtmlPath = `${get_extension_directory()}/settings.html`;
     try {
@@ -329,20 +374,13 @@ const load_settings_html_manually = async () => {
 jQuery(async () => {
     try {
         log(`Initializing extension: ${MODULE_NAME}`);
-
-        // Initialize settings data from storage
-        initialize_settings();
+        await initialize_settings();
         await load_settings_html_manually();
-        // Initialize settings UI listeners
         initialize_settings_listeners();
         log("Settings panel listeners initialized.");
-
-        // Load the template
         await loadTemplate();
-
         const context = getContext();
         const { eventSource, event_types } = context;
-        
         eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, renderTracker);
         eventSource.on(event_types.CHAT_CHANGED, refreshAllCards);
         eventSource.on(event_types.MORE_MESSAGES_LOADED, refreshAllCards);
@@ -350,10 +388,11 @@ jQuery(async () => {
             log(`Message ${mesId} was edited. Re-rendering tracker card.`);
             renderTracker(mesId);
         });
-        
         refreshAllCards();
         log(`${MODULE_NAME} has been successfully loaded.`);
     } catch (error) {
         console.error(`[${MODULE_NAME}] A critical error occurred during initialization. The extension may not work correctly. Error: ${error.stack}`);
     }
 });
+
+export { sim_intercept_messages };
