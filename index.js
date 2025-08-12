@@ -31,14 +31,7 @@ const darkenColor = (hex) => {
     b = Math.floor(b * 0.7).toString(16).padStart(2, '0');
     return `#${r}${g}${b}`;
 };
-const getContrastColor = (hex) => {
-    if (!hex || hex.length < 7) return 'rgba(255,255,255,0.9)';
-    let r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
-    // Calculate luminance
-    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    // Return light color for dark backgrounds, dark color for light backgrounds
-    return luminance > 0.5 ? 'rgba(0,0,0,0.8)' : 'rgba(255,255,255,0.9)';
-};
+
 const getReactionEmoji = (reactValue) => {
     switch (parseInt(reactValue, 10)) {
         case 1: return '👍';
@@ -230,7 +223,6 @@ const renderTracker = (mesId) => {
                     },
                     bgColor: bgColor,
                     darkerBgColor: darkenColor(bgColor),
-                    contrastColor: getContrastColor(bgColor),
                     reactionEmoji: getReactionEmoji(stats.last_react),
                     healthIcon: stats.health === 1 ? '🤕' : stats.health === 2 ? '💀' : null,
                     showThoughtBubble: get_settings('showThoughtBubble'),
