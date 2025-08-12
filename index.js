@@ -3,7 +3,6 @@ import { saveSettingsDebounced, messageFormatting } from '../../../../script.js'
 import { MacrosParser } from '../../../macros.js';
 
 const MODULE_NAME = 'SillySimTracker';
-const GIT_MODULE_NAME = 'SillyTavern-DatingSimTracker'
 const CONTAINER_ID = 'silly-sim-tracker-container';
 const SETTINGS_ID = 'silly-sim-tracker-settings';
 
@@ -85,69 +84,28 @@ const loadDefaultPromptFromFile = async () => {
     }
 };
 
-async function getTemplateFiles() {
-    // Dynamically get the base URL path from the browser side.
-    const browserPathBase = get_extension_directory();
-    // Transform it into a server-side file system path by removing the '/scripts/' prefix.
-
-    const defaultDir = `${browserPathBase}/tracker-card-templates`;
-    const customDir = `${browserPathBase}/custom_tracker_templates`;
-    let defaultFiles = [];
-    let customFiles = [];
-
-    const listFiles = async (path) => {
-        try {
-            const response = await fetch('/api/files/list', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ path: path }),
-            });
-            if (!response.ok) {
-                if (response.status === 404) {
-                    log(`Directory not found (this is okay): ${path}`);
-                    return [];
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-            const data = await response.json();
-            return data.files.filter(file => file.endsWith('.html'));
-        } catch (error) {
-            console.error(`Error listing files in ${path}:`, error);
-            return [];
-        }
-    };
-
-    defaultFiles = await listFiles(defaultDir);
-    customFiles = await listFiles(customDir);
-
-    const allFiles = [...new Set([...defaultFiles, ...customFiles])];
-    return allFiles.sort();
-}
-
-async function populateTemplateDropdown() {
+function populateTemplateDropdown() {
     log('Populating template dropdown with default templates...');
-    const defaultDir = `${get_extension_directory().replace('/scripts/', '')}/tracker-card-templates`;
-    let defaultFiles = [];
 
-    // We can use $.get to check the directory listing, which works reliably
-    try {
-        const response = await $.get(defaultDir);
-        // A simple regex to find hrefs to .html files in the directory listing page
-        const matches = response.match(/href="([^"]+\.html)"/g) || [];
-        defaultFiles = matches.map(href => href.substring(6, href.length - 1));
-    } catch (e) {
-        log('Could not list default template directory. It might be empty or missing.');
-    }
+    const defaultFiles = [
+        "default-card-template.html"
+    ];
 
     const $select = $('#templateFile');
     const currentSelection = get_settings('templateFile');
 
     $select.empty();
-    defaultFiles.sort().forEach(file => {
+    defaultFiles.forEach(file => {
         $select.append($('<option>', { value: file, text: file }));
     });
 
-    $select.val(currentSelection);
+    if (defaultFiles.includes(currentSelection)) {
+        $select.val(currentSelection);
+    } else if (defaultFiles.length > 0) {
+        $select.val(defaultFiles[0]);
+        set_settings('templateFile', defaultFiles[0]);
+    }
+
     log('Default template dropdown populated.');
 }
 
@@ -170,49 +128,7 @@ function handleCustomTemplateUpload(event) {
     };
     reader.readAsText(file);
 
-    // Clear the input's value. This is important so the 'change' event will
-    // fire again if the user selects the same file twice in a row.
     event.target.value = '';
-}
-
-async function saveCustomTemplate(fileName, content) {
-    const serverPathBase = get_extension_directory();
-    const customDir = `${serverPathBase}/custom_tracker_templates`;
-    const filePath = `${customDir}/${fileName}`;
-
-    try {
-        log(`Attempting to save template to: ${filePath}`);
-        // This API call now receives the correct server-side path.
-        const response = await fetch('/api/files/save', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                path: filePath,
-                data: content,
-            }),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
-        }
-
-        const result = await response.json();
-        if (result.success) {
-            toastr.success(`Template "${fileName}" uploaded successfully!`, 'Upload Complete');
-            await populateTemplateDropdown();
-            set_settings('templateFile', fileName);
-            $('#templateFile').val(fileName);
-            await loadTemplate();
-            refreshAllCards();
-        } else {
-            throw new Error('Save operation was not successful.');
-        }
-
-    } catch (error) {
-        console.error('Failed to save custom template:', error);
-        toastr.error(`Failed to save template: ${error.message}`, 'Upload Failed');
-    }
 }
 
 // Load template from file
@@ -378,37 +294,6 @@ const renderTracker = (mesId) => {
 };
 
 // --- SETTINGS MANAGEMENT ---
-globalThis.sim_intercept_messages = async function (data) {
-    log("SillySimTracker interceptor triggered.");
-
-    if (!get_settings('isEnabled')) {
-        return data;
-    }
-
-    const datingPrompt = get_settings('datingSimPrompt');
-    const datingSimMacro = /\{\{sim_tracker\}\}/g;
-    const lastStatsMacro = /\{\{last_sim_stats\}\}/g;
-
-    const processString = (str) => {
-        if (!str) return str;
-        let processed = str;
-        if (processed.includes('{{sim_tracker}}')) {
-            processed = processed.replace(datingSimMacro, datingPrompt);
-            log('Replaced {{sim_tracker}} macro.');
-        }
-        if (processed.includes('{{last_sim_stats}}')) {
-            processed = processed.replace(lastStatsMacro, lastSimJsonString || '{}');
-            log('Replaced {{last_sim_stats}} macro.');
-        }
-        return processed;
-    };
-
-    // Process all relevant parts of the prompt data object
-    data.prompt = processString(data.prompt);
-    data.system_prompt = processString(data.system_prompt);
-
-    return data;
-};
 
 const refresh_settings_ui = () => {
     for (const [key, [element, type]] of Object.entries(settings_ui_map)) {
@@ -528,7 +413,7 @@ jQuery(async () => {
         log(`Initializing extension: ${MODULE_NAME}`);
         await initialize_settings();
         await load_settings_html_manually();
-        await populateTemplateDropdown();
+        populateTemplateDropdown();
         initialize_settings_listeners();
         log("Settings panel listeners initialized.");
         await loadTemplate();
