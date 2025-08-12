@@ -4,5 +4,5 @@ srpc-ui/manifest.json
 srpc-ui/settings.html
 *.xml
 *.txt
-!tracker-card-templates/*.html
-*.html
+!tracker-card-templates/*
+/*.html
