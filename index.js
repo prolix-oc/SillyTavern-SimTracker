@@ -1,4 +1,4 @@
-import { getContext, on, extension_settings } from '../../../extensions.js';
+import { getContext, extension_settings } from '../../../extensions.js';
 import { saveSettingsDebounced } from '../../../../script.js';
 
 const MODULE_NAME = 'Tracker';
@@ -214,23 +214,21 @@ const load_settings_html_manually = async () => {
 // --- ENTRY POINT ---
 jQuery(async () => {
     try {
-        log(`[SST] Initializing extension: ${MODULE_NAME}`);
+        log(`Initializing extension: ${MODULE_NAME}`);
 
         // Initialize settings data from storage
         initialize_settings();
 
-        // ADD THIS CALL to load the settings panel
-        await load_settings_html_manually();
-
-        // Initialize settings UI listeners (this will now find the injected HTML)
+        // Initialize settings UI listeners
         initialize_settings_listeners();
-        log("[SST] Settings panel listeners initialized.");
+        log("Settings panel listeners initialized.");
 
-        // Register the main extension functionality
-        on('[SST] CHARACTER_MESSAGE_RENDERED', renderTracker);
+        const context = getContext();
+        context.eventSource.on(context.event_types.CHARACTER_MESSAGE_RENDERED, renderTracker);
 
-        log(`[SST] ${MODULE_NAME} has been successfully loaded.`);
+
+        log(`${MODULE_NAME} has been successfully loaded.`);
     } catch (error) {
-        console.error(`[SST] [${MODULE_NAME}] A critical error occurred during initialization. The extension may not work correctly. Error: ${error.stack}`);
+        console.error(`[${MODULE_NAME}] A critical error occurred during initialization. The extension may not work correctly. Error: ${error.stack}`);
     }
 });
