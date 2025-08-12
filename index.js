@@ -249,9 +249,11 @@ const renderTracker = (mesId) => {
 };
 
 // --- SETTINGS MANAGEMENT ---
-async function sim_intercept_messages(data) {
+globalThis.sim_intercept_messages = async function(data) {
+    log("SillySimTracker interceptor triggered.");
+
     if (!get_settings('isEnabled')) {
-        return data; // Do nothing if the extension is disabled
+        return data;
     }
 
     const datingPrompt = get_settings('datingSimPrompt');
@@ -259,26 +261,23 @@ async function sim_intercept_messages(data) {
     const lastStatsMacro = /\{\{last_sim_stats\}\}/g;
 
     const processString = (str) => {
+        if (!str) return str;
         let processed = str;
         if (processed.includes('{{dating_sim}}')) {
             processed = processed.replace(datingSimMacro, datingPrompt);
             log('Replaced {{dating_sim}} macro.');
         }
         if (processed.includes('{{last_sim_stats}}')) {
-            // Use the stored JSON string, or an empty object string if not found
             processed = processed.replace(lastStatsMacro, lastSimJsonString || '{}');
             log('Replaced {{last_sim_stats}} macro.');
         }
         return processed;
     };
 
-    // Process all relevant parts of the prompt data
-    if (data.prompt) {
-        data.prompt = processString(data.prompt);
-    }
-    if (data.system_prompt) {
-        data.system_prompt = processString(data.system_prompt);
-    }
+    // Process all relevant parts of the prompt data object
+    data.prompt = processString(data.prompt);
+    data.system_prompt = processString(data.system_prompt);
+
     return data;
 };
 
