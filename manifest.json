@@ -1,13 +1,14 @@
 {
-  "name": "Tracker",
   "display_name": "Silly Sim Tracker",
   "author": "Prolix OCs",
   "version": "1.0.0",
   "description": "Displays a dating sim-style tracker card based on a JSON code block in a character's message.",
   "js": "index.js",
   "css": "style.css",
+  "homePage": "https://github.com/prolix-oc/Tracker.git",
   "settings": "settings.html",
   "requires": [],
   "optional": [],
+  "generate_interceptor": "memory_intercept_messages",
   "loading_order": 1
 }
