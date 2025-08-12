@@ -88,10 +88,9 @@ async function getTemplateFiles() {
     // Dynamically get the base URL path from the browser side.
     const browserPathBase = get_extension_directory();
     // Transform it into a server-side file system path by removing the '/scripts/' prefix.
-    const serverPathBase = browserPathBase.replace('/scripts/', '');
 
-    const defaultDir = `${serverPathBase}/tracker-card-templates`;
-    const customDir = `${serverPathBase}/custom_tracker_templates`;
+    const defaultDir = `${browserPathBase}/tracker-card-templates`;
+    const customDir = `${browserPathBase}/custom_tracker_templates`;
     let defaultFiles = [];
     let customFiles = [];
 
@@ -157,7 +156,7 @@ function handleFileUpload(event) {
 }
 
 async function saveCustomTemplate(fileName, content) {
-    const serverPathBase = get_extension_directory().replace('/scripts/', '');
+    const serverPathBase = get_extension_directory();
     const customDir = `${serverPathBase}/custom_tracker_templates`;
     const filePath = `${customDir}/${fileName}`;
 
