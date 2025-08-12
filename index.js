@@ -85,8 +85,10 @@ const loadDefaultPromptFromFile = async () => {
 };
 
 async function getTemplateFiles() {
-    const defaultDir = `extensions/third-party/${GIT_MODULE_NAME}/tracker-card-templates`;
-    const customDir = `extensions/third-party/${GIT_MODULE_NAME}/custom_tracker_templates`;
+    const serverPathBase = get_extension_directory().replace('/scripts/', '');
+    const defaultDir = `${serverPathBase}/tracker-card-templates`;
+    const customDir = `${serverPathBase}/custom_tracker_templates`;
+
     let defaultFiles = [];
     let customFiles = [];
 
@@ -98,7 +100,6 @@ async function getTemplateFiles() {
                 body: JSON.stringify({ path: path }),
             });
             if (!response.ok) {
-                // It's normal for the custom directory to not exist initially
                 if (response.status === 404) {
                     log(`Directory not found (this is okay): ${path}`);
                     return [];
@@ -153,7 +154,9 @@ function handleFileUpload(event) {
 }
 
 async function saveCustomTemplate(fileName, content) {
-    const customDir = `extensions/third-party/${GIT_MODULE_NAME}/custom_tracker_templates`;
+    // Dynamically get the base path and then format it for the server API
+    const serverPathBase = get_extension_directory().replace('/scripts/', '');
+    const customDir = `${serverPathBase}/custom_tracker_templates`;
     const filePath = `${customDir}/${fileName}`;
 
     try {
@@ -163,7 +166,7 @@ async function saveCustomTemplate(fileName, content) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 path: filePath,
-                data: content, // The API accepts raw text content
+                data: content,
             }),
         });
 
