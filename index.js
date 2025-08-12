@@ -12,7 +12,7 @@ const default_settings = {
     defaultBgColor: "#6a5acd",
     showThoughtBubble: true,
     customTemplateHtml: '',
-    templateFile: "default-card-template.html",
+    templateFile: "dating-card-template.html",
     datingSimPrompt: "Default prompt could not be loaded. Please check file path.",
 };
 
@@ -84,29 +84,62 @@ const loadDefaultPromptFromFile = async () => {
     }
 };
 
-function populateTemplateDropdown() {
-    log('Populating template dropdown with default templates...');
+async function populateTemplateDropdown() {
+    log('Populating template dropdown with parsed friendly names...');
 
     const defaultFiles = [
-        "default-card-template.html"
+        "dating-card-template.html"
     ];
+
+    const templateOptions = [];
+    const nameRegex = /<!--\s*TEMPLATE NAME\s*:\s*(.*?)\s*-->/;
+    const authorRegex = /<!--\s*AUTHOR\s*:\s*(.*?)\s*-->/;
+
+    await Promise.all(defaultFiles.map(async (filename) => {
+        const filePath = `${get_extension_directory()}/tracker-card-templates/${filename}`;
+        let friendlyName = filename; // Default to filename as a fallback
+
+        try {
+            const content = await $.get(filePath);
+
+            const nameMatch = content.match(nameRegex);
+            const authorMatch = content.match(authorRegex);
+
+            const templateName = nameMatch ? nameMatch[1].trim() : null;
+            const author = authorMatch ? authorMatch[1].trim() : null;
+
+            if (templateName && author) {
+                friendlyName = `${templateName} - by ${author}`;
+            } else if (templateName) {
+                friendlyName = templateName;
+            }
+
+            templateOptions.push({ filename, friendlyName });
+
+        } catch (error) {
+            console.error(`Could not fetch or parse template info for ${filename}:`, error);
+            // If fetching fails, add it to the list with its filename so it's not missing
+            templateOptions.push({ filename, friendlyName: filename });
+        }
+    }));
+
+    // Sort the results alphabetically by friendly name for a clean list
+    templateOptions.sort((a, b) => a.friendlyName.localeCompare(b.friendlyName));
 
     const $select = $('#templateFile');
     const currentSelection = get_settings('templateFile');
 
     $select.empty();
-    defaultFiles.forEach(file => {
-        $select.append($('<option>', { value: file, text: file }));
+    templateOptions.forEach(option => {
+        $select.append($('<option>', {
+            value: option.filename,
+            text: option.friendlyName,
+        }));
     });
 
-    if (defaultFiles.includes(currentSelection)) {
-        $select.val(currentSelection);
-    } else if (defaultFiles.length > 0) {
-        $select.val(defaultFiles[0]);
-        set_settings('templateFile', defaultFiles[0]);
-    }
-
-    log('Default template dropdown populated.');
+    // Restore the user's selection
+    $select.val(currentSelection);
+    log('Template dropdown populated with friendly names.');
 }
 
 function handleCustomTemplateUpload(event) {
@@ -413,7 +446,7 @@ jQuery(async () => {
         log(`Initializing extension: ${MODULE_NAME}`);
         await initialize_settings();
         await load_settings_html_manually();
-        populateTemplateDropdown();
+        await populateTemplateDropdown();
         initialize_settings_listeners();
         log("Settings panel listeners initialized.");
         await loadTemplate();
