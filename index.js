@@ -189,9 +189,7 @@ const initialize_settings_listeners = () => {
             log("Settings container not found, waiting for SillyTavern loader...");
             return;
         }
-        
-        // --- If we get here, the container was found! ---
-        
+                
         // Stop the timer so we don't keep checking unnecessarily.
         clearInterval(settingsInterval);
         
