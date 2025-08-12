@@ -83,9 +83,9 @@ const renderTracker = (message) => {
     const identifier = get_settings('codeBlockIdentifier');
     const jsonRegex = new RegExp("```" + identifier + "\\s*([\\s\\S]*?)\\s*```");
     const match = message.mes.match(jsonRegex);
-    if (match && match) {
+    if (match && match[1]) {
         try {
-            const jsonData = JSON.parse(match);
+            const jsonData = JSON.parse(match[1]);
             const currentDate = jsonData.current_date || 'Unknown Date';
             const characterNames = Object.keys(jsonData).filter(key => key !== 'current_date');
             if (!characterNames.length) return;
@@ -136,11 +136,24 @@ const bind_setting = (selector, key, type) => {
     });
 };
 const initialize_settings_listeners = () => {
-    bind_setting('#isEnabled', 'isEnabled', 'boolean');
-    bind_setting('#codeBlockIdentifier', 'codeBlockIdentifier', 'text');
-    bind_setting('#defaultBgColor', 'defaultBgColor', 'color');
-    bind_setting('#showThoughtBubble', 'showThoughtBubble', 'boolean');
-    refresh_settings_ui();
+    // Wait for settings UI to be loaded by SillyTavern
+    const tryBindSettings = () => {
+        const settingsContainer = $(`#${SETTINGS_ID}`);
+        if (settingsContainer.length === 0) {
+            log("Settings container not found, retrying in 100ms...");
+            setTimeout(tryBindSettings, 100);
+            return;
+        }
+        
+        bind_setting('#isEnabled', 'isEnabled', 'boolean');
+        bind_setting('#codeBlockIdentifier', 'codeBlockIdentifier', 'text');
+        bind_setting('#defaultBgColor', 'defaultBgColor', 'color');
+        bind_setting('#showThoughtBubble', 'showThoughtBubble', 'boolean');
+        refresh_settings_ui();
+        log("Settings UI successfully bound.");
+    };
+    
+    tryBindSettings();
 };
 const initialize_settings = () => {
     extension_settings[MODULE_NAME] = Object.assign({}, default_settings, extension_settings[MODULE_NAME]);
@@ -151,56 +164,14 @@ const initialize_settings = () => {
 jQuery(async () => {
     log(`Initializing extension: ${MODULE_NAME}`);
 
-    // Step 1: Initialize settings data from storage
+    // Initialize settings data from storage
     initialize_settings();
 
-    // Step 2: Create and inject the settings HTML directly
-    const settingsHtml = `
-        <div id="${SETTINGS_ID}">
-            <div class="inline-drawer">
-                <div class="inline-drawer-toggle inline-drawer-header">
-                    <b>Silly Sim Tracker</b>
-                    <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
-                </div>
-                <div class="inline-drawer-content">
-                    <div class="silly-sim-tracker-settings-content">
-                        <div class="setting">
-                            <label for="isEnabled">Enable Tracker</label>
-                            <div class="control"><input type="checkbox" id="isEnabled"></div>
-                        </div>
-                        <p class="description">The master switch to enable or disable the extension.</p>
-                        <hr>
-                        <div class="setting">
-                            <label for="codeBlockIdentifier">Code Block Identifier</label>
-                            <div class="control"><input type="text" id="codeBlockIdentifier" class="text_pole"></div>
-                        </div>
-                        <p class="description">The keyword the extension looks for after the opening \`\`\` (e.g., "sim").</p>
-                        <hr>
-                        <div class="setting">
-                            <label for="defaultBgColor">Default Card Color</label>
-                            <div class="control"><input type="color" id="defaultBgColor"></div>
-                        </div>
-                        <p class="description">The background color used for cards when one isn't specified in the JSON.</p>
-                        <hr>
-                        <div class="setting">
-                            <label for="showThoughtBubble">Show Thought Bubble</label>
-                            <div class="control"><input type="checkbox" id="showThoughtBubble"></div>
-                        </div>
-                        <p class="description">Whether to display the 'thought' section at the bottom of the card.</p>
-                    </div>
-                </div>
-            </div>
-        </div>
-    `;
-
-    // Append settings HTML to the extensions settings container
-    $("#extensions_settings2").append(settingsHtml);
-
-    // Step 3: Bind listeners after the HTML is injected
+    // Initialize settings UI listeners (settings.html is loaded automatically by SillyTavern)
     initialize_settings_listeners();
-    log("Settings panel loaded and listeners initialized.");
+    log("Settings panel listeners initialized.");
 
-    // Step 4: Register the main extension functionality
+    // Register the main extension functionality
     on('CHARACTER_MESSAGE_RENDERED', renderTracker);
 
     log(`${MODULE_NAME} has been successfully loaded.`);

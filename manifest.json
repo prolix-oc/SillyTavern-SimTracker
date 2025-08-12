@@ -6,6 +6,7 @@
   "description": "Displays a dating sim-style tracker card based on a JSON code block in a character's message.",
   "js": "index.js",
   "css": "style.css",
+  "settings": "settings.html",
   "requires": [],
   "optional": [],
   "loading_order": 1
