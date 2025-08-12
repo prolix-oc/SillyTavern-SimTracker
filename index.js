@@ -249,7 +249,7 @@ const renderTracker = (mesId) => {
 };
 
 // --- SETTINGS MANAGEMENT ---
-async function sim_intercept_messages = async (data) => {
+async function sim_intercept_messages(data) {
     if (!get_settings('isEnabled')) {
         return data; // Do nothing if the extension is disabled
     }
