@@ -386,15 +386,15 @@ globalThis.sim_intercept_messages = async function (data) {
     }
 
     const datingPrompt = get_settings('datingSimPrompt');
-    const datingSimMacro = /\{\{dating_sim\}\}/g;
+    const datingSimMacro = /\{\{sim_tracker\}\}/g;
     const lastStatsMacro = /\{\{last_sim_stats\}\}/g;
 
     const processString = (str) => {
         if (!str) return str;
         let processed = str;
-        if (processed.includes('{{dating_sim}}')) {
+        if (processed.includes('{{sim_tracker}}')) {
             processed = processed.replace(datingSimMacro, datingPrompt);
-            log('Replaced {{dating_sim}} macro.');
+            log('Replaced {{sim_tracker}} macro.');
         }
         if (processed.includes('{{last_sim_stats}}')) {
             processed = processed.replace(lastStatsMacro, lastSimJsonString || '{}');
@@ -534,9 +534,9 @@ jQuery(async () => {
         await loadTemplate();
 
         log("Registering macros...");
-        MacrosParser.registerMacro('dating_sim', () => {
+        MacrosParser.registerMacro('sim_tracker', () => {
             if (!get_settings('isEnabled')) return '';
-            log('Processed {{dating_sim}} macro.');
+            log('Processed {{sim_tracker}} macro.');
             return get_settings('datingSimPrompt');
         });
 
