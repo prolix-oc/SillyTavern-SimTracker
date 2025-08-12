@@ -1,5 +1,5 @@
 import { getContext, extension_settings } from '../../../extensions.js';
-import { saveSettingsDebounced } from '../../../../script.js';
+import { saveSettingsDebounced, messageFormatting } from '../../../../script.js';
 
 const MODULE_NAME = 'Tracker';
 const CONTAINER_ID = 'silly-sim-tracker-container';
@@ -142,10 +142,8 @@ const renderTracker = (mesId) => {
             }).join('');
 
             const finalHtml = compiledWrapperTemplate({ cardsHtml });
-            const { DOMPurify } = context.libs;
-            const sanitizedHtml = DOMPurify.sanitize(finalHtml);
-            messageElement.insertAdjacentHTML('beforeend', sanitizedHtml);
-        }
+            const formattedContent = messageFormatting(finalHtml);
+            $(messageElement).append(formattedContent);        }
     } catch (error) {
         log(`[SST] A critical error occurred in renderTracker for message ID ${mesId}. Please check the console. Error: ${error.stack}`);
     }
