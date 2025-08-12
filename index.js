@@ -204,8 +204,8 @@ const loadTemplate = async () => {
     }
 
     // Use relative paths for $.get, which works from the SillyTavern root
-    const customPath = `extensions/third-party/${GIT_MODULE_NAME}/custom_tracker_templates/${templateFile}`;
-    const defaultPath = `extensions/third-party/${GIT_MODULE_NAME}/tracker-card-templates/${templateFile}`;
+    const customPath = `${get_extension_directory()}/custom_tracker_templates/${templateFile}`;
+    const defaultPath = `${get_extension_directory()}/tracker-card-templates/${templateFile}`;
     let templateContent;
     let loadedFrom = '';
 
