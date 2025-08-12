@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Silly Sim Tracker Settings</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 10px; }
+        .setting { margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; }
+        .setting label { font-weight: bold; margin-right: 10px; }
+        .setting .control { display: flex; align-items: center; }
+        .setting input[type="text"], .setting input[type="color"] {
+            padding: 5px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+        .setting input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+        }
+        .description { font-size: 0.9em; color: #666; margin-top: 2px; }
+    </style>
+</head>
+<body>
+    <h3>Silly Sim Tracker Settings</h3>
+
+    <div class="setting">
+        <label for="isEnabled">Enable Tracker</label>
+        <div class="control">
+            <input type="checkbox" id="isEnabled">
+        </div>
+    </div>
+    <p class="description">The master switch to enable or disable the extension.</p>
+
+    <hr>
+
+    <div class="setting">
+        <label for="codeBlockIdentifier">Code Block Identifier</label>
+        <div class="control">
+            <input type="text" id="codeBlockIdentifier">
+        </div>
+    </div>
+    <p class="description">The keyword the extension looks for after the opening ``` to identify the data block (e.g., "sim").</p>
+
+    <hr>
+
+    <div class="setting">
+        <label for="defaultBgColor">Default Card Color</label>
+        <div class="control">
+            <input type="color" id="defaultBgColor">
+        </div>
+    </div>
+    <p class="description">The background color used for cards when one isn't specified in the JSON data.</p>
+    
+    <hr>
+
+    <div class="setting">
+        <label for="showThoughtBubble">Show Thought Bubble</label>
+        <div class="control">
+            <input type="checkbox" id="showThoughtBubble">
+        </div>
+    </div>
+    <p class="description">Whether to display the 'thought' section at the bottom of the card.</p>
+
+</body>
+</html>
