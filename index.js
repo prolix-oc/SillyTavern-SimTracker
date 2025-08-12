@@ -1,7 +1,7 @@
 import { getContext, on, SimpleHandlebarsCompiler, extension_settings } from '../../../extensions.js';
 import { saveSettingsDebounced } from '../../../../script.js';
 
-const MODULE_NAME = 'SillySimTracker';
+const MODULE_NAME = 'Tracker';
 const CONTAINER_ID = 'silly-sim-tracker-container';
 const SETTINGS_ID = 'silly-sim-tracker-settings';
 
