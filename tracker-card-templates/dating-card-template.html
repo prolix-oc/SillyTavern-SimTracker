@@ -13,7 +13,8 @@
     flex: 1 1 100% !important; 
     max-width: 100% !important; 
     width: 100%;
-    min-height: 370px !important;
+    min-height: 400px !important;
+    opacity: 1 !important;
   }
   
   .stat-icon { font-size: 20px !important; }
@@ -22,10 +23,10 @@
   .stat-title { font-size: 9px !important; }
   
   /* Mobile-specific adjustments */
-  /* Updated selector for new structure - main stats container is now nth-child(6) */
-  .tracker-card > div:nth-child(6) {
-    top: 125px !important;
-    bottom: 90px !important;
+  /* Updated selector for new header structure */
+  .tracker-card > div:nth-child(3) {  /* Stats container is now the 3rd direct child after gradient and header */
+    top: 100px !important; /* Moved up further for more even spacing */
+    bottom: 110px !important; /* Keep same bottom clearance for thought label */
   }
 }
 
@@ -38,7 +39,8 @@
   .tracker-card { 
     flex: 1 1 calc(50% - 10px) !important; 
     max-width: calc(50% - 10px) !important; 
-    height: 370px !important;
+    height: 400px !important;
+    opacity: 1 !important;
   }
   
   .stat-icon { font-size: 28px !important; margin-bottom: 6px !important; }
@@ -47,10 +49,10 @@
   .stat-title { font-size: 10px !important; }
   
   /* Desktop-specific adjustments */
-  /* Updated selector for new structure - main stats container is now nth-child(6) */
-  .tracker-card > div:nth-child(6) {
-    top: 125px !important;
-    bottom: 90px !important;
+  /* Updated selector for new header structure */
+  .tracker-card > div:nth-child(3) {  /* Stats container is now the 3rd direct child after gradient and header */
+    top: 110px !important; /* Moved up further for more even spacing */
+    bottom: 110px !important; /* Keep same bottom clearance for thought label */
   }
 }
 
@@ -58,7 +60,8 @@
   .tracker-card { 
     flex: 1 1 600px !important; 
     max-width: 600px !important; 
-    height: 370px !important;
+    height: 400px !important;
+    opacity: 1 !important;
   }
   
   .stat-icon { font-size: 32px !important; margin-bottom: 8px !important; }
@@ -67,10 +70,10 @@
   .stat-title { font-size: 11px !important; }
   
   /* Large screen adjustments */
-  /* Updated selector for new structure - main stats container is now nth-child(6) */
-  .tracker-card > div:nth-child(6) {
-    top: 125px !important;
-    bottom: 90px !important;
+  /* Updated selector for new header structure */
+  .tracker-card > div:nth-child(3) {  /* Stats container is now the 3rd direct child after gradient and header */
+    top: 110px !important; /* Moved up further for more even spacing */
+    bottom: 110px !important; /* Keep same bottom clearance for thought label */
   }
 }
 
@@ -161,7 +164,6 @@
   position: absolute !important;
   top: -8px !important;
   right: -8px !important;
-  background: {{#if (gt stats.apChange 0)}}rgba(46, 204, 113, 0.9){{else}}rgba(231, 76, 60, 0.9){{/if}} !important;
   color: white !important;
   font-size: 10px !important;
   font-weight: 600 !important;
@@ -175,8 +177,16 @@
   animation: pulse 0.5s ease-in-out !important;
 }
 
+.change-indicator.positive {
+  background: rgba(46, 204, 113, 0.9) !important;
+}
+
 .change-indicator.negative {
-  background: {{#if (gt stats.cpChange 0)}}rgba(231, 76, 60, 0.9){{else}}rgba(46, 204, 113, 0.9){{/if}} !important;
+  background: rgba(231, 76, 60, 0.9) !important;
+}
+
+.change-indicator.negative-alt {
+  background: rgba(46, 204, 113, 0.9) !important;
 }
 
 @keyframes pulse {
@@ -187,122 +197,100 @@
 </style>
 
 <div class="tracker-card-container" style="display:flex;gap:20px;justify-content:center;font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;width:100%">
-  <div class="tracker-card" style="min-width:320px;background:linear-gradient(145deg,{{bgColor}} 0%,{{darkerBgColor}} 50%,{{darkerBgColor}} 100%);border-radius:16px;padding:0;box-sizing:border-box;position:relative;color:#fff;font-size:14px;font-weight:500;">
-    
-    <!-- Gradient overlay -->
+  <div class="tracker-card" style="min-width:320px;background:linear-gradient(145deg,{{bgColor}} 0%,{{darkerBgColor}} 50%,{{darkerBgColor}} 100%);border-radius:16px;padding:0;box-sizing:border-box;position:relative;color:#fff;font-size:14px;font-weight:500;{{#unless isActive}}opacity:0.6;{{/unless}}">
     <div class="gradient-overlay" style="position:absolute;top:0;left:0;right:0;height:1px;"></div>
-    
-    <!-- Top Elements Container (Date, Day Count, Conception) -->
-    <div class="top-elements-container" style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px 0 20px;font-size:12px;font-weight:500;margin-bottom:8px;">
-      <div class="header-badge" style="padding:4px 10px;border-radius:8px;font-weight:500;letter-spacing:0.25px">{{currentDate}}</div>
-      <div style="display:flex;gap:8px">
-        <div class="header-badge" style="padding:4px 10px;border-radius:8px;font-weight:500;letter-spacing:0.25px">Day {{stats.days_since_first_meeting}}</div>
-        {{#if stats.preg}}<div class="header-badge" style="padding:4px 10px;border-radius:8px;font-weight:500;letter-spacing:0.25px">🤰{{stats.days_preg}}d</div>{{/if}}
-      </div>
-    </div>
-    
-    <!-- Character Name Container -->
-    <div class="character-name-container" style="display:flex;justify-content:space-between;align-items:flex-start;padding:0 20px;font-size:26px;font-weight:600;letter-spacing:-0.25px;margin-bottom:4px;">
-      <div style="text-align:left;">{{characterName}}</div>
-    </div>
-    
-    <!-- Character Titles Container -->
-    <div class="character-titles-container" style="display:flex;justify-content:space-between;align-items:center;padding:0 20px;margin-bottom:8px;">
-      {{#if stats.relationshipStatus}}
-      <div class="character-status" style="display:flex;align-items:center;width:100%;justify-content:flex-start;font-size:12px;font-weight:500;color:rgba(255,255,255,0.7);text-shadow:0 1px 2px rgba(0,0,0,0.3);letter-spacing:0.25px;">
-        <span>{{stats.relationshipStatus}}</span>
-        {{#if stats.desireStatus}}<span class="status-divider" style="margin:0 8px;opacity:0.5;">|</span><span>{{stats.desireStatus}}</span>{{/if}}
-      </div>
-      {{/if}}
-    </div>
-    
-    <!-- Sub-status Icons Container -->
-    <div class="sub-status-icons-container" style="display:flex;justify-content:flex-end;padding:0 20px;margin-bottom:12px;">
-      <div style="display:flex;align-items:center;gap:12px;font-size:20px;">
-        {{#if healthIcon}}<span>{{healthIcon}}</span>{{/if}}
-        {{#if stats.inactive}}
-          {{#if (eq stats.inactiveReason 1)}}<span>😴</span>{{/if}}
-          {{#if (eq stats.inactiveReason 2)}}<span>🏥</span>{{/if}}
-          {{#if (eq stats.inactiveReason 3)}}<span>😡</span>{{/if}}
-          {{#if (eq stats.inactiveReason 4)}}<span>🫠</span>{{/if}}
-          {{#if (eq stats.inactiveReason 5)}}<span>🪦</span>{{/if}}
-        {{/if}}
-        <span>{{reactionEmoji}}</span>
-      </div>
-    </div>
-    
-    <!-- Main Stats Container -->
-    <div class="main-stats-container" style="position:absolute;top:130px;bottom:90px;left:0;right:0;display:flex;align-items:center;justify-content:center;padding:0 12px">
-      <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:8px;flex-wrap:nowrap">
-        <!-- Affection Stat -->
-        <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:60px;max-width:120px;position:relative">
-          <div class="stat-title" style="font-size:8px;font-weight:500;opacity:0.8;margin-bottom:3px;color:rgba(255,255,255,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;text-align:center;line-height:1.2">AFFECTION</div>
-          <div class="stat-container" style="padding:6px 3px;border-radius:10px;width:100%;display:flex;flex-direction:column;align-items:center;position:relative;min-height:70px;justify-content:center;box-sizing:border-box">
-            <div class="stat-icon" style="font-size:20px;line-height:1;margin-bottom:3px">❤️</div>
-            <div class="stat-value" style="font-size:16px;font-weight:600;line-height:1;">{{stats.ap}}</div>
-            {{#if stats.apChange}}{{#unless (eq stats.apChange 0)}}
-            <div class="change-indicator" style="position:absolute;top:-8px;right:-8px;background:{{#if (gt stats.apChange 0)}}rgba(46, 204, 113, 0.9){{else}}rgba(231, 76, 60, 0.9){{/if}};color:white;font-size:10px;font-weight:600;padding:2px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);min-width:24px;text-align:center;line-height:1.2;box-shadow:0 2px 6px rgba(0,0,0,0.2);animation:pulse 0.5s ease-in-out">
-              {{#if (gt stats.apChange 0)}}+{{/if}}{{stats.apChange}}
-            </div>
-            {{/unless}}{{/if}}
-          </div>
-        </div>
-        <!-- Desire Stat -->
-        <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:60px;max-width:120px;position:relative">
-          <div class="stat-title" style="font-size:8px;font-weight:500;opacity:0.8;margin-bottom:3px;color:rgba(255,255,255,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;text-align:center;line-height:1.2">DESIRE</div>
-          <div class="stat-container" style="padding:6px 3px;border-radius:10px;width:100%;display:flex;flex-direction:column;align-items:center;position:relative;min-height:70px;justify-content:center;box-sizing:border-box">
-            <div class="stat-icon" style="font-size:20px;line-height:1;margin-bottom:3px">🔥</div>
-            <div class="stat-value" style="font-size:16px;font-weight:600;line-height:1;">{{stats.dp}}</div>
-            {{#if stats.dpChange}}{{#unless (eq stats.dpChange 0)}}
-            <div class="change-indicator" style="position:absolute;top:-8px;right:-8px;background:{{#if (gt stats.dpChange 0)}}rgba(46, 204, 113, 0.9){{else}}rgba(231, 76, 60, 0.9){{/if}};color:white;font-size:10px;font-weight:600;padding:2px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);min-width:24px;text-align:center;line-height:1.2;box-shadow:0 2px 6px rgba(0,0,0,0.2);animation:pulse 0.5s ease-in-out">
-              {{#if (gt stats.dpChange 0)}}+{{/if}}{{stats.dpChange}}
-            </div>
-            {{/unless}}{{/if}}
-          </div>
-        </div>
-        <!-- Trust Stat -->
-        <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:60px;max-width:120px;position:relative">
-          <div class="stat-title" style="font-size:8px;font-weight:500;opacity:0.8;margin-bottom:3px;color:rgba(255,255,255,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;text-align:center;line-height:1.2">TRUST</div>
-          <div class="stat-container" style="padding:6px 3px;border-radius:10px;width:100%;display:flex;flex-direction:column;align-items:center;position:relative;min-height:70px;justify-content:center;box-sizing:border-box">
-            <div class="stat-icon" style="font-size:20px;line-height:1;margin-bottom:3px">🤝</div>
-            <div class="stat-value" style="font-size:16px;font-weight:600;line-height:1;">{{stats.tp}}</div>
-            {{#if stats.tpChange}}{{#unless (eq stats.tpChange 0)}}
-            <div class="change-indicator" style="position:absolute;top:-8px;right:-8px;background:{{#if (gt stats.tpChange 0)}}rgba(46, 204, 113, 0.9){{else}}rgba(231, 76, 60, 0.9){{/if}};color:white;font-size:10px;font-weight:600;padding:2px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);min-width:24px;text-align:center;line-height:1.2;box-shadow:0 2px 6px rgba(0,0,0,0.2);animation:pulse 0.5s ease-in-out">
-              {{#if (gt stats.tpChange 0)}}+{{/if}}{{stats.tpChange}}
-            </div>
-            {{/unless}}{{/if}}
-          </div>
-        </div>
-        <!-- Contempt Stat -->
-        <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:60px;max-width:120px;position:relative">
-          <div class="stat-title" style="font-size:8px;font-weight:500;opacity:0.8;margin-bottom:3px;color:rgba(255,255,255,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;text-align:center;line-height:1.2">CONTEMPT</div>
-          <div class="stat-container" style="padding:6px 3px;border-radius:10px;width:100%;display:flex;flex-direction:column;align-items:center;position:relative;min-height:70px;justify-content:center;box-sizing:border-box">
-            <div class="stat-icon" style="font-size:20px;line-height:1;margin-bottom:3px">💔</div>
-            <div class="stat-value" style="font-size:16px;font-weight:600;line-height:1;">{{stats.cp}}</div>
-            {{#if stats.cpChange}}{{#unless (eq stats.cpChange 0)}}
-            <div class="change-indicator negative" style="position:absolute;top:-8px;right:-8px;background:{{#if (gt stats.cpChange 0)}}rgba(231, 76, 60, 0.9){{else}}rgba(46, 204, 113, 0.9){{/if}};color:white;font-size:10px;font-weight:600;padding:2px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);min-width:24px;text-align:center;line-height:1.2;box-shadow:0 2px 6px rgba(0,0,0,0.2);animation:pulse 0.5s ease-in-out">
-              {{#if (gt stats.cpChange 0)}}+{{/if}}{{stats.cpChange}}
-            </div>
-            {{/unless}}{{/if}}
-          </div>
+    <!-- Combined Header Section -->
+    <div class="tracker-card-header" style="padding:16px 20px 0 20px;font-size:12px;font-weight:500;display:flex;flex-direction:column;">
+      <!-- Date and Counters Row -->
+      <div style="display:flex;justify-content:space-between;align-items:center;width:100%;margin-bottom:8px;">
+        <div class="header-badge" style="padding:4px 10px;border-radius:8px;font-weight:500;letter-spacing:0.25px">{{currentDate}}</div>
+        <div style="display:flex;gap:8px">
+          <div class="header-badge" style="padding:4px 10px;border-radius:8px;font-weight:500;letter-spacing:0.25px">Day {{stats.days_since_first_meeting}}</div>
+          {{#if stats.preg}}<div class="header-badge" style="padding:4px 10px;border-radius:8px;font-weight:500;letter-spacing:0.25px">🤰{{stats.days_preg}}d</div>{{/if}}
         </div>
       </div>
-    </div>
-    
-    <!-- Divider and Thought Bubble Container -->
-    {{#if showThoughtBubble}}
-    <div class="thought-section-container" style="position:absolute;bottom:16px;left:16px;right:16px;">
-      <!-- Divider between stats and thoughts -->
-      <div class="stats-thoughts-divider" style="height:1px;background:rgba(255,255,255,0.1);box-shadow:0 1px 0 rgba(0,0,0,0.7);margin-bottom:12px;"></div>
       
-      <!-- Thought Bubble -->
-      <div class="thought-bubble" style="min-height:60px;border-radius:12px;display:flex;align-items:center;gap:12px;padding:12px 16px;">
-        <div class="thought-label" style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.7);text-shadow:0 1px 2px rgba(0,0,0,0.3);letter-spacing:0.25px;margin-right:8px;">{{characterName}} thinks:</div>
-        <div style="font-size:22px;flex-shrink:0">💭</div>
-        <div style="flex:1;font-size:13px;font-weight:400;line-height:1.4;overflow:hidden;">{{stats.internal_thought}}</div>
+      <!-- Character Name and Icons Row -->
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;width:100%;margin-bottom:4px;">
+        <div style="font-size:26px;font-weight:600;letter-spacing:-0.25px;text-align:left;">{{characterName}}</div>
+        <div style="display:flex;align-items:center;gap:12px;font-size:20px;flex-shrink:0;">
+          {{#if healthIcon}}<span>{{healthIcon}}</span>{{/if}}
+          {{#if stats.inactive}}
+            {{#if (eq stats.inactiveReason 1)}}<span>😴</span>{{/if}}
+            {{#if (eq stats.inactiveReason 2)}}<span>🏥</span>{{/if}}
+            {{#if (eq stats.inactiveReason 3)}}<span>😡</span>{{/if}}
+            {{#if (eq stats.inactiveReason 4)}}<span>🫠</span>{{/if}}
+            {{#if (eq stats.inactiveReason 5)}}<span>🪦</span>{{/if}}
+          {{/if}}
+          <span>{{reactionEmoji}}</span>
+        </div>
+      </div>
+      
+      <!-- Character Status Row -->
+      <div style="display:flex;justify-content:flex-start;width:100%;margin-bottom:12px;">
+        <div class="character-status" style="display:flex;align-items:center;">
+          {{#if stats.relationshipStatus}}<span>{{stats.relationshipStatus}}</span>{{/if}}
+          {{#if stats.desireStatus}}<span class="status-divider">|</span><span>{{stats.desireStatus}}</span>{{/if}}
+        </div>
       </div>
     </div>
-    {{/if}}
+    <div style="position:absolute;top:115px;bottom:110px;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:0 12px;gap:8px;flex-wrap:nowrap">
+      <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:60px;max-width:120px;position:relative">
+        <div class="stat-title" style="font-size:8px;font-weight:500;opacity:0.8;margin-bottom:3px;color:rgba(255,255,255,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;text-align:center;line-height:1.2">AFFECTION</div>
+        <div class="stat-container" style="padding:6px 3px;border-radius:10px;width:100%;display:flex;flex-direction:column;align-items:center;position:relative;min-height:70px;justify-content:center;box-sizing:border-box">
+          <div class="stat-icon" style="font-size:20px;line-height:1;margin-bottom:3px">❤️</div>
+          <div class="stat-value" style="font-size:16px;font-weight:600;line-height:1;">{{stats.ap}}</div>
+          {{#if stats.apChange}}{{#unless (eq stats.apChange 0)}}
+          <div class="change-indicator positive" style="position:absolute;top:-8px;right:-8px;color:white;font-size:10px;font-weight:600;padding:2px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);min-width:24px;text-align:center;line-height:1.2;box-shadow:0 2px 6px rgba(0,0,0,0.2);animation:pulse 0.5s ease-in-out">
+            {{#if (gt stats.apChange 0)}}+{{/if}}{{stats.apChange}}
+          </div>
+          {{/unless}}{{/if}}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:60px;max-width:120px;position:relative">
+        <div class="stat-title" style="font-size:8px;font-weight:500;opacity:0.8;margin-bottom:3px;color:rgba(255,255,255,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;text-align:center;line-height:1.2">DESIRE</div>
+        <div class="stat-container" style="padding:6px 3px;border-radius:10px;width:100%;display:flex;flex-direction:column;align-items:center;position:relative;min-height:70px;justify-content:center;box-sizing:border-box">
+          <div class="stat-icon" style="font-size:20px;line-height:1;margin-bottom:3px">🔥</div>
+          <div class="stat-value" style="font-size:16px;font-weight:600;line-height:1;">{{stats.dp}}</div>
+          {{#if stats.dpChange}}{{#unless (eq stats.dpChange 0)}}
+          <div class="change-indicator negative" style="position:absolute;top:-8px;right:-8px;color:white;font-size:10px;font-weight:600;padding:2px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);min-width:24px;text-align:center;line-height:1.2;box-shadow:0 2px 6px rgba(0,0,0,0.2);animation:pulse 0.5s ease-in-out">
+            {{#if (gt stats.dpChange 0)}}+{{/if}}{{stats.dpChange}}
+          </div>
+          {{/unless}}{{/if}}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:60px;max-width:120px;position:relative">
+        <div class="stat-title" style="font-size:8px;font-weight:500;opacity:0.8;margin-bottom:3px;color:rgba(255,255,255,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;text-align:center;line-height:1.2">TRUST</div>
+        <div class="stat-container" style="padding:6px 3px;border-radius:10px;width:100%;display:flex;flex-direction:column;align-items:center;position:relative;min-height:70px;justify-content:center;box-sizing:border-box">
+          <div class="stat-icon" style="font-size:20px;line-height:1;margin-bottom:3px">🤝</div>
+          <div class="stat-value" style="font-size:16px;font-weight:600;line-height:1;">{{stats.tp}}</div>
+          {{#if stats.tpChange}}{{#unless (eq stats.tpChange 0)}}
+          <div class="change-indicator positive" style="position:absolute;top:-8px;right:-8px;color:white;font-size:10px;font-weight:600;padding:2px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);min-width:24px;text-align:center;line-height:1.2;box-shadow:0 2px 6px rgba(0,0,0,0.2);animation:pulse 0.5s ease-in-out">
+            {{#if (gt stats.tpChange 0)}}+{{/if}}{{stats.tpChange}}
+          </div>
+          {{/unless}}{{/if}}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:60px;max-width:120px;position:relative">
+        <div class="stat-title" style="font-size:8px;font-weight:500;opacity:0.8;margin-bottom:3px;color:rgba(255,255,255,0.9);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:100%;text-align:center;line-height:1.2">CONTEMPT</div>
+        <div class="stat-container" style="padding:6px 3px;border-radius:10px;width:100%;display:flex;flex-direction:column;align-items:center;position:relative;min-height:70px;justify-content:center;box-sizing:border-box">
+          <div class="stat-icon" style="font-size:20px;line-height:1;margin-bottom:3px">💔</div>
+          <div class="stat-value" style="font-size:16px;font-weight:600;line-height:1;">{{stats.cp}}</div>
+          {{#if stats.cpChange}}{{#unless (eq stats.cpChange 0)}}
+          <div class="change-indicator negative-alt" style="position:absolute;top:-8px;right:-8px;color:white;font-size:10px;font-weight:600;padding:2px 6px;border-radius:6px;border:1px solid rgba(255,255,255,0.2);min-width:24px;text-align:center;line-height:1.2;box-shadow:0 2px 6px rgba(0,0,0,0.2);animation:pulse 0.5s ease-in-out">
+            {{#if (gt stats.cpChange 0)}}+{{/if}}{{stats.cpChange}}
+          </div>
+          {{/unless}}{{/if}}
+        </div>
+      </div>
+    </div>
+    <div class="stats-thoughts-divider" style="position:absolute;bottom:90px;left:16px;right:16px;height:1px;background:rgba(255,255,255,0.1);box-shadow:0 1px 0 rgba(0,0,0,0.7);"></div>
+    <div class="thought-label-divider" style="position:absolute;bottom:52px;left:50%;transform:translateX(-50%);width:80px;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.6),transparent);opacity:0.6;"></div>
+    <div class="thought-bubble" style="position:absolute;left:16px;right:16px;bottom:16px;min-height:60px;border-radius:12px;display:flex;align-items:center;gap:12px;padding:12px 16px;">
+      <div class="thought-label" style="position:absolute;top:-24px;left:0;font-size:11px;font-weight:500;color:rgba(255,255,255,0.7);text-shadow:0 1px 2px rgba(0,0,0,0.3);letter-spacing:0.25px">{{characterName}} thinks:</div>
+      <div style="font-size:22px;flex-shrink:0">💭</div>
+      <div style="flex:1;font-size:13px;font-weight:400;line-height:1.4;overflow:hidden;">{{stats.internal_thought}}</div>
+    </div>
   </div>
 </div>
 <!-- CARD_TEMPLATE_END -->
@@ -332,5 +320,6 @@ TEMPLATE VARIABLES:
 - {{stats.inactiveReason}}: Number indicating reason for inactivity (0-5)
 - {{healthIcon}}: Health status icon (🤕 or 💀)
 - {{reactionEmoji}}: Reaction emoji (👍, 👎, or 😐)
-- {{showThoughtBubble}}: Boolean to show/hide thought bubble
+- {{showThoughtBubble}}: Boolean to show/hide thought bubble (always shown in this template)
+- {{isActive}}: Boolean for card active state (affects opacity)
 -->
