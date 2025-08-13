@@ -3,6 +3,7 @@ srpc-ui/index.js
 srpc-ui/manifest.json
 srpc-ui/settings.html
 *.xml
-*.txt
 !tracker-card-templates/*
-/*.html
+demo.html
+.env
+QWEN.md

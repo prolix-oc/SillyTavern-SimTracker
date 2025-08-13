@@ -44,6 +44,17 @@ const getReactionEmoji = (reactValue) => {
     }
 };
 
+const getInactiveReasonEmoji = (reason) => {
+    switch (parseInt(reason, 10)) {
+        case 1: return '😴';
+        case 2: return '🏥';
+        case 3: return '😡';
+        case 4: return '🫠';
+        case 5: return '🪦';
+        default: return '';
+    }
+};
+
 const get_extension_directory = () => {
     const index_path = new URL(import.meta.url).pathname;
     return index_path.substring(0, index_path.lastIndexOf('/'));
@@ -307,7 +318,14 @@ const renderTracker = (mesId) => {
                 const cardData = {
                     characterName: name,
                     currentDate: currentDate,
-                    stats: { ...stats, internal_thought: stats.internal_thought || stats.thought || "No thought recorded." },
+                    stats: { 
+                        ...stats, 
+                        internal_thought: stats.internal_thought || stats.thought || "No thought recorded.",
+                        relationshipStatus: stats.relationshipStatus || "Unknown Status",
+                        desireStatus: stats.desireStatus || "Unknown Desire",
+                        inactive: stats.inactive || false,
+                        inactiveReason: stats.inactiveReason || 0
+                    },
                     bgColor: bgColor,
                     darkerBgColor: darkenColor(bgColor),
                     reactionEmoji: getReactionEmoji(stats.last_react),
@@ -320,6 +338,98 @@ const renderTracker = (mesId) => {
             const finalHtml = compiledWrapperTemplate({ cardsHtml });
             const formattedContent = messageFormatting(finalHtml);
             $(messageElement).append(formattedContent);
+        }
+    } catch (error) {
+        log(`A critical error occurred in renderTracker for message ID ${mesId}. Please check the console. Error: ${error.stack}`);
+    }
+};
+
+const renderTrackerWithoutSim = (mesId) => {
+    try {
+        if (!get_settings('isEnabled')) return;
+
+        const context = getContext();
+        const message = context.chat[mesId];
+
+        if (!message) {
+            log(`Error: Could not find message with ID ${mesId}. Aborting render.`);
+            return;
+        }
+
+        const messageElement = document.querySelector(`div[mesid="${mesId}"] .mes_text`);
+        if (!messageElement) return;
+
+
+        const identifier = get_settings('codeBlockIdentifier');
+        const hideRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "sg");
+        let displayMessage = message.mes; 
+
+        if (get_settings('hideSimBlocks')) {
+            displayMessage = displayMessage.replace(hideRegex, (match) => `<span class="sst-hidden-sim-block">${match}</span>`);
+        }
+
+        messageElement.innerHTML = messageFormatting(displayMessage, message.name, message.is_system, message.is_user, mesId);
+
+        const dataMatch = message.mes.match(new RegExp("```" + identifier + "[\\s\\S]*?```", "s"));
+
+        if (dataMatch && dataMatch[0]) {
+            // Remove the container if it already exists to prevent duplication on re-renders
+            const existingContainer = messageElement.querySelector(`#${CONTAINER_ID}`);
+            if (existingContainer) {
+                existingContainer.remove();
+            }
+
+            const jsonContent = dataMatch[0].replace(/```/g, '').replace(new RegExp(`^${identifier}`), '').trim();
+            let jsonData;
+
+            try {
+                jsonData = JSON.parse(jsonContent);
+            } catch (jsonError) {
+                log(`Failed to parse JSON in message ID ${mesId}. Error: ${jsonError.message}`);
+                const errorHtml = `<div style="color: red; font-family: monospace;">[SillySimTracker] Error: Invalid JSON in code block.</div>`;
+                messageElement.insertAdjacentHTML('beforeend', errorHtml);
+                return;
+            }
+
+            if (typeof jsonData !== 'object' || jsonData === null) {
+                log(`Parsed data in message ID ${mesId} is not a valid object.`);
+                return;
+            }
+
+            const currentDate = jsonData.current_date || 'Unknown Date';
+            const characterNames = Object.keys(jsonData).filter(key => key !== 'current_date');
+
+            if (!characterNames.length) return;
+
+            const cardsHtml = characterNames.map(name => {
+                const stats = jsonData[name];
+                if (!stats) {
+                    log(`No stats found for character "${name}" in message ID ${mesId}. Skipping card.`);
+                    return '';
+                }
+                const bgColor = stats.bg || get_settings('defaultBgColor');
+                const cardData = {
+                    characterName: name,
+                    currentDate: currentDate,
+                    stats: {
+                        ...stats,
+                        internal_thought: stats.internal_thought || stats.thought || "No thought recorded.",
+                        relationshipStatus: stats.relationshipStatus || "Unknown Status",
+                        desireStatus: stats.desireStatus || "Unknown Desire",
+                        inactive: stats.inactive || false,
+                        inactiveReason: stats.inactiveReason || 0
+                    },
+                    bgColor: bgColor,
+                    darkerBgColor: darkenColor(bgColor),
+                    reactionEmoji: getReactionEmoji(stats.last_react),
+                    healthIcon: stats.health === 1 ? '🤕' : stats.health === 2 ? '💀' : null,
+                    showThoughtBubble: get_settings('showThoughtBubble'),
+                };
+                return compiledCardTemplate(cardData);
+            }).join('');
+
+            const finalHtml = compiledWrapperTemplate({ cardsHtml });
+            messageElement.insertAdjacentHTML('beforeend', finalHtml);
         }
     } catch (error) {
         log(`A critical error occurred in renderTracker for message ID ${mesId}. Please check the console. Error: ${error.stack}`);
@@ -352,7 +462,7 @@ const refreshAllCards = () => {
         const mesId = messageElement.getAttribute('mesid');
         if (mesId) {
             // Call the existing render function for each visible message
-            renderTracker(parseInt(mesId, 10));
+            renderTrackerWithoutSim(parseInt(mesId, 10));
         }
     });
 };
@@ -472,7 +582,7 @@ jQuery(async () => {
         eventSource.on(event_types.MORE_MESSAGES_LOADED, refreshAllCards);
         eventSource.on(event_types.MESSAGE_EDITED, (mesId) => {
             log(`Message ${mesId} was edited. Re-rendering tracker card.`);
-            renderTracker(mesId);
+            renderTrackerWithoutSim(mesId);
         });
         refreshAllCards();
         log(`${MODULE_NAME} has been successfully loaded.`);

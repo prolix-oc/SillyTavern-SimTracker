@@ -22,9 +22,10 @@
   .stat-title { font-size: 9px !important; }
   
   /* Mobile-specific adjustments */
-  .tracker-card > div:nth-child(3) {  /* Stats container */
-    top: 80px !important;
-    bottom: 110px !important;
+  /* Updated selector for new structure - main stats container is now nth-child(6) */
+  .tracker-card > div:nth-child(6) {
+    top: 125px !important;
+    bottom: 90px !important;
   }
 }
 
@@ -46,9 +47,10 @@
   .stat-title { font-size: 10px !important; }
   
   /* Desktop-specific adjustments */
-  .tracker-card > div:nth-child(3) {  /* Stats container */
-    top: 80px !important;
-    bottom: 110px !important;
+  /* Updated selector for new structure - main stats container is now nth-child(6) */
+  .tracker-card > div:nth-child(6) {
+    top: 125px !important;
+    bottom: 90px !important;
   }
 }
 
@@ -65,9 +67,10 @@
   .stat-title { font-size: 11px !important; }
   
   /* Large screen adjustments */
-  .tracker-card > div:nth-child(3) {  /* Stats container */
-    top: 80px !important;
-    bottom: 110px !important;
+  /* Updated selector for new structure - main stats container is now nth-child(6) */
+  .tracker-card > div:nth-child(6) {
+    top: 125px !important;
+    bottom: 90px !important;
   }
 }
 
@@ -99,6 +102,33 @@
   backdrop-filter: blur(8px) !important;
   font-weight: 500 !important;
   letter-spacing: 0.25px !important;
+}
+
+/* Character status styling */
+.character-status {
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  letter-spacing: 0.25px !important;
+  margin-top: 4px !important;
+  text-align: left !important;
+}
+
+.status-divider {
+  margin: 0 8px !important;
+  opacity: 0.5 !important;
+}
+
+/* Divider between stats and thoughts */
+.stats-thoughts-divider {
+  position: absolute !important;
+  bottom: 90px !important;
+  left: 16px !important;
+  right: 16px !important;
+  height: 1px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.7) !important;
 }
 
 /* Thought label styling */
@@ -162,8 +192,8 @@
     <!-- Gradient overlay -->
     <div class="gradient-overlay" style="position:absolute;top:0;left:0;right:0;height:1px;"></div>
     
-    <!-- Header -->
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px 0 20px;font-size:12px;font-weight:500">
+    <!-- Top Elements Container (Date, Day Count, Conception) -->
+    <div class="top-elements-container" style="display:flex;justify-content:space-between;align-items:center;padding:16px 20px 0 20px;font-size:12px;font-weight:500;margin-bottom:8px;">
       <div class="header-badge" style="padding:4px 10px;border-radius:8px;font-weight:500;letter-spacing:0.25px">{{currentDate}}</div>
       <div style="display:flex;gap:8px">
         <div class="header-badge" style="padding:4px 10px;border-radius:8px;font-weight:500;letter-spacing:0.25px">Day {{stats.days_since_first_meeting}}</div>
@@ -171,17 +201,38 @@
       </div>
     </div>
     
-    <!-- Character Info -->
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 20px 0 20px">
-      <div style="font-size:26px;font-weight:600;letter-spacing:-0.25px">{{characterName}}</div>
+    <!-- Character Name Container -->
+    <div class="character-name-container" style="display:flex;justify-content:space-between;align-items:flex-start;padding:0 20px;font-size:26px;font-weight:600;letter-spacing:-0.25px;margin-bottom:4px;">
+      <div style="text-align:left;">{{characterName}}</div>
+    </div>
+    
+    <!-- Character Titles Container -->
+    <div class="character-titles-container" style="display:flex;justify-content:space-between;align-items:center;padding:0 20px;margin-bottom:8px;">
+      {{#if stats.relationshipStatus}}
+      <div class="character-status" style="display:flex;align-items:center;width:100%;justify-content:flex-start;font-size:12px;font-weight:500;color:rgba(255,255,255,0.7);text-shadow:0 1px 2px rgba(0,0,0,0.3);letter-spacing:0.25px;">
+        <span>{{stats.relationshipStatus}}</span>
+        {{#if stats.desireStatus}}<span class="status-divider" style="margin:0 8px;opacity:0.5;">|</span><span>{{stats.desireStatus}}</span>{{/if}}
+      </div>
+      {{/if}}
+    </div>
+    
+    <!-- Sub-status Icons Container -->
+    <div class="sub-status-icons-container" style="display:flex;justify-content:flex-end;padding:0 20px;margin-bottom:12px;">
       <div style="display:flex;align-items:center;gap:12px;font-size:20px;">
         {{#if healthIcon}}<span>{{healthIcon}}</span>{{/if}}
+        {{#if stats.inactive}}
+          {{#if (eq stats.inactiveReason 1)}}<span>😴</span>{{/if}}
+          {{#if (eq stats.inactiveReason 2)}}<span>🏥</span>{{/if}}
+          {{#if (eq stats.inactiveReason 3)}}<span>😡</span>{{/if}}
+          {{#if (eq stats.inactiveReason 4)}}<span>🫠</span>{{/if}}
+          {{#if (eq stats.inactiveReason 5)}}<span>🪦</span>{{/if}}
+        {{/if}}
         <span>{{reactionEmoji}}</span>
       </div>
     </div>
     
-    <!-- Stats Container -->
-    <div style="position:absolute;top:80px;bottom:110px;left:0;right:0;display:flex;align-items:center;justify-content:center;padding:0 12px">
+    <!-- Main Stats Container -->
+    <div class="main-stats-container" style="position:absolute;top:130px;bottom:90px;left:0;right:0;display:flex;align-items:center;justify-content:center;padding:0 12px">
       <div style="display:flex;justify-content:space-between;align-items:center;width:100%;gap:8px;flex-wrap:nowrap">
         <!-- Affection Stat -->
         <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:60px;max-width:120px;position:relative">
@@ -238,12 +289,18 @@
       </div>
     </div>
     
-    <!-- Thought Bubble -->
+    <!-- Divider and Thought Bubble Container -->
     {{#if showThoughtBubble}}
-    <div class="thought-bubble" style="position:absolute;left:16px;right:16px;bottom:16px;min-height:60px;border-radius:12px;display:flex;align-items:center;gap:12px;padding:12px 16px;">
-      <div class="thought-label" style="position:absolute;top:-24px;left:0;font-size:11px;font-weight:500;color:rgba(255,255,255,0.7);text-shadow:0 1px 2px rgba(0,0,0,0.3);letter-spacing:0.25px">{{characterName}} thinks:</div>
-      <div style="font-size:22px;flex-shrink:0">💭</div>
-      <div style="flex:1;font-size:13px;font-weight:400;line-height:1.4;overflow:hidden;">{{stats.internal_thought}}</div>
+    <div class="thought-section-container" style="position:absolute;bottom:16px;left:16px;right:16px;">
+      <!-- Divider between stats and thoughts -->
+      <div class="stats-thoughts-divider" style="height:1px;background:rgba(255,255,255,0.1);box-shadow:0 1px 0 rgba(0,0,0,0.7);margin-bottom:12px;"></div>
+      
+      <!-- Thought Bubble -->
+      <div class="thought-bubble" style="min-height:60px;border-radius:12px;display:flex;align-items:center;gap:12px;padding:12px 16px;">
+        <div class="thought-label" style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.7);text-shadow:0 1px 2px rgba(0,0,0,0.3);letter-spacing:0.25px;margin-right:8px;">{{characterName}} thinks:</div>
+        <div style="font-size:22px;flex-shrink:0">💭</div>
+        <div style="flex:1;font-size:13px;font-weight:400;line-height:1.4;overflow:hidden;">{{stats.internal_thought}}</div>
+      </div>
     </div>
     {{/if}}
   </div>
@@ -269,6 +326,10 @@ TEMPLATE VARIABLES:
 - {{stats.preg}}: Boolean for pregnancy status
 - {{stats.days_preg}}: Days pregnant (if applicable)
 - {{stats.internal_thought}}: Character's internal thoughts
+- {{stats.relationshipStatus}}: Relationship status text
+- {{stats.desireStatus}}: Desire status text
+- {{stats.inactive}}: Boolean for inactive status
+- {{stats.inactiveReason}}: Number indicating reason for inactivity (0-5)
 - {{healthIcon}}: Health status icon (🤕 or 💀)
 - {{reactionEmoji}}: Reaction emoji (👍, 👎, or 😐)
 - {{showThoughtBubble}}: Boolean to show/hide thought bubble

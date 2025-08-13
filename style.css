@@ -7,6 +7,10 @@
     pointer-events: none;
 }
 
+.sst-hidden-sim-block {
+    display: none !important;
+}
+
 /* 
   General styling for settings labels to ensure consistent alignment and spacing.
 */
