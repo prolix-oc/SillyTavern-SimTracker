@@ -368,7 +368,8 @@ const renderTracker = (mesId) => {
             }).join('');
 
             const finalHtml = compiledWrapperTemplate({ cardsHtml });
-            const formattedContent = messageFormatting(finalHtml);
+            const htmlWithDivider = `<hr style="margin-top: 15px; margin-bottom: 20px;">${finalHtml}`;
+            const formattedContent = messageFormatting(htmlWithDivider);
             $(messageElement).append(formattedContent);
         }
     } catch (error) {
