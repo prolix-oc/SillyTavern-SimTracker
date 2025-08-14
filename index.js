@@ -317,7 +317,7 @@ const renderTracker = (mesId) => {
         // Hide sim blocks in the displayed message content if the setting is enabled
         if (get_settings('hideSimBlocks')) {
             const identifier = get_settings('codeBlockIdentifier');
-            const hideRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
+            const hideRegex = new RegExp("```" + identifier + "\\s*[\\s\\S]*?```", "g");
             let displayMessage = message.mes;
 
             // Hide sim blocks
@@ -329,12 +329,12 @@ const renderTracker = (mesId) => {
 
         // Parse the sim data from the original message content
         const identifier = get_settings('codeBlockIdentifier');
-        const jsonRegex = new RegExp("```" + identifier + "[\\\\s\\\\S]*?```");
+        const jsonRegex = new RegExp("```" + identifier + "\\s*([\\s\\S]*?)\\s*```");
         const match = message.mes.match(jsonRegex);
 
         // Handle message formatting and sim block hiding
         if (get_settings('hideSimBlocks')) {
-            const hideRegex = new RegExp("```" + identifier + "[\\\\s\\\\S]*?```", "gm");
+            const hideRegex = new RegExp("```" + identifier + "\\s*[\\s\\S]*?```", "g");
             let displayMessage = message.mes; // Hide sim blocks
             displayMessage = displayMessage.replace(hideRegex, (match) => `<span style="display: none !important;">${match}</span>`);                        // Format and display the message content (without the tracker UI)\n            messageElement.innerHTML = messageFormatting(displayMessage, message.name, message.is_system, message.is_user, mesId);\n        } else if (!get_settings('hideSimBlocks')) {\n            // Just format the message if not hiding blocks\n            messageElement.innerHTML = messageFormatting(message.mes, message.name, message.is_system, message.is_user, mesId);\n        }\n\n        if (match) {
             // Extract JSON content from the match
@@ -415,7 +415,7 @@ const renderTrackerWithoutSim = (mesId) => {
 
 
         const identifier = get_settings('codeBlockIdentifier');
-        const hideRegex = new RegExp("```" + identifier + "[\s\S]*?```", "gm");
+        const hideRegex = new RegExp("```" + identifier + "\s*[\s\S]*?```", "g");
         let displayMessage = message.mes;
 
         // Hide sim blocks if the setting is enabled
