@@ -329,15 +329,6 @@ const renderTracker = (mesId) => {
             
             // Format and display the message content (without the tracker UI)
             messageElement.innerHTML = messageFormatting(displayMessage, message.name, message.is_system, message.is_user, mesId);
-            
-            // After formatting, hide any pre elements that contain sim code
-            const preElements = messageElement.querySelectorAll('pre');
-            preElements.forEach(pre => {
-                // Check if this pre element contains sim code
-                if (pre.textContent.trim().startsWith(identifier)) {
-                    pre.style.display = 'none';
-                }
-            });
         } else {
             // Just format the message if not hiding blocks
             messageElement.innerHTML = messageFormatting(message.mes, message.name, message.is_system, message.is_user, mesId);
@@ -432,17 +423,6 @@ const renderTrackerWithoutSim = (mesId) => {
 
         // Format and display the message content (without the tracker UI)
         messageElement.innerHTML = messageFormatting(displayMessage, message.name, message.is_system, message.is_user, mesId);
-        
-        // After formatting, hide any pre elements that contain sim code
-        if (get_settings('hideSimBlocks')) {
-            const preElements = messageElement.querySelectorAll('pre');
-            preElements.forEach(pre => {
-                // Check if this pre element contains sim code
-                if (pre.textContent.trim().startsWith(identifier)) {
-                    pre.style.display = 'none';
-                }
-            });
-        }
 
         // Parse the sim data from the original message content (not the hidden version)       
         const dataMatch = message.mes.match(new RegExp("```" + identifier + "[\\s\\S]*?```", "m"));
