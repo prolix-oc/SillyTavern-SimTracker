@@ -309,6 +309,10 @@ const renderTracker = (mesId) => {
         const messageElement = document.querySelector(`div[mesid="${mesId}"] .mes_text`);
         if (!messageElement || messageElement.querySelector(`#${CONTAINER_ID}`)) return;
 
+        // Log message element dimensions for debugging layout issues
+        const messageRect = messageElement.getBoundingClientRect();
+        log(`Message ID ${mesId} dimensions - Width: ${messageRect.width.toFixed(2)}px, Height: ${messageRect.height.toFixed(2)}px`);
+
         const identifier = get_settings('codeBlockIdentifier');
         const jsonRegex = new RegExp("```" + identifier + "\\s*([\\s\\S]*?)\\s*```");
         const match = message.mes.match(jsonRegex);
