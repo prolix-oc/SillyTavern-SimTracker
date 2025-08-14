@@ -317,31 +317,36 @@ const renderTracker = (mesId) => {
         // Hide sim blocks in the displayed message content if the setting is enabled
         if (get_settings('hideSimBlocks')) {
             const identifier = get_settings('codeBlockIdentifier');
-            const hideRegex = new RegExp("```" + identifier + "\\s*[\\s\\S]*?```", "g");
+            const hideRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
             let displayMessage = message.mes;
-            
+
             // Hide sim blocks
             displayMessage = displayMessage.replace(hideRegex, (match) => `<span style="display: none !important;">${match}</span>`);
-            
+
             // Format and display the message content (without the tracker UI)
             messageElement.innerHTML = messageFormatting(displayMessage, message.name, message.is_system, message.is_user, mesId);
         }
 
-        // Check if we've already rendered a tracker for this message
-        if (messageElement.querySelector(`#${CONTAINER_ID}`)) return;
-
+        // Parse the sim data from the original message content
         const identifier = get_settings('codeBlockIdentifier');
-        const jsonRegex = new RegExp("```" + identifier + "\\s*([\\s\\S]*?)\\s*```");
+        const jsonRegex = new RegExp("```" + identifier + "[\\\\s\\\\S]*?```");
         const match = message.mes.match(jsonRegex);
 
-        if (match && match[1]) {
+        // Handle message formatting and sim block hiding
+        if (get_settings('hideSimBlocks')) {
+            const hideRegex = new RegExp("```" + identifier + "[\\\\s\\\\S]*?```", "gm");
+            let displayMessage = message.mes; // Hide sim blocks
+            displayMessage = displayMessage.replace(hideRegex, (match) => `<span style="display: none !important;">${match}</span>`);                        // Format and display the message content (without the tracker UI)\n            messageElement.innerHTML = messageFormatting(displayMessage, message.name, message.is_system, message.is_user, mesId);\n        } else if (!get_settings('hideSimBlocks')) {\n            // Just format the message if not hiding blocks\n            messageElement.innerHTML = messageFormatting(message.mes, message.name, message.is_system, message.is_user, mesId);\n        }\n\n        if (match) {
+            // Extract JSON content from the match
+            const jsonContent = match[0].replace(/```/g, '').replace(new RegExp(`^${identifier}\\s*`), '').trim();
+
             // --- NEW --- Capture the raw JSON string for the {{last_sim_stats}} macro
-            lastSimJsonString = match[1].trim();
+            lastSimJsonString = jsonContent;
             log(`Captured last sim stats JSON.`);
 
             let jsonData;
             try {
-                jsonData = JSON.parse(match[1]);
+                jsonData = JSON.parse(jsonContent);
             } catch (jsonError) {
                 log(`Failed to parse JSON in message ID ${mesId}. Error: ${jsonError.message}`);
                 messageElement.insertAdjacentHTML('beforeend', `<div style="color: red; font-family: monospace;">[SillySimTracker] Error: Invalid JSON in code block.</div>`);
@@ -367,8 +372,8 @@ const renderTracker = (mesId) => {
                 const cardData = {
                     characterName: name,
                     currentDate: currentDate,
-                    stats: { 
-                        ...stats, 
+                    stats: {
+                        ...stats,
                         internal_thought: stats.internal_thought || stats.thought || "No thought recorded.",
                         relationshipStatus: stats.relationshipStatus || "Unknown Status",
                         desireStatus: stats.desireStatus || "Unknown Desire",
@@ -386,8 +391,7 @@ const renderTracker = (mesId) => {
 
             // Add a horizontal divider before the cards
             const finalHtml = `<hr style="margin-top: 15px; margin-bottom: 20px;">` + compiledWrapperTemplate({ cardsHtml });
-            const formattedContent = messageFormatting(finalHtml);
-            $(messageElement).append(formattedContent);
+            messageElement.insertAdjacentHTML('beforeend', finalHtml);
         }
     } catch (error) {
         log(`A critical error occurred in renderTracker for message ID ${mesId}. Please check the console. Error: ${error.stack}`);
@@ -411,8 +415,8 @@ const renderTrackerWithoutSim = (mesId) => {
 
 
         const identifier = get_settings('codeBlockIdentifier');
-        const hideRegex = new RegExp("```" + identifier + "\s*[\s\S]*?```", "g");
-        let displayMessage = message.mes; 
+        const hideRegex = new RegExp("```" + identifier + "[\s\S]*?```", "gm");
+        let displayMessage = message.mes;
 
         // Hide sim blocks if the setting is enabled
         if (get_settings('hideSimBlocks')) {
@@ -423,7 +427,7 @@ const renderTrackerWithoutSim = (mesId) => {
         messageElement.innerHTML = messageFormatting(displayMessage, message.name, message.is_system, message.is_user, mesId);
 
         // Parse the sim data from the original message content (not the hidden version)       
-        const dataMatch = message.mes.match(new RegExp("```" + identifier + "\s*[\s\S]*?```", "s"));
+        const dataMatch = message.mes.match(new RegExp("```" + identifier + "[\\s\\S]*?```", "m"));
 
         if (dataMatch && dataMatch[0]) {
             // Remove the container if it already exists to prevent duplication on re-renders
@@ -676,23 +680,23 @@ jQuery(async () => {
             if (!get_settings('isEnabled')) return '';
             const fields = get_settings('customFields') || [];
             log('Processed {{sim_format}} macro.');
-            
+
             // Start building the JSON example structure
             let exampleJson = "{";
             exampleJson += "  \"characterName\": {";
-            
+
             // Add each custom field as a commented key-value pair
             fields.forEach(field => {
                 const sanitizedKey = sanitizeFieldKey(field.key);
                 exampleJson += `    "${sanitizedKey}": [${sanitizedKey.toUpperCase()}_VALUE], // ${field.description}`;
             });
-            
+
             exampleJson += "  },";
             exampleJson += "  \"characterTwo\": { ... }, // Repeat structure for each character";
             exampleJson += "  \"current_date\": [CURRENT_STORY_DATE] // YYYY-MM-DD";
             exampleJson += "  \"current_time\": [CURRENT_STORY_TIME] // 21:34, 10:21, etc (24-hour time)"
             exampleJson += "}";
-            
+
             // Wrap in the code block with the identifier
             const identifier = get_settings('codeBlockIdentifier') || 'sim';
             return `\`\`\`${identifier}
@@ -703,7 +707,7 @@ ${exampleJson}
 
         const context = getContext();
         const { eventSource, event_types } = context;
-        
+
         eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, renderTracker);
         eventSource.on(event_types.CHAT_CHANGED, refreshAllCards);
         eventSource.on(event_types.MORE_MESSAGES_LOADED, refreshAllCards);
