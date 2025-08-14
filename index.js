@@ -1,7 +1,8 @@
 import { getContext, extension_settings } from '../../../extensions.js';
 import { saveSettingsDebounced, messageFormatting } from '../../../../script.js';
 import { MacrosParser } from '../../../macros.js';
-import { SlashCommandParser, SlashCommand } from '../../../slash-commands.js';
+import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
+import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 
 const MODULE_NAME = 'SillySimTracker';
 const CONTAINER_ID = 'silly-sim-tracker-container';
