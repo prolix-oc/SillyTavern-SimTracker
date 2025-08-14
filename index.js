@@ -317,7 +317,7 @@ const renderTracker = (mesId) => {
         // Hide sim blocks in the displayed message content if the setting is enabled
         if (get_settings('hideSimBlocks')) {
             const identifier = get_settings('codeBlockIdentifier');
-            const hideRegex = new RegExp("```" + identifier + "[\\\\s\\\\S]*?```", "sg");
+            const hideRegex = new RegExp("```" + identifier + "\\s*[\\s\\S]*?```", "g");
             let displayMessage = message.mes;
             
             // Hide sim blocks
@@ -328,7 +328,7 @@ const renderTracker = (mesId) => {
         }
 
         const identifier = get_settings('codeBlockIdentifier');
-        const jsonRegex = new RegExp("```" + identifier + "\\\\s*([\\\\s\\\\S]*?)\\\\s*```");
+        const jsonRegex = new RegExp("```" + identifier + "\\s*([\\s\\S]*?)\\s*```");
         const match = message.mes.match(jsonRegex);
 
         if (match && match[1]) {
@@ -408,7 +408,7 @@ const renderTrackerWithoutSim = (mesId) => {
 
 
         const identifier = get_settings('codeBlockIdentifier');
-        const hideRegex = new RegExp("```" + identifier + "[\\\\s\\\\S]*?```", "sg");
+        const hideRegex = new RegExp("```" + identifier + "\\s*[\\s\\S]*?```", "g");
         let displayMessage = message.mes; 
 
         // Hide sim blocks if the setting is enabled
@@ -419,8 +419,8 @@ const renderTrackerWithoutSim = (mesId) => {
         // Format and display the message content (without the tracker UI)
         messageElement.innerHTML = messageFormatting(displayMessage, message.name, message.is_system, message.is_user, mesId);
 
-        // Parse the sim data from the original message content (not the hidden version)
-        const dataMatch = message.mes.match(new RegExp("```" + identifier + "[\\\\s\\\\S]*?```", "s"));
+        // Parse the sim data from the original message content (not the hidden version)       
+        const dataMatch = message.mes.match(new RegExp("```" + identifier + "\s*[\s\S]*?```", "s"));
 
         if (dataMatch && dataMatch[0]) {
             // Remove the container if it already exists to prevent duplication on re-renders
@@ -429,7 +429,7 @@ const renderTrackerWithoutSim = (mesId) => {
                 existingContainer.remove();
             }
 
-            const jsonContent = dataMatch[0].replace(/```/g, '').replace(new RegExp(`^${identifier}`), '').trim();
+            const jsonContent = dataMatch[0].replace(/```/g, '').replace(new RegExp(`^${identifier}\\s*`), '').trim();
             let jsonData;
 
             try {
