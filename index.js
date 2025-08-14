@@ -89,7 +89,7 @@ const get_extension_directory = () => {
 };
 
 // --- TEMPLATES ---
-const wrapperTemplate = `<div id="${CONTAINER_ID}" style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif">{{{cardsHtml}}}</div>`;
+const wrapperTemplate = `<div id="${CONTAINER_ID}" style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center;align-items:start;width:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">{{{cardsHtml}}}</div>`;
 let compiledWrapperTemplate = Handlebars.compile(wrapperTemplate);
 let compiledCardTemplate = null;
 

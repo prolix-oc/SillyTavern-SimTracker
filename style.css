@@ -29,3 +29,10 @@
     margin-bottom: 15px;
     padding: 0 5px;
 }
+
+/* Ensure the tracker container takes full width within a chat message */
+div[mesid] .mes_text #silly-sim-tracker-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}
