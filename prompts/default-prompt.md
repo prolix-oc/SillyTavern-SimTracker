@@ -1,6 +1,6 @@
 ## DATING SIM MODE ENABLED
 
-Your objective: Prioritize narrative reality for relationship/status updates. Analyze chat context to determine current date (YYYY-MM-DD format). Update all trackers instantly when events occur. ALWAYS check for `sim` codeblocks containing JSON.
+Your objective: Prioritize narrative reality for relationship/status updates. Analyze chat context to determine current date (YYYY-MM-DD format) and time (24-hour time). Update all trackers instantly when events occur. ALWAYS check for `sim` codeblocks containing JSON. Ensure ALL necessary data is recalculated if missing.
 
 ## Core Systems:
 
@@ -51,6 +51,7 @@ Your objective: Prioritize narrative reality for relationship/status updates. An
   - Track conception days relative to conception date
 - **Display**: Show in ISO format at top of card
 - **Day Tracking**: Confirm the amount of days that have passed since the first meeting of the character.
+- **Time Tracking**: Confirm the time of day of the interaction, and present it as the story progresses realistically.
 
 5. **Status Trackers**:
 
@@ -87,39 +88,11 @@ Your objective: Prioritize narrative reality for relationship/status updates. An
 1. Process narrative events
 2. Calculate status changes for ALL active characters
 3. Output narrative content
-4. Place divider element (`---`)
-5. Output ONLY the sim codeblock (no HTML)
+4. Output ONLY the sim codeblock (no HTML)
 
 Output the sim codeblock with all character data:
 
-```sim
-{
-  "characterName": {
-    "ap": [CURRENT_AP],
-    "dp": [CURRENT_DP],
-    "tp": [CURRENT_TP],
-    "cp": [CURRENT_CP],
-    "apChange": [AP_CHANGE_VALUE],
-    "dpChange": [DP_CHANGE_VALUE],
-    "tpChange": [TP_CHANGE_VALUE],
-    "cpChange": [CP_CHANGE_VALUE],
-    "relationshipStatus": [RELATION_STATUS],
-    "desireStatus": [DESIRE_STATUS],
-    "preg": [true/false],
-    "days_preg": [DAYS_SINCE_CONCEPTION],
-    "conception_date": [DATE_OF_CONCEPTION],
-    "health": [0/1/2],
-    "bg": "[HEX_COLOR]",
-    "last_react": [0/1/2],
-    "internal_thought": "[CHARACTER_INTERNAL_THOUGHTS]",
-    "days_since_first_meeting": [TOTAL_DAYS],
-    "inactive": [true/false],
-    "inactiveReason": [INACTIVE_REASON_NUM]
-  },
-  "characterTwo": { ... },
-  "current_date": [CURRENT_DATE]
-}
-```
+{{sim_format}}
 
 ## Critical Enforcement:
 
@@ -135,6 +108,7 @@ Output the sim codeblock with all character data:
    - Narrative content MUST come FIRST
    - Tracker cards MUST come AFTER narrative
    - Sim codeblock MUST be LAST OUTPUT
+   - NEVER exclude the sim codeblock from ANY character response. It must always be included.
 
 3. **Multi-Character Handling**:
 
@@ -151,8 +125,10 @@ Output the sim codeblock with all character data:
    - Limit to 4 active characters maximum at a time
    - Collapse inactive character cards
    - Preserve state for all known characters
+   - Previous tracker blocks are only to be used as references
+   - ALWAYS generate fresh tracker data for each message
 
 6. **Data Correction**:
    - If ANY data is missing from the previous sim tracker block, add the missing data and continue your assessment.
-   - Do not leave any relevant data empty or unavailable. The JSON block and its complete formatting is mission critical.
-   - If data from previous run does not match expected formatting, perform self-correction of new data.
+   - Do not leave any relevant data empty or unavailable. The JSON block, its presence at the end of the message, and its complete formatting is mission critical.
+   - If data from previous run does not match expected formatting, or contains missing keys, perform self-correction of the data and present the new code block at the end of the message.

@@ -1,6 +1,7 @@
 import { getContext, extension_settings } from '../../../extensions.js';
 import { saveSettingsDebounced, messageFormatting } from '../../../../script.js';
 import { MacrosParser } from '../../../macros.js';
+import { SlashCommandParser, SlashCommand } from '../../../slash-commands.js';
 
 const MODULE_NAME = 'SillySimTracker';
 const CONTAINER_ID = 'silly-sim-tracker-container';
@@ -87,6 +88,116 @@ const getInactiveReasonEmoji = (reason) => {
 const get_extension_directory = () => {
     const index_path = new URL(import.meta.url).pathname;
     return index_path.substring(0, index_path.lastIndexOf('/'));
+};
+
+// Utility function to migrate old JSON format to new format
+const migrateJsonFormat = (oldJsonData) => {
+    // Check if it's already in the new format
+    if (oldJsonData.worldData && Array.isArray(oldJsonData.characters)) {
+        return oldJsonData; // Already in new format
+    }
+    
+    // Create new format structure
+    const newJsonData = {
+        worldData: {},
+        characters: []
+    };
+    
+    // Define known world data fields
+    const worldDataFields = ['current_date', 'current_time'];
+    
+    // Migrate data
+    Object.keys(oldJsonData).forEach(key => {
+        if (worldDataFields.includes(key)) {
+            newJsonData.worldData[key] = oldJsonData[key];
+        } else {
+            // Convert character object to array item
+            newJsonData.characters.push({
+                name: key,
+                ...oldJsonData[key]
+            });
+        }
+    });
+    
+    return newJsonData;
+};
+
+// Utility function to migrate all sim data in the chat
+const migrateAllSimData = async () => {
+    try {
+        log("Starting migration of all sim data to new format...");
+        const context = getContext();
+        
+        // Counter for migrated messages
+        let migratedCount = 0;
+        
+        // Iterate through all messages in the chat
+        for (let i = 0; i < context.chat.length; i++) {
+            const message = context.chat[i];
+            if (!message || !message.mes) continue;
+            
+            // Check if this message contains sim data
+            const identifier = get_settings('codeBlockIdentifier');
+            const simRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
+            const matches = message.mes.match(simRegex);
+            
+            if (matches && matches.length > 0) {
+                // Process each sim block in the message
+                let updatedMessage = message.mes;
+                let modified = false;
+                
+                matches.forEach(match => {
+                    try {
+                        // Extract JSON content
+                        const jsonContent = match.replace(/```/g, '').replace(new RegExp(`^${identifier}\\s*`), '').trim();
+                        const jsonData = JSON.parse(jsonContent);
+                        
+                        // Check if it's already in new format
+                        if (jsonData.worldData && Array.isArray(jsonData.characters)) {
+                            return; // Already in new format, skip
+                        }
+                        
+                        // Migrate to new format
+                        const migratedData = migrateJsonFormat(jsonData);
+                        
+                        // Convert back to JSON string
+                        const migratedJsonString = JSON.stringify(migratedData, null, 2);
+                        
+                        // Reconstruct the code block
+                        const migratedCodeBlock = "```" + identifier + "\n" + migratedJsonString + "\n```";
+                        
+                        // Replace in message
+                        updatedMessage = updatedMessage.replace(match, migratedCodeBlock);
+                        modified = true;
+                    } catch (error) {
+                        log(`Error migrating sim data in message ${i}: ${error.message}`);
+                    }
+                });
+                
+                // If we modified the message, update it
+                if (modified) {
+                    message.mes = updatedMessage;
+                    migratedCount++;
+                }
+            }
+        }
+        
+        if (migratedCount > 0) {
+            // Save the updated chat
+            // Note: This might require calling SillyTavern's save function
+            log(`Successfully migrated ${migratedCount} messages to new format.`);
+            toastr.success(`Successfully migrated ${migratedCount} messages to new format!`);
+            
+            // Refresh the chat to show the changes
+            refreshAllCards();
+        } else {
+            log("No messages needed migration or no sim data found.");
+            toastr.info("No messages needed migration or no sim data found.");
+        }
+    } catch (error) {
+        log(`Error during migration: ${error.message}`);
+        toastr.error("Error during migration. Check console for details.");
+    }
 };
 
 // --- TEMPLATES ---
@@ -356,12 +467,40 @@ const renderTracker = (mesId) => {
                 return;
             }
 
-            const currentDate = jsonData.current_date || 'Unknown Date';
-            const characterNames = Object.keys(jsonData).filter(key => key !== 'current_date');
-            if (!characterNames.length) return;
+            // Handle both old and new JSON formats
+            let worldData, characterList;
+            
+            // Check if it's the new format (with worldData and characters array)
+            if (jsonData.worldData && Array.isArray(jsonData.characters)) {
+                worldData = jsonData.worldData;
+                characterList = jsonData.characters;
+            } else {
+                // Handle old format - convert object structure to array format
+                const worldDataFields = ['current_date', 'current_time'];
+                worldData = {};
+                characterList = [];
+                
+                Object.keys(jsonData).forEach(key => {
+                    if (worldDataFields.includes(key)) {
+                        worldData[key] = jsonData[key];
+                    } else {
+                        // Convert character object to array item
+                        characterList.push({
+                            name: key,
+                            ...jsonData[key]
+                        });
+                    }
+                });
+            }
+            
+            const currentDate = worldData.current_date || 'Unknown Date';
+            const currentTime = worldData.current_time || 'Unknown Time';
+            
+            if (!characterList.length) return;
 
-            const cardsHtml = characterNames.map(name => {
-                const stats = jsonData[name];
+            const cardsHtml = characterList.map(character => {
+                const stats = character;
+                const name = character.name;
                 if (!stats) {
                     log(`No stats found for character "${name}" in message ID ${mesId}. Skipping card.`);
                     return '';
@@ -370,6 +509,7 @@ const renderTracker = (mesId) => {
                 const cardData = {
                     characterName: name,
                     currentDate: currentDate,
+                    currentTime: currentTime,
                     stats: {
                         ...stats,
                         internal_thought: stats.internal_thought || stats.thought || "No thought recorded.",
@@ -451,13 +591,40 @@ const renderTrackerWithoutSim = (mesId) => {
                 return;
             }
 
-            const currentDate = jsonData.current_date || 'Unknown Date';
-            const characterNames = Object.keys(jsonData).filter(key => key !== 'current_date');
+            // Handle both old and new JSON formats
+            let worldData, characterList;
+            
+            // Check if it's the new format (with worldData and characters array)
+            if (jsonData.worldData && Array.isArray(jsonData.characters)) {
+                worldData = jsonData.worldData;
+                characterList = jsonData.characters;
+            } else {
+                // Handle old format - convert object structure to array format
+                const worldDataFields = ['current_date', 'current_time'];
+                worldData = {};
+                characterList = [];
+                
+                Object.keys(jsonData).forEach(key => {
+                    if (worldDataFields.includes(key)) {
+                        worldData[key] = jsonData[key];
+                    } else {
+                        // Convert character object to array item
+                        characterList.push({
+                            name: key,
+                            ...jsonData[key]
+                        });
+                    }
+                });
+            }
+            
+            const currentDate = worldData.current_date || 'Unknown Date';
+            const currentTime = worldData.current_time || 'Unknown Date';
+            
+            if (!characterList.length) return;
 
-            if (!characterNames.length) return;
-
-            const cardsHtml = characterNames.map(name => {
-                const stats = jsonData[name];
+            const cardsHtml = characterList.map(character => {
+                const stats = character;
+                const name = character.name;
                 if (!stats) {
                     log(`No stats found for character "${name}" in message ID ${mesId}. Skipping card.`);
                     return '';
@@ -466,6 +633,7 @@ const renderTrackerWithoutSim = (mesId) => {
                 const cardData = {
                     characterName: name,
                     currentDate: currentDate,
+                    currentTime: currentTime,
                     stats: {
                         ...stats,
                         internal_thought: stats.internal_thought || stats.thought || "No thought recorded.",
@@ -575,6 +743,13 @@ const initialize_settings_listeners = () => {
         toastr.info("Custom template cleared. Reverted to default.");
         await loadTemplate(); // Reload to apply the selected default
         refreshAllCards();
+    });
+
+    // Listener for the JSON format migration button
+    $('#migrateJsonFormatBtn').on('click', () => {
+        if (confirm('This will migrate all existing sim data to the new format with worldData and characters array. This operation cannot be undone. Are you sure?')) {
+            migrateAllSimData();
+        }
     });
 
     // --- Custom Fields UI Logic ---
@@ -705,6 +880,35 @@ jQuery(async () => {
             log('Processed {{last_sim_stats}} macro.');
             return lastSimJsonString || '{}';
         });
+        
+        // Register the slash command for converting sim data formats
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'sst-convert',
+            callback: () => {
+                if (confirm('This will convert all sim data in the current chat to the new format. Are you sure?')) {
+                    migrateAllSimData();
+                    return 'Converting sim data formats... Check notifications for results.';
+                }
+                return 'Conversion cancelled.';
+            },
+            returns: 'status message',
+            unnamedArgumentList: [],
+            helpString: `
+                <div>
+                    Converts all sim data in the current chat from the old format to the new format.
+                </div>
+                <div>
+                    <strong>Example:</strong>
+                    <ul>
+                        <li>
+                            <pre><code class="language-stscript">/sst-convert</code></pre>
+                            Converts all sim data in the current chat
+                        </li>
+                    </ul>
+                </div>
+            `,
+        }));
+
         MacrosParser.registerMacro('sim_format', () => {
             if (!get_settings('isEnabled')) return '';
             const fields = get_settings('customFields') || [];
