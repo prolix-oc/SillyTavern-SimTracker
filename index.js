@@ -39,6 +39,7 @@ const default_settings = {
     templateFile: "dating-card-template.html",
     datingSimPrompt: "Default prompt could not be loaded. Please check file path.",
     customFields: [...defaultSimFields], // Clone the default fields
+    hideSimBlocks: true, // New setting to hide sim blocks in message text
 };
 
 let settings = {};
@@ -526,6 +527,7 @@ const initialize_settings_listeners = () => {
     bind_setting('#codeBlockIdentifier', 'codeBlockIdentifier', 'text');
     bind_setting('#defaultBgColor', 'defaultBgColor', 'color');
     bind_setting('#showThoughtBubble', 'showThoughtBubble', 'boolean');
+    bind_setting('#hideSimBlocks', 'hideSimBlocks', 'boolean'); // New setting
     bind_setting('#datingSimPrompt', 'datingSimPrompt', 'textarea');
 
     // Listener for the default template dropdown
@@ -679,6 +681,29 @@ jQuery(async () => {
 
         const context = getContext();
         const { eventSource, event_types } = context;
+        
+        // Handle hiding sim blocks in real-time as messages are received
+        eventSource.on(event_types.MESSAGE_RECEIVED, (message) => {
+            if (!get_settings('isEnabled') || !get_settings('hideSimBlocks')) return;
+            
+            const identifier = get_settings('codeBlockIdentifier');
+            // Create a regex to find the sim block
+            const hideRegex = new RegExp("```" + identifier + "[\s\S]*?```", "sg");
+            
+            // If the message content contains a sim block, replace it with a hidden span
+            if (hideRegex.test(message.mes)) {
+                // We need to re-run the regex to get the match for replacement
+                const match = message.mes.match(hideRegex);
+                if (match) {
+                    // Replace the sim block with a hidden span containing the original content
+                    // This preserves the data for later processing but hides it from view
+                    message.mes = message.mes.replace(hideRegex, (match) => 
+                        `<span class="sst-hidden-sim-block">${match}</span>`
+                    );
+                }
+            }
+        });
+        
         eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, renderTracker);
         eventSource.on(event_types.CHAT_CHANGED, refreshAllCards);
         eventSource.on(event_types.MORE_MESSAGES_LOADED, refreshAllCards);
