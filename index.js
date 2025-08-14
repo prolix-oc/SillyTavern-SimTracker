@@ -321,7 +321,7 @@ const renderTracker = (mesId) => {
             let displayMessage = message.mes;
             
             // Hide sim blocks
-            displayMessage = displayMessage.replace(hideRegex, (match) => `<span class="sst-hidden-sim-block">${match}</span>`);
+            displayMessage = displayMessage.replace(hideRegex, (match) => `<span style="display: none !important;">${match}</span>`);
             
             // Format and display the message content (without the tracker UI)
             messageElement.innerHTML = messageFormatting(displayMessage, message.name, message.is_system, message.is_user, mesId);
@@ -413,7 +413,7 @@ const renderTrackerWithoutSim = (mesId) => {
 
         // Hide sim blocks if the setting is enabled
         if (get_settings('hideSimBlocks')) {
-            displayMessage = displayMessage.replace(hideRegex, (match) => `<span class="sst-hidden-sim-block">${match}</span>`);
+            displayMessage = displayMessage.replace(hideRegex, (match) => `<span style="display: none !important;">${match}</span>`);
         }
 
         // Format and display the message content (without the tracker UI)
