@@ -685,21 +685,28 @@ jQuery(async () => {
         // Handle hiding sim blocks in real-time as messages are received
         eventSource.on(event_types.MESSAGE_RECEIVED, (message) => {
             if (!get_settings('isEnabled') || !get_settings('hideSimBlocks')) {
-                log(`Skipping MESSAGE_RECEIVED for message ID ${message.mesId} (Extension disabled or hideSimBlocks is off)`);
+                log(`Skipping MESSAGE_RECEIVED (Extension disabled or hideSimBlocks is off)`);
                 return;
             }
             
-            log(`Processing MESSAGE_RECEIVED for message ID ${message.mesId}`);
+            // Log detailed information about the message object
+            log(`Processing MESSAGE_RECEIVED. Message object: ${JSON.stringify(message, null, 2)}`);
+            
+            // Check if message has the required properties
+            if (!message || !message.mes) {
+                log(`Message object is missing required properties (mes)`);
+                return;
+            }
             
             const identifier = get_settings('codeBlockIdentifier');
             // Create a regex to find the sim block
             const hideRegex = new RegExp("```" + identifier + "[\s\S]*?```", "sg");
             
-            log(`Message content for ID ${message.mesId}: ${message.mes.substring(0, 100)}...`); // Log first 100 chars
+            log(`Message content: ${message.mes.substring(0, 100)}...`); // Log first 100 chars
             
             // Check if the message content contains a sim block
             if (hideRegex.test(message.mes)) {
-                log(`Sim block detected in message ID ${message.mesId}`);
+                log(`Sim block detected`);
                 // We need to re-run the regex to get the match for replacement
                 // Note: .test() consumes the regex state, so we create a new one
                 const replaceRegex = new RegExp("```" + identifier + "[\s\S]*?```", "sg");
@@ -710,12 +717,12 @@ jQuery(async () => {
                 );
                 
                 if (originalMes !== message.mes) {
-                    log(`Sim block successfully hidden in message ID ${message.mesId}`);
+                    log(`Sim block successfully hidden`);
                 } else {
-                    log(`ERROR: Sim block replacement failed for message ID ${message.mesId}`);
+                    log(`ERROR: Sim block replacement failed`);
                 }
             } else {
-                log(`No sim block found in message ID ${message.mesId}`);
+                log(`No sim block found`);
             }
         });
         
