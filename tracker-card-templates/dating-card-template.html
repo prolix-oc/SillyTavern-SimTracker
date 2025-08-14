@@ -327,7 +327,7 @@
 }
 </style>
 
-<div class="tracker-card {{#unless isActive}}inactive{{/unless}}" style="background: linear-gradient(145deg, {{bgColor}} 0%, {{darkerBgColor}} 50%, {{darkerBgColor}} 100%);">
+<div class="tracker-card {{#if stats.inactive}}inactive{{/if}}" style="background: linear-gradient(145deg, {{bgColor}} 0%, {{darkerBgColor}} 50%, {{darkerBgColor}} 100%);">
   <div class="gradient-overlay"></div>
   
   <!-- Combined Header Section -->
