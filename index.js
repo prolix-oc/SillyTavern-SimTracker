@@ -683,14 +683,14 @@ jQuery(async () => {
         const { eventSource, event_types } = context;
         
         // Handle hiding sim blocks in real-time as messages are received
-        eventSource.on(event_types.MESSAGE_RECEIVED, (message) => {
+        eventSource.on(event_types.STREAM_TOKEN_RECEIVED, (message) => {
             if (!get_settings('isEnabled') || !get_settings('hideSimBlocks')) {
-                log(`Skipping MESSAGE_RECEIVED (Extension disabled or hideSimBlocks is off)`);
+                log(`Skipping STREAM_TOKEN_RECEIVED (Extension disabled or hideSimBlocks is off)`);
                 return;
             }
             
             // Log detailed information about the message object
-            log(`Processing MESSAGE_RECEIVED. Message object keys: ${JSON.stringify(Object.keys(message))}`);
+            log(`Processing STREAM_TOKEN_RECEIVED. Message object keys: ${JSON.stringify(Object.keys(message))}`);
             
             // Check if message has the required properties
             if (!message) {
