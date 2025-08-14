@@ -314,8 +314,21 @@ const renderTracker = (mesId) => {
         const messageRect = messageElement.getBoundingClientRect();
         log(`Message ID ${mesId} dimensions - Width: ${messageRect.width.toFixed(2)}px, Height: ${messageRect.height.toFixed(2)}px`);
 
+        // Hide sim blocks in the displayed message content if the setting is enabled
+        if (get_settings('hideSimBlocks')) {
+            const identifier = get_settings('codeBlockIdentifier');
+            const hideRegex = new RegExp("```" + identifier + "[\\\\s\\\\S]*?```", "sg");
+            let displayMessage = message.mes;
+            
+            // Hide sim blocks
+            displayMessage = displayMessage.replace(hideRegex, (match) => `<span class="sst-hidden-sim-block">${match}</span>`);
+            
+            // Format and display the message content (without the tracker UI)
+            messageElement.innerHTML = messageFormatting(displayMessage, message.name, message.is_system, message.is_user, mesId);
+        }
+
         const identifier = get_settings('codeBlockIdentifier');
-        const jsonRegex = new RegExp("```" + identifier + "\\s*([\\s\\S]*?)\\s*```");
+        const jsonRegex = new RegExp("```" + identifier + "\\\\s*([\\\\s\\\\S]*?)\\\\s*```");
         const match = message.mes.match(jsonRegex);
 
         if (match && match[1]) {
@@ -368,9 +381,9 @@ const renderTracker = (mesId) => {
                 return compiledCardTemplate(cardData);
             }).join('');
 
-            const finalHtml = compiledWrapperTemplate({ cardsHtml });
-            const htmlWithDivider = `<hr style="margin-top: 15px; margin-bottom: 20px;">${finalHtml}`;
-            const formattedContent = messageFormatting(htmlWithDivider);
+            // Add a horizontal divider before the cards
+            const finalHtml = `<hr style="margin-top: 15px; margin-bottom: 20px;">` + compiledWrapperTemplate({ cardsHtml });
+            const formattedContent = messageFormatting(finalHtml);
             $(messageElement).append(formattedContent);
         }
     } catch (error) {
@@ -395,16 +408,19 @@ const renderTrackerWithoutSim = (mesId) => {
 
 
         const identifier = get_settings('codeBlockIdentifier');
-        const hideRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "sg");
+        const hideRegex = new RegExp("```" + identifier + "[\\\\s\\\\S]*?```", "sg");
         let displayMessage = message.mes; 
 
+        // Hide sim blocks if the setting is enabled
         if (get_settings('hideSimBlocks')) {
             displayMessage = displayMessage.replace(hideRegex, (match) => `<span class="sst-hidden-sim-block">${match}</span>`);
         }
 
+        // Format and display the message content (without the tracker UI)
         messageElement.innerHTML = messageFormatting(displayMessage, message.name, message.is_system, message.is_user, mesId);
 
-        const dataMatch = message.mes.match(new RegExp("```" + identifier + "[\\s\\S]*?```", "s"));
+        // Parse the sim data from the original message content (not the hidden version)
+        const dataMatch = message.mes.match(new RegExp("```" + identifier + "[\\\\s\\\\S]*?```", "s"));
 
         if (dataMatch && dataMatch[0]) {
             // Remove the container if it already exists to prevent duplication on re-renders
@@ -462,11 +478,12 @@ const renderTrackerWithoutSim = (mesId) => {
                 return compiledCardTemplate(cardData);
             }).join('');
 
-            const finalHtml = compiledWrapperTemplate({ cardsHtml });
+            // Add a horizontal divider before the cards
+            const finalHtml = `<hr style="margin-top: 15px; margin-bottom: 20px;">` + compiledWrapperTemplate({ cardsHtml });
             messageElement.insertAdjacentHTML('beforeend', finalHtml);
         }
     } catch (error) {
-        log(`A critical error occurred in renderTracker for message ID ${mesId}. Please check the console. Error: ${error.stack}`);
+        log(`A critical error occurred in renderTrackerWithoutSim for message ID ${mesId}. Please check the console. Error: ${error.stack}`);
     }
 };
 
@@ -681,86 +698,6 @@ jQuery(async () => {
 
         const context = getContext();
         const { eventSource, event_types } = context;
-        
-        // Handle hiding sim blocks in real-time as messages are received
-        eventSource.on(event_types.STREAM_TOKEN_RECEIVED, (message) => {
-            if (!get_settings('isEnabled') || !get_settings('hideSimBlocks')) {
-                log(`Skipping STREAM_TOKEN_RECEIVED (Extension disabled or hideSimBlocks is off)`);
-                return;
-            }
-            
-            // Log detailed information about the message object
-            log(`Processing STREAM_TOKEN_RECEIVED. Message object keys: ${JSON.stringify(Object.keys(message))}`);
-            
-            // Check if message has the required properties
-            if (!message) {
-                log(`Message object is null or undefined`);
-                return;
-            }
-            
-            // Try to find the message text property
-            let messageText = null;
-            let textProperty = null;
-            
-            // Common property names for message text
-            const possibleTextProperties = ['mes', 'text', 'content', 'message'];
-            
-            for (const prop of possibleTextProperties) {
-                if (message[prop] && typeof message[prop] === 'string') {
-                    messageText = message[prop];
-                    textProperty = prop;
-                    break;
-                }
-            }
-            
-            // If we still haven't found it, do a more thorough search
-            if (!messageText) {
-                for (const [key, value] of Object.entries(message)) {
-                    if (typeof value === 'string' && value.length > 0) {
-                        // Check if this looks like message content
-                        if (value.includes('```') || value.length > 50) {
-                            messageText = value;
-                            textProperty = key;
-                            break;
-                        }
-                    }
-                }
-            }
-            
-            if (!messageText) {
-                log(`Could not find message text property in message object`);
-                return;
-            }
-            
-            log(`Found message text in property '${textProperty}': ${messageText.substring(0, 100)}...`);
-            
-            const identifier = get_settings('codeBlockIdentifier');
-            // Create a regex to find the sim block
-            const hideRegex = new RegExp("```" + identifier + "[\s\S]*?```", "sg");
-            
-            // Check if the message content contains a sim block
-            if (hideRegex.test(messageText)) {
-                log(`Sim block detected`);
-                // We need to re-run the regex to get the match for replacement
-                // Note: .test() consumes the regex state, so we create a new one
-                const replaceRegex = new RegExp("```" + identifier + "[\s\S]*?```", "sg");
-                // Replace the sim block with a hidden span containing the original content
-                const originalMes = messageText;
-                const newText = messageText.replace(replaceRegex, (match) => 
-                    `<span class="sst-hidden-sim-block">${match}</span>`
-                );
-                
-                if (originalMes !== newText) {
-                    log(`Sim block successfully hidden`);
-                    // Update the message object with the modified text
-                    message[textProperty] = newText;
-                } else {
-                    log(`ERROR: Sim block replacement failed`);
-                }
-            } else {
-                log(`No sim block found`);
-            }
-        });
         
         eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, renderTracker);
         eventSource.on(event_types.CHAT_CHANGED, refreshAllCards);

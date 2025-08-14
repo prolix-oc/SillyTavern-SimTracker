@@ -7,3 +7,4 @@ srpc-ui/settings.html
 demo.html
 .env
 QWEN.md
+regex/*
