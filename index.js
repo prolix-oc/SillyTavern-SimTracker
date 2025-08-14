@@ -690,34 +690,70 @@ jQuery(async () => {
             }
             
             // Log detailed information about the message object
-            log(`Processing MESSAGE_RECEIVED. Message object: ${JSON.stringify(message, null, 2)}`);
+            log(`Processing MESSAGE_RECEIVED. Message object keys: ${JSON.stringify(Object.keys(message))}`);
             
             // Check if message has the required properties
-            if (!message || !message.mes) {
-                log(`Message object is missing required properties (mes)`);
+            if (!message) {
+                log(`Message object is null or undefined`);
                 return;
             }
+            
+            // Try to find the message text property
+            let messageText = null;
+            let textProperty = null;
+            
+            // Common property names for message text
+            const possibleTextProperties = ['mes', 'text', 'content', 'message'];
+            
+            for (const prop of possibleTextProperties) {
+                if (message[prop] && typeof message[prop] === 'string') {
+                    messageText = message[prop];
+                    textProperty = prop;
+                    break;
+                }
+            }
+            
+            // If we still haven't found it, do a more thorough search
+            if (!messageText) {
+                for (const [key, value] of Object.entries(message)) {
+                    if (typeof value === 'string' && value.length > 0) {
+                        // Check if this looks like message content
+                        if (value.includes('```') || value.length > 50) {
+                            messageText = value;
+                            textProperty = key;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (!messageText) {
+                log(`Could not find message text property in message object`);
+                return;
+            }
+            
+            log(`Found message text in property '${textProperty}': ${messageText.substring(0, 100)}...`);
             
             const identifier = get_settings('codeBlockIdentifier');
             // Create a regex to find the sim block
             const hideRegex = new RegExp("```" + identifier + "[\s\S]*?```", "sg");
             
-            log(`Message content: ${message.mes.substring(0, 100)}...`); // Log first 100 chars
-            
             // Check if the message content contains a sim block
-            if (hideRegex.test(message.mes)) {
+            if (hideRegex.test(messageText)) {
                 log(`Sim block detected`);
                 // We need to re-run the regex to get the match for replacement
                 // Note: .test() consumes the regex state, so we create a new one
                 const replaceRegex = new RegExp("```" + identifier + "[\s\S]*?```", "sg");
                 // Replace the sim block with a hidden span containing the original content
-                const originalMes = message.mes;
-                message.mes = message.mes.replace(replaceRegex, (match) => 
+                const originalMes = messageText;
+                const newText = messageText.replace(replaceRegex, (match) => 
                     `<span class="sst-hidden-sim-block">${match}</span>`
                 );
                 
-                if (originalMes !== message.mes) {
+                if (originalMes !== newText) {
                     log(`Sim block successfully hidden`);
+                    // Update the message object with the modified text
+                    message[textProperty] = newText;
                 } else {
                     log(`ERROR: Sim block replacement failed`);
                 }
