@@ -307,8 +307,8 @@ const renderTracker = (mesId) => {
             log(`Error: Could not find message with ID ${mesId}. Aborting render.`);
             return;
         }
-        const messageElement = document.querySelector(`div[mesid="${mesId}"] .mes_text`);
-        if (!messageElement || messageElement.querySelector(`#${CONTAINER_ID}`)) return;
+        const messageElement = document.querySelector(`div[mesid=\"${mesId}\"] .mes_text`);
+        if (!messageElement) return;
 
         // Log message element dimensions for debugging layout issues
         const messageRect = messageElement.getBoundingClientRect();
@@ -326,6 +326,9 @@ const renderTracker = (mesId) => {
             // Format and display the message content (without the tracker UI)
             messageElement.innerHTML = messageFormatting(displayMessage, message.name, message.is_system, message.is_user, mesId);
         }
+
+        // Check if we've already rendered a tracker for this message
+        if (messageElement.querySelector(`#${CONTAINER_ID}`)) return;
 
         const identifier = get_settings('codeBlockIdentifier');
         const jsonRegex = new RegExp("```" + identifier + "\\s*([\\s\\S]*?)\\s*```");
@@ -408,7 +411,7 @@ const renderTrackerWithoutSim = (mesId) => {
 
 
         const identifier = get_settings('codeBlockIdentifier');
-        const hideRegex = new RegExp("```" + identifier + "\\s*[\\s\\S]*?```", "g");
+        const hideRegex = new RegExp("```" + identifier + "\s*[\s\S]*?```", "g");
         let displayMessage = message.mes; 
 
         // Hide sim blocks if the setting is enabled
@@ -675,24 +678,26 @@ jQuery(async () => {
             log('Processed {{sim_format}} macro.');
             
             // Start building the JSON example structure
-            let exampleJson = "{\n";
-            exampleJson += "  \"characterName\": {\n";
+            let exampleJson = "{";
+            exampleJson += "  \"characterName\": {";
             
             // Add each custom field as a commented key-value pair
             fields.forEach(field => {
                 const sanitizedKey = sanitizeFieldKey(field.key);
-                exampleJson += `    "${sanitizedKey}": [${sanitizedKey.toUpperCase()}_VALUE], // ${field.description}\n`;
+                exampleJson += `    "${sanitizedKey}": [${sanitizedKey.toUpperCase()}_VALUE], // ${field.description}`;
             });
             
-            exampleJson += "  },\n";
-            exampleJson += "  \"characterTwo\": { ... }, // Repeat structure for each character\n";
-            exampleJson += "  \"current_date\": [CURRENT_STORY_DATE] // YYYY-MM-DD\n";
+            exampleJson += "  },";
+            exampleJson += "  \"characterTwo\": { ... }, // Repeat structure for each character";
+            exampleJson += "  \"current_date\": [CURRENT_STORY_DATE] // YYYY-MM-DD";
             exampleJson += "  \"current_time\": [CURRENT_STORY_TIME] // 21:34, 10:21, etc (24-hour time)"
             exampleJson += "}";
             
             // Wrap in the code block with the identifier
             const identifier = get_settings('codeBlockIdentifier') || 'sim';
-            return `\`\`\`${identifier}\n${exampleJson}\n\`\`\``;
+            return `\`\`\`${identifier}
+${exampleJson}
+\`\`\``;
         });
         log("Macros registered successfully.");
 
