@@ -683,7 +683,7 @@ jQuery(async () => {
         const { eventSource, event_types } = context;
         
         // Handle hiding sim blocks in real-time as messages are received
-        eventSource.on(event_types.MESSAGE_RECEIVED, (message) => {
+        eventSource.on(event_types.STREAM_TOKEN_RECEIVED, (message) => {
             if (!get_settings('isEnabled') || !get_settings('hideSimBlocks')) return;
             
             const identifier = get_settings('codeBlockIdentifier');
