@@ -83,6 +83,21 @@
           directory. Default: default-card-template.html
         </p>
         <hr />
+        
+        <!-- Custom Fields Section -->
+        <h4>Custom Sim Data Fields</h4>
+        <div class="setting">
+            <label>Define the data fields for your sim tracker.</label>
+            <div id="customFieldsList">
+                <!-- Fields will be populated here by JavaScript -->
+            </div>
+            <button id="addCustomFieldBtn" class="menu_button">Add Field</button>
+        </div>
+        <p class="description">
+          These fields define the structure of your sim data and are used by the <code>{{sim_format}}</code> macro in prompts.
+        </p>
+        <hr />
+        
         <div class="setting">
           <label for="datingSimPrompt">Sim Tracker System Prompt</label>
           <textarea id="datingSimPrompt" class="text_pole" rows="6"></textarea>
@@ -93,4 +108,11 @@
       </div>
     </div>
   </div>
+</div>
+
+<!-- Template for a single custom field row (hidden by default) -->
+<div id="customFieldTemplate" class="setting flex-container hidden" style="gap: 10px; align-items: center; margin-bottom: 8px;">
+    <input type="text" class="field-key text_pole" placeholder="Field Key" style="flex: 1; min-width: 100px;" />
+    <input type="text" class="field-description text_pole" placeholder="Description" style="flex: 2; min-width: 150px;" />
+    <button class="remove-field-btn menu_button">Remove</button>
 </div>

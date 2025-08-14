@@ -6,6 +6,30 @@ const MODULE_NAME = 'SillySimTracker';
 const CONTAINER_ID = 'silly-sim-tracker-container';
 const SETTINGS_ID = 'silly-sim-tracker-settings';
 
+// Default fields for sim data, used for both initial settings and the {{sim_format}} macro
+const defaultSimFields = [
+    { key: "ap", description: "Affection Points (0-200)" },
+    { key: "dp", description: "Desire Points (0-150)" },
+    { key: "tp", description: "Trust Points (0-150)" },
+    { key: "cp", description: "Contempt Points (0-150)" },
+    { key: "apChange", description: "Change in Affection from last action (positive/negative/zero)" },
+    { key: "dpChange", description: "Change in Desire from last action (positive/negative/zero)" },
+    { key: "tpChange", description: "Change in Trust from last action (positive/negative/zero)" },
+    { key: "cpChange", description: "Change in Contempt from last action (positive/negative/zero)" },
+    { key: "relationshipStatus", description: "Relationship status text (e.g., 'Romantic Interest')" },
+    { key: "desireStatus", description: "Desire status text (e.g., 'A smoldering flame builds.')" },
+    { key: "preg", description: "Boolean for pregnancy status (true/false)" },
+    { key: "days_preg", description: "Days pregnant (if applicable)" },
+    { key: "conception_date", description: "Date of conception (YYYY-MM-DD)" },
+    { key: "health", description: "Health Status (0=Unharmed, 1=Injured, 2=Critical)" },
+    { key: "bg", description: "Hex color for card background (e.g., #6a5acd)" },
+    { key: "last_react", description: "Reaction to User (0=Neutral, 1=Like, 2=Dislike)" },
+    { key: "internal_thought", description: "Character's current internal thoughts/feelings" },
+    { key: "days_since_first_meeting", description: "Total days since first meeting" },
+    { key: "inactive", description: "Boolean for character inactivity (true/false)" },
+    { key: "inactiveReason", description: "Reason for inactivity (0=Not inactive, 1=Asleep, 2=Comatose, 3=Contempt/anger, 4=Incapacitated, 5=Death)" }
+];
+
 const default_settings = {
     isEnabled: true,
     codeBlockIdentifier: "sim",
@@ -14,6 +38,7 @@ const default_settings = {
     customTemplateHtml: '',
     templateFile: "dating-card-template.html",
     datingSimPrompt: "Default prompt could not be loaded. Please check file path.",
+    customFields: [...defaultSimFields], // Clone the default fields
 };
 
 let settings = {};
@@ -27,6 +52,9 @@ const set_settings = (key, value) => {
     settings[key] = value;
     saveSettingsDebounced();
 };
+
+// Utility to sanitize a field key (replace spaces with underscores)
+const sanitizeFieldKey = (key) => key.replace(/\s+/g, '_');
 const darkenColor = (hex) => {
     if (!hex || hex.length < 7) return '#6a5acd';
     let r = parseInt(hex.slice(1, 3), 16), g = parseInt(hex.slice(3, 5), 16), b = parseInt(hex.slice(5, 7), 16);
@@ -520,6 +548,50 @@ const initialize_settings_listeners = () => {
         refreshAllCards();
     });
 
+    // --- Custom Fields UI Logic ---
+    const $fieldsContainer = $('#customFieldsList');
+    const $addFieldButton = $('#addCustomFieldBtn');
+    const $fieldTemplate = $('#customFieldTemplate');
+
+    // Function to render the list of fields
+    const renderFields = () => {
+        const fields = get_settings('customFields') || [];
+        $fieldsContainer.empty();
+        fields.forEach((field, index) => {
+            const $fieldElement = $fieldTemplate.clone();
+            $fieldElement.removeAttr('id').removeClass('hidden');
+            $fieldElement.find('.field-key').val(field.key).on('input', function () {
+                const newValue = $(this).val();
+                const updatedFields = [...fields];
+                updatedFields[index].key = sanitizeFieldKey(newValue); // Sanitize on input
+                set_settings('customFields', updatedFields);
+            });
+            $fieldElement.find('.field-description').val(field.description).on('input', function () {
+                const newValue = $(this).val();
+                const updatedFields = [...fields];
+                updatedFields[index].description = newValue;
+                set_settings('customFields', updatedFields);
+            });
+            $fieldElement.find('.remove-field-btn').on('click', function () {
+                const updatedFields = fields.filter((_, i) => i !== index);
+                set_settings('customFields', updatedFields);
+                renderFields(); // Re-render the list
+            });
+            $fieldsContainer.append($fieldElement);
+        });
+    };
+
+    // Add new field button listener
+    $addFieldButton.on('click', () => {
+        const fields = get_settings('customFields') || [];
+        const newField = { key: 'new_key', description: 'New field description' };
+        set_settings('customFields', [...fields, newField]);
+        renderFields(); // Re-render the list
+    });
+
+    // Initial render of fields
+    renderFields();
+
     refresh_settings_ui();
     log("Settings UI successfully bound.");
 };
@@ -572,6 +644,30 @@ jQuery(async () => {
             if (!get_settings('isEnabled')) return '';
             log('Processed {{last_sim_stats}} macro.');
             return lastSimJsonString || '{}';
+        });
+        MacrosParser.registerMacro('sim_format', () => {
+            if (!get_settings('isEnabled')) return '';
+            const fields = get_settings('customFields') || [];
+            log('Processed {{sim_format}} macro.');
+            
+            // Start building the JSON example structure
+            let exampleJson = "{\n";
+            exampleJson += "  \"characterName\": {\n";
+            
+            // Add each custom field as a commented key-value pair
+            fields.forEach(field => {
+                const sanitizedKey = sanitizeFieldKey(field.key);
+                exampleJson += `    "${sanitizedKey}": [${sanitizedKey.toUpperCase()}_VALUE], // ${field.description}\n`;
+            });
+            
+            exampleJson += "  },\n";
+            exampleJson += "  \"characterTwo\": { ... }, // Repeat structure for each character\n";
+            exampleJson += "  \"current_date\": [CURRENT_DATE] // YYYY-MM-DD\n";
+            exampleJson += "}";
+            
+            // Wrap in the code block with the identifier
+            const identifier = get_settings('codeBlockIdentifier') || 'sim';
+            return `\`\`\`${identifier}\n${exampleJson}\n\`\`\``;
         });
         log("Macros registered successfully.");
 
