@@ -666,7 +666,8 @@ jQuery(async () => {
             
             exampleJson += "  },\n";
             exampleJson += "  \"characterTwo\": { ... }, // Repeat structure for each character\n";
-            exampleJson += "  \"current_date\": [CURRENT_DATE] // YYYY-MM-DD\n";
+            exampleJson += "  \"current_date\": [CURRENT_STORY_DATE] // YYYY-MM-DD\n";
+            exampleJson += "  \"current_time\": [CURRENT_STORY_TIME] // 21:34, 10:21, etc (24-hour time)"
             exampleJson += "}";
             
             // Wrap in the code block with the identifier
@@ -680,6 +681,7 @@ jQuery(async () => {
         eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, renderTracker);
         eventSource.on(event_types.CHAT_CHANGED, refreshAllCards);
         eventSource.on(event_types.MORE_MESSAGES_LOADED, refreshAllCards);
+        eventSource.on(event_types.MESSAGE_UPDATED, refreshAllCards)
         eventSource.on(event_types.MESSAGE_EDITED, (mesId) => {
             log(`Message ${mesId} was edited. Re-rendering tracker card.`);
             renderTrackerWithoutSim(mesId);
