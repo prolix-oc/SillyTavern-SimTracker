@@ -6,17 +6,16 @@ A powerful SillyTavern extension that dynamically renders visually appealing tra
 
 ## Installation
 
-1. **Download the Extension**:
-   - Download the latest release from the [GitHub repository](https://github.com/prolix-oc/SillyTavern-SimTracker.git)
-   - Or clone the repository directly into your SillyTavern extensions folder
+1. **Copy the Extension Link**
+   - Copy the repo URL (`https://github.com/prolix-oc/SillyTavern-SimTracker`) and keep it in your clipboard
 
-2. **Install in SillyTavern**:
-   - Place the `SillySimTracker` folder in your SillyTavern `extensions` directory
-   - Restart SillyTavern if it's currently running
-   - Navigate to the Extensions settings in SillyTavern
-   - Find "Silly Sim Tracker" in the list and enable it
+2. **Install in SillyTavern**
+   - Open the extensions menu (3 stacked cubes)
+   - Click on "Install Extension"
+   - Paste URL into repo URL field. OPTIONALLY: select a branch or version of the extension
+   - Choose install scope (either for you or globally)
 
-3. **Verify Installation**:
+3. **Verify Installation**
    - The extension should now appear in your SillyTavern settings
    - You can access the configuration panel through the Extensions drawer
 
