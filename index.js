@@ -674,9 +674,9 @@ jQuery(async () => {
                     if (node.nodeType === Node.ELEMENT_NODE) {
                         const preElements = node.tagName === 'PRE' ? [node] : node.querySelectorAll('pre');
                         preElements.forEach((pre) => {
-                            // Check if this pre element contains sim code
-                            if (pre.textContent && pre.textContent.trim().startsWith(get_settings('codeBlockIdentifier'))) {
-                                log(`Hiding in-flight sim block: ${pre.textContent.trim().substring(0, 50)}...`);
+                            // Check if this pre element is within a mes_text div
+                            if (pre.closest('.mes_text')) {
+                                log(`Hiding in-flight code block in mes_text`);
                                 pre.style.display = 'none';
                             }
                         });
