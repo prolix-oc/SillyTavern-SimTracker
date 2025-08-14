@@ -683,24 +683,39 @@ jQuery(async () => {
         const { eventSource, event_types } = context;
         
         // Handle hiding sim blocks in real-time as messages are received
-        eventSource.on(event_types.STREAM_TOKEN_RECEIVED, (message) => {
-            if (!get_settings('isEnabled') || !get_settings('hideSimBlocks')) return;
+        eventSource.on(event_types.MESSAGE_RECEIVED, (message) => {
+            if (!get_settings('isEnabled') || !get_settings('hideSimBlocks')) {
+                log(`Skipping MESSAGE_RECEIVED for message ID ${message.mesId} (Extension disabled or hideSimBlocks is off)`);
+                return;
+            }
+            
+            log(`Processing MESSAGE_RECEIVED for message ID ${message.mesId}`);
             
             const identifier = get_settings('codeBlockIdentifier');
             // Create a regex to find the sim block
             const hideRegex = new RegExp("```" + identifier + "[\s\S]*?```", "sg");
             
-            // If the message content contains a sim block, replace it with a hidden span
+            log(`Message content for ID ${message.mesId}: ${message.mes.substring(0, 100)}...`); // Log first 100 chars
+            
+            // Check if the message content contains a sim block
             if (hideRegex.test(message.mes)) {
+                log(`Sim block detected in message ID ${message.mesId}`);
                 // We need to re-run the regex to get the match for replacement
-                const match = message.mes.match(hideRegex);
-                if (match) {
-                    // Replace the sim block with a hidden span containing the original content
-                    // This preserves the data for later processing but hides it from view
-                    message.mes = message.mes.replace(hideRegex, (match) => 
-                        `<span class="sst-hidden-sim-block">${match}</span>`
-                    );
+                // Note: .test() consumes the regex state, so we create a new one
+                const replaceRegex = new RegExp("```" + identifier + "[\s\S]*?```", "sg");
+                // Replace the sim block with a hidden span containing the original content
+                const originalMes = message.mes;
+                message.mes = message.mes.replace(replaceRegex, (match) => 
+                    `<span class="sst-hidden-sim-block">${match}</span>`
+                );
+                
+                if (originalMes !== message.mes) {
+                    log(`Sim block successfully hidden in message ID ${message.mesId}`);
+                } else {
+                    log(`ERROR: Sim block replacement failed for message ID ${message.mesId}`);
                 }
+            } else {
+                log(`No sim block found in message ID ${message.mesId}`);
             }
         });
         
