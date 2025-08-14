@@ -314,29 +314,36 @@ const renderTracker = (mesId) => {
         const messageRect = messageElement.getBoundingClientRect();
         log(`Message ID ${mesId} dimensions - Width: ${messageRect.width.toFixed(2)}px, Height: ${messageRect.height.toFixed(2)}px`);
 
-        // Hide sim blocks in the displayed message content if the setting is enabled
-        if (get_settings('hideSimBlocks')) {
-            const identifier = get_settings('codeBlockIdentifier');
-            const hideRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
-            let displayMessage = message.mes;
-
-            // Hide sim blocks
-            displayMessage = displayMessage.replace(hideRegex, (match) => `<span style="display: none !important;">${match}</span>`);
-
-            // Format and display the message content (without the tracker UI)
-            messageElement.innerHTML = messageFormatting(displayMessage, message.name, message.is_system, message.is_user, mesId);
-        }
-
         // Parse the sim data from the original message content
         const identifier = get_settings('codeBlockIdentifier');
-        const jsonRegex = new RegExp("```" + identifier + "[\\\\s\\\\S]*?```");
+        const jsonRegex = new RegExp("```" + identifier + "[\\s\\S]*?```");
         const match = message.mes.match(jsonRegex);
 
         // Handle message formatting and sim block hiding
         if (get_settings('hideSimBlocks')) {
-            const hideRegex = new RegExp("```" + identifier + "[\\\\s\\\\S]*?```", "gm");
-            let displayMessage = message.mes; // Hide sim blocks
-            displayMessage = displayMessage.replace(hideRegex, (match) => `<span style="display: none !important;">${match}</span>`);                        // Format and display the message content (without the tracker UI)\n            messageElement.innerHTML = messageFormatting(displayMessage, message.name, message.is_system, message.is_user, mesId);\n        } else if (!get_settings('hideSimBlocks')) {\n            // Just format the message if not hiding blocks\n            messageElement.innerHTML = messageFormatting(message.mes, message.name, message.is_system, message.is_user, mesId);\n        }\n\n        if (match) {
+            let displayMessage = message.mes;
+            
+            // Hide sim blocks with spans (for pre-processing)
+            const hideRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
+            displayMessage = displayMessage.replace(hideRegex, (match) => `<span style="display: none !important;">${match}</span>`);
+            
+            // Format and display the message content (without the tracker UI)
+            messageElement.innerHTML = messageFormatting(displayMessage, message.name, message.is_system, message.is_user, mesId);
+            
+            // After formatting, hide any pre elements that contain sim code
+            const preElements = messageElement.querySelectorAll('pre');
+            preElements.forEach(pre => {
+                // Check if this pre element contains sim code
+                if (pre.textContent.trim().startsWith(identifier)) {
+                    pre.style.display = 'none';
+                }
+            });
+        } else {
+            // Just format the message if not hiding blocks
+            messageElement.innerHTML = messageFormatting(message.mes, message.name, message.is_system, message.is_user, mesId);
+        }
+
+        if (match) {
             // Extract JSON content from the match
             const jsonContent = match[0].replace(/```/g, '').replace(new RegExp(`^${identifier}\\s*`), '').trim();
 
@@ -415,16 +422,27 @@ const renderTrackerWithoutSim = (mesId) => {
 
 
         const identifier = get_settings('codeBlockIdentifier');
-        const hideRegex = new RegExp("```" + identifier + "[\s\S]*?```", "gm");
         let displayMessage = message.mes;
 
         // Hide sim blocks if the setting is enabled
         if (get_settings('hideSimBlocks')) {
+            const hideRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
             displayMessage = displayMessage.replace(hideRegex, (match) => `<span style="display: none !important;">${match}</span>`);
         }
 
         // Format and display the message content (without the tracker UI)
         messageElement.innerHTML = messageFormatting(displayMessage, message.name, message.is_system, message.is_user, mesId);
+        
+        // After formatting, hide any pre elements that contain sim code
+        if (get_settings('hideSimBlocks')) {
+            const preElements = messageElement.querySelectorAll('pre');
+            preElements.forEach(pre => {
+                // Check if this pre element contains sim code
+                if (pre.textContent.trim().startsWith(identifier)) {
+                    pre.style.display = 'none';
+                }
+            });
+        }
 
         // Parse the sim data from the original message content (not the hidden version)       
         const dataMatch = message.mes.match(new RegExp("```" + identifier + "[\\s\\S]*?```", "m"));
@@ -663,6 +681,37 @@ jQuery(async () => {
         initialize_settings_listeners();
         log("Settings panel listeners initialized.");
         await loadTemplate();
+
+        // Set up MutationObserver to hide sim code blocks as they stream in
+        log("Setting up MutationObserver for in-flight sim block hiding...");
+        const observer = new MutationObserver((mutations) => {
+            // Only process if the extension is enabled and hiding is turned on
+            if (!get_settings('isEnabled') || !get_settings('hideSimBlocks')) return;
+            
+            mutations.forEach((mutation) => {
+                mutation.addedNodes.forEach((node) => {
+                    // Check if the added node is a pre element or contains pre elements
+                    if (node.nodeType === Node.ELEMENT_NODE) {
+                        const preElements = node.tagName === 'PRE' ? [node] : node.querySelectorAll('pre');
+                        preElements.forEach((pre) => {
+                            // Check if this pre element contains sim code
+                            if (pre.textContent && pre.textContent.trim().startsWith(get_settings('codeBlockIdentifier'))) {
+                                log(`Hiding in-flight sim block: ${pre.textContent.trim().substring(0, 50)}...`);
+                                pre.style.display = 'none';
+                            }
+                        });
+                    }
+                });
+            });
+        });
+
+        // Start observing for changes in the document
+        observer.observe(document.body, {
+            childList: true,
+            subtree: true
+        });
+
+        log("MutationObserver set up for in-flight sim block hiding.");
 
         log("Registering macros...");
         MacrosParser.registerMacro('sim_tracker', () => {
