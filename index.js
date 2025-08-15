@@ -32,7 +32,7 @@ const defaultSimFields = [
     { key: "inactiveReason", description: "Reason for inactivity (0=Not inactive, 1=Asleep, 2=Comatose, 3=Contempt/anger, 4=Incapacitated, 5=Death)" }
 ];
 
-const default_settings = Object.freeze({
+const default_settings = {
     isEnabled: true,
     codeBlockIdentifier: "sim",
     defaultBgColor: "#6a5acd",
@@ -42,30 +42,13 @@ const default_settings = Object.freeze({
     datingSimPrompt: "Default prompt could not be loaded. Please check file path.",
     customFields: [...defaultSimFields], // Clone the default fields
     hideSimBlocks: true, // New setting to hide sim blocks in message text
-});
+};
 
 let settings = {};
 const settings_ui_map = {};
 let lastSimJsonString = '';
 // Keep track of when we're expecting code blocks to be generated
 let isGeneratingCodeBlocks = false;
-
-function getSettings() {
-    // Initialize settings if they don't exist
-    if (!extensionSettings[MODULE_NAME]) {
-        extensionSettings[MODULE_NAME] = structuredClone(defaultSettings);
-    }
-
-    // Ensure all default keys exist (helpful after updates)
-    for (const key of Object.keys(defaultSettings)) {
-        if (!Object.hasOwn(extensionSettings[MODULE_NAME], key)) {
-            extensionSettings[MODULE_NAME][key] = defaultSettings[key];
-        }
-    }
-
-    return extensionSettings[MODULE_NAME];
-}
-
 
 // --- UTILITY FUNCTIONS ---
 const log = (message) => console.log(`[SST] [${MODULE_NAME}]`, message);
@@ -500,34 +483,6 @@ const renderTracker = (mesId) => {
             // Just format the message if not hiding blocks
             messageElement.innerHTML = messageFormatting(message.mes, message.name, message.is_system, message.is_user, mesId);
         }
-        
-        // Pre-insert the preparing text div (hidden) at the bottom of the message
-        if (!messageElement.querySelector('.sst-preparing-text')) {
-            const preparingText = document.createElement('div');
-            preparingText.className = 'sst-preparing-text';
-            preparingText.textContent = 'Preparing new tracker cards...';
-            preparingText.style.cssText = `
-                color: #6a5acd;
-                font-style: italic;
-                margin: 10px 0;
-                display: none;
-            `;
-            messageElement.appendChild(preparingText);
-            
-            // Add the pulse animation to the document if not already present
-            if (!document.getElementById('sst-pulse-animation')) {
-                const style = document.createElement('style');
-                style.id = 'sst-pulse-animation';
-                style.textContent = `
-                    @keyframes sst-pulse {
-                        0% { opacity: 0.5; }
-                        50% { opacity: 1; }
-                        100% { opacity: 0.5; }
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-        }
 
         if (match) {
             // Set flag to indicate we're processing a message with sim data
@@ -661,34 +616,6 @@ const renderTrackerWithoutSim = (mesId) => {
 
         // Format and display the message content (without the tracker UI)
         messageElement.innerHTML = messageFormatting(displayMessage, message.name, message.is_system, message.is_user, mesId);
-        
-        // Pre-insert the preparing text div (hidden) at the bottom of the message
-        if (!messageElement.querySelector('.sst-preparing-text')) {
-            const preparingText = document.createElement('div');
-            preparingText.className = 'sst-preparing-text';
-            preparingText.textContent = 'Preparing new tracker cards...';
-            preparingText.style.cssText = `
-                color: #6a5acd;
-                font-style: italic;
-                margin: 10px 0;
-                display: none;
-            `;
-            messageElement.appendChild(preparingText);
-            
-            // Add the pulse animation to the document if not already present
-            if (!document.getElementById('sst-pulse-animation')) {
-                const style = document.createElement('style');
-                style.id = 'sst-pulse-animation';
-                style.textContent = `
-                    @keyframes sst-pulse {
-                        0% { opacity: 0.5; }
-                        50% { opacity: 1; }
-                        100% { opacity: 0.5; }
-                    }
-                `;
-                document.head.appendChild(style);
-            }
-        }
 
         // Parse the sim data from the original message content (not the hidden version)       
         const dataMatch = message.mes.match(new RegExp("```" + identifier + "[\\s\\S]*?```", "m"));
@@ -780,7 +707,9 @@ const renderTrackerWithoutSim = (mesId) => {
             // Remove any preparing text
             const preparingText = messageElement.querySelector('.sst-preparing-text');
             if (preparingText) {
-                preparingText.style.display = 'none';
+                preparingText.remove();
+                // Remove this mesText from the set since it no longer has preparing text
+                mesTextsWithPreparingText.delete(messageElement);
             }
             
             // Add a horizontal divider before the cards
@@ -993,14 +922,35 @@ jQuery(async () => {
                                 log(`Hiding in-flight code block in mes_text`);
                                 pre.style.display = 'none';
                                 
-                                // Show preparing text if we're expecting code blocks
+                                // Add "Preparing new tracker cards..." text with pulsing animation
                                 const mesText = pre.closest('.mes_text');
-                                if (mesText && isGeneratingCodeBlocks) {
-                                    const preparingText = mesText.querySelector('.sst-preparing-text');
-                                    if (preparingText) {
-                                        // Apply the pulse animation
-                                        preparingText.style.animation = 'sst-pulse 1.5s infinite';
-                                        preparingText.style.display = 'block';
+                                if (mesText && !mesTextsWithPreparingText.has(mesText)) {
+                                    // Mark this mesText as having preparing text
+                                    mesTextsWithPreparingText.add(mesText);
+                                    
+                                    const preparingText = document.createElement('div');
+                                    preparingText.className = 'sst-preparing-text';
+                                    preparingText.textContent = 'Preparing new tracker cards...';
+                                    preparingText.style.cssText = `
+                                        color: #6a5acd;
+                                        font-style: italic;
+                                        margin: 10px 0;
+                                        animation: sst-pulse 1.5s infinite;
+                                    `;
+                                    mesText.appendChild(preparingText);
+                                    
+                                    // Add the pulse animation to the document if not already present
+                                    if (!document.getElementById('sst-pulse-animation')) {
+                                        const style = document.createElement('style');
+                                        style.id = 'sst-pulse-animation';
+                                        style.textContent = `
+                                            @keyframes sst-pulse {
+                                                0% { opacity: 0.5; }
+                                                50% { opacity: 1; }
+                                                100% { opacity: 0.5; }
+                                            }
+                                        `;
+                                        document.head.appendChild(style);
                                     }
                                 }
                             }
@@ -1015,16 +965,6 @@ jQuery(async () => {
             childList: true,
             subtree: true
         });
-
-        // Periodically check the flag and update preparing text visibility
-        setInterval(() => {
-            if (!isGeneratingCodeBlocks) {
-                // Hide all preparing text elements
-                document.querySelectorAll('.sst-preparing-text').forEach(el => {
-                    el.style.display = 'none';
-                });
-            }
-        }, 100);
 
         log("MutationObserver set up for in-flight sim block hiding.");
 
