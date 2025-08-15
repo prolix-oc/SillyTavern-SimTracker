@@ -114,7 +114,7 @@ The extension offers extensive configuration options through the SillyTavern set
 
 Templates can define their preferred position using HTML comments. The positioning options are:
 
-- **ABOVE**: Display the tracker above the message content
+- **ABOVE**: Display the tracker above the message content (inside the message block)
 - **BOTTOM**: Display the tracker below the message content (default)
 - **LEFT**: Display the tracker in a fixed sidebar on the left side of the screen
 - **RIGHT**: Display the tracker in a fixed sidebar on the right side of the screen
@@ -126,6 +126,13 @@ To set a position in your template, add a comment like this at the top of your t
 ```
 
 If no position is specified in the template, the extension will use the position selected in the settings panel.
+
+### Positioning Examples
+
+1. **ABOVE Positioning**: The tracker will appear at the top of the message block, above the reasoning details.
+2. **MACRO Positioning**: The tracker will replace the `{{sim_tracker_positioned}}` macro wherever it appears in your message.
+
+These positioning options give you fine-grained control over where your tracker cards appear in relation to your messages.
 
 ## Migration Tools
 

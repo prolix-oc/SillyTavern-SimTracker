@@ -602,11 +602,16 @@ const renderTracker = (mesId) => {
             // Handle different positions
             switch (templatePosition) {
                 case 'ABOVE':
-                    // Insert above mes_text
-                    const messageContainer = messageElement.closest('.mes');
-                    if (messageContainer) {
-                        const finalHtmlAbove = compiledWrapperTemplate({ cardsHtml });
-                        messageContainer.insertAdjacentHTML('afterbegin', finalHtmlAbove);
+                    // Insert above the message content (inside the message block)
+                    const reasoningElement = messageElement.querySelector('.mes_reasoning_details');
+                    if (reasoningElement) {
+                        // Insert above reasoning details if they exist
+                        const finalHtml = `<hr style="margin-top: 15px; margin-bottom: 20px;">` + compiledWrapperTemplate({ cardsHtml });
+                        reasoningElement.insertAdjacentHTML('beforebegin', finalHtml);
+                    } else {
+                        // If no reasoning details, insert at the beginning of the message
+                        const finalHtml = `<hr style="margin-top: 15px; margin-bottom: 20px;">` + compiledWrapperTemplate({ cardsHtml });
+                        messageElement.insertAdjacentHTML('afterbegin', finalHtml);
                     }
                     break;
                 case 'LEFT':
@@ -802,11 +807,16 @@ const renderTrackerWithoutSim = (mesId) => {
             // Handle different positions
             switch (templatePosition) {
                 case 'ABOVE':
-                    // Insert above mes_text
-                    const messageContainer = messageElement.closest('.mes');
-                    if (messageContainer) {
-                        const finalHtmlAbove = compiledWrapperTemplate({ cardsHtml });
-                        messageContainer.insertAdjacentHTML('afterbegin', finalHtmlAbove);
+                    // Insert above the message content (inside the message block)
+                    const reasoningElement = messageElement.querySelector('.mes_reasoning_details');
+                    if (reasoningElement) {
+                        // Insert above reasoning details if they exist
+                        const finalHtml = `<hr style="margin-top: 15px; margin-bottom: 20px;">` + compiledWrapperTemplate({ cardsHtml });
+                        reasoningElement.insertAdjacentHTML('beforebegin', finalHtml);
+                    } else {
+                        // If no reasoning details, insert at the beginning of the message
+                        const finalHtml = `<hr style="margin-top: 15px; margin-bottom: 20px;">` + compiledWrapperTemplate({ cardsHtml });
+                        messageElement.insertAdjacentHTML('afterbegin', finalHtml);
                     }
                     break;
                 case 'LEFT':
