@@ -1,4 +1,8 @@
+<!-- TEMPLATE NAME: Dating Sim Tracker (Positionable) -->
+<!-- AUTHOR: Prolix OCs -->
 <!-- POSITION: RIGHT -->
+
+<!-- CARD_TEMPLATE_START -->
 <div class="sim-tracker-container" style="display: flex; flex-direction: column; gap: 20px; width: 100%;">
   {{#each characters}}
   <div class="sim-tracker-card {{#if inactive}}inactive{{/if}}" 
@@ -107,3 +111,33 @@
   </div>
   {{/each}}
 </div>
+<!-- CARD_TEMPLATE_END -->
+
+<!-- 
+TEMPLATE VARIABLES:
+- {{characterName}}: Character's name
+- {{currentDate}}: Current date in YYYY-MM-DD format
+- {{bgColor}}: Primary background color
+- {{darkerBgColor}}: Darker variant of background color
+- {{contrastColor}}: Contrast color for text against background
+- {{stats.ap}}: Affection points
+- {{stats.dp}}: Desire points
+- {{stats.tp}}: Trust points
+- {{stats.cp}}: Contempt points
+- {{stats.apChange}}: Change in affection points (positive/negative/zero)
+- {{stats.dpChange}}: Change in desire points (positive/negative/zero)
+- {{stats.tpChange}}: Change in trust points (positive/negative/zero)
+- {{stats.cpChange}}: Change in contempt points (positive/negative/zero)
+- {{stats.days_since_first_meeting}}: Days since first meeting
+- {{stats.preg}}: Boolean for pregnancy status
+- {{stats.days_preg}}: Days pregnant (if applicable)
+- {{stats.internal_thought}}: Character's internal thoughts
+- {{stats.relationshipStatus}}: Relationship status text
+- {{stats.desireStatus}}: Desire status text
+- {{stats.inactive}}: Boolean for inactive status
+- {{stats.inactiveReason}}: Number indicating reason for inactivity (0-5)
+- {{healthIcon}}: Health status icon (🤕 or 💀)
+- {{reactionEmoji}}: Reaction emoji (👍, 👎, or 😐)
+- {{showThoughtBubble}}: Boolean to show/hide thought bubble (always shown in this template)
+- {{isActive}}: Boolean for card active state (affects opacity)
+-->
