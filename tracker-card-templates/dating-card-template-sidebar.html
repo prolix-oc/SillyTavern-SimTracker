@@ -3,21 +3,150 @@
 <!-- POSITION: RIGHT -->
 
 <!-- CARD_TEMPLATE_START -->
+ <style>
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .message {
+      background: rgba(30, 30, 40, 0.7);
+      border-radius: 15px;
+      padding: 25px;
+      margin-bottom: 30px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+    }
+    
+    .message h1 {
+      margin-top: 0;
+      font-weight: 600;
+      color: #e0e0ff;
+    }
+    
+    .message p {
+      line-height: 1.6;
+      color: #cccccc;
+    }
+    
+    /* Sidebar styling for demo purposes */
+    .sidebar-demo {
+      position: fixed;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 320px;
+      max-height: 90vh;
+      overflow-y: auto;
+      z-index: 1000;
+      padding: 10px;
+      background: rgba(30, 30, 30, 0.7);
+      border-radius: 20px;
+      backdrop-filter: blur(15px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+    
+    /* The actual template styling (copied from the template file) */
+    .sim-tracker-container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      width: 100%;
+    }
+    
+    .sim-tracker-card {
+      background: linear-gradient(145deg, #2c2c2c, #1a1a1a);
+      border-radius: 18px;
+      padding: 20px;
+      width: 100%;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      position: relative;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    }
+    
+    .character-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 18px;
+    }
+    
+    .character-name {
+      font-size: 1.3em;
+      font-weight: 600;
+      color: #ffffff;
+    }
+    
+    .status-indicator {
+      font-size: 1.4em;
+    }
+    
+    .stats-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+    
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    
+    .stat-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.9em;
+      color: rgba(255, 255, 255, 0.7);
+    }
+    
+    .stat-bar-bg {
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    
+    .stat-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+    }
+    
+    .status-container {
+      margin-top: 20px;
+      padding-top: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    
+    .relationship-status, .desire-status {
+      margin-bottom: 10px;
+      font-size: 0.95em;
+      color: rgba(255, 255, 255, 0.9);
+    }
+    
+    .days-counter {
+      text-align: center;
+      font-style: italic;
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 0.9em;
+    }
+    
+    .thought-bubble {
+      margin-top: 20px;
+      padding: 15px;
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
 <div class="sim-tracker-container" style="display: flex; flex-direction: column; gap: 20px; width: 100%; min-width: 250px; visibility: visible !important;">
   {{#each characters}}
-  <div class="sim-tracker-card {{#if inactive}}inactive{{/if}}" 
-       style="background: linear-gradient(145deg, #2c2c2c, #1a1a1a); 
-              border-radius: 18px; 
-              padding: 20px; 
-              width: 100%;
-              box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-              position: relative;
-              border: 1px solid rgba(255, 255, 255, 0.05);
-              {{#if inactive}}opacity: 0.7;{{/if}}
-              backdrop-filter: blur(10px);
-              transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-              display: block !important;
-              visibility: visible !important;">
+  <div class="sim-tracker-card {{#if inactive}}inactive{{/if}}">
     
     <!-- Character header with name and status -->
     <div class="character-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px;">
