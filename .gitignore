@@ -9,7 +9,9 @@ QWEN.md
 regex/*
 *.md
 *.html
+*.css
 !tracker-card-templates/*
 !settings.html
 !prompts/*.md
 !README.md
+!style.css

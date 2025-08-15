@@ -47,7 +47,8 @@ A powerful SillyTavern extension that dynamically renders visually appealing tra
 - **Responsive Design**: Cards automatically adapt to mobile and desktop layouts
 - **Visual Indicators**: Color-coded change indicators for stat modifications
 - **Status Icons**: Automatic emoji-based status indicators for health, reactions, and inactivity
-- **Positionable Templates**: Templates can define their position (Above, Bottom, Left, Right, or Macro replacement)
+- **Positionable Templates**: Templates can define their display position (Above, Bottom, Left, Right, or Macro replacement)
+- **Multiple Built-in Templates**: Choose from different designs including a sleek sidebar template
 
 ### Data Structure
 Supports both legacy and modern JSON formats:
@@ -133,6 +134,16 @@ If no position is specified in the template, the extension will use the position
 2. **MACRO Positioning**: The tracker will replace the `{{sim_tracker_positioned}}` macro wherever it appears in your message.
 
 These positioning options give you fine-grained control over where your tracker cards appear in relation to your messages.
+
+## Built-in Templates
+
+The extension includes several built-in templates for different use cases:
+
+1. **Default Template**: A clean, responsive design that works well in most situations
+2. **Sidebar Template**: A sleek design optimized for display in sidebars with progress bars and glass-morphism effects
+3. **Positionable Template**: A template that demonstrates the macro positioning feature
+
+To use a built-in template, simply select it from the template selection dropdown in the settings panel.
 
 ## Migration Tools
 

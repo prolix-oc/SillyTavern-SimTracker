@@ -606,11 +606,11 @@ const renderTracker = (mesId) => {
                     const reasoningElement = messageElement.querySelector('.mes_reasoning_details');
                     if (reasoningElement) {
                         // Insert above reasoning details if they exist
-                        const finalHtml = `<hr style="margin-top: 15px; margin-bottom: 20px;">` + compiledWrapperTemplate({ cardsHtml });
+                        const finalHtml = compiledWrapperTemplate({ cardsHtml }) + `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
                         reasoningElement.insertAdjacentHTML('beforebegin', finalHtml);
                     } else {
                         // If no reasoning details, insert at the beginning of the message
-                        const finalHtml = `<hr style="margin-top: 15px; margin-bottom: 20px;">` + compiledWrapperTemplate({ cardsHtml });
+                        const finalHtml = compiledWrapperTemplate({ cardsHtml }) + `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
                         messageElement.insertAdjacentHTML('afterbegin', finalHtml);
                     }
                     break;
@@ -811,11 +811,11 @@ const renderTrackerWithoutSim = (mesId) => {
                     const reasoningElement = messageElement.querySelector('.mes_reasoning_details');
                     if (reasoningElement) {
                         // Insert above reasoning details if they exist
-                        const finalHtml = `<hr style="margin-top: 15px; margin-bottom: 20px;">` + compiledWrapperTemplate({ cardsHtml });
+                        const finalHtml = compiledWrapperTemplate({ cardsHtml }) + `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
                         reasoningElement.insertAdjacentHTML('beforebegin', finalHtml);
                     } else {
                         // If no reasoning details, insert at the beginning of the message
-                        const finalHtml = `<hr style="margin-top: 15px; margin-bottom: 20px;">` + compiledWrapperTemplate({ cardsHtml });
+                        const finalHtml = compiledWrapperTemplate({ cardsHtml }) + `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
                         messageElement.insertAdjacentHTML('afterbegin', finalHtml);
                     }
                     break;
