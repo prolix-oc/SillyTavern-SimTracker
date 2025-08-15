@@ -9,5 +9,6 @@
   "homePage": "https://github.com/prolix-oc/SillyTavern-SimTracker.git",
   "requires": [],
   "optional": [],
-  "loading_order": 1
+  "loading_order": 1,
+  "generate_interceptor": "simTrackerGenInterceptor"
 }
