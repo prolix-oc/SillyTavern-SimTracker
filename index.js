@@ -91,6 +91,42 @@ const get_extension_directory = () => {
     return index_path.substring(0, index_path.lastIndexOf('/'));
 };
 
+// Function to update lastSimJsonString when a message is swiped
+const updateLastSimStatsOnSwipe = (currentMesId) => {
+    try {
+        const context = getContext();
+        if (!context || !context.chat) {
+            log("Context or chat not available for swipe update");
+            return;
+        }
+
+        // Look for the previous message with sim data
+        for (let i = currentMesId - 1; i >= 0; i--) {
+            const message = context.chat[i];
+            if (!message || !message.mes) continue;
+
+            // Check if this message contains sim data
+            const identifier = get_settings('codeBlockIdentifier');
+            const simRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "m");
+            const match = message.mes.match(simRegex);
+
+            if (match) {
+                // Extract JSON content from the match
+                const jsonContent = match[0].replace(/```/g, '').replace(new RegExp(`^${identifier}\\s*`), '').trim();
+                
+                // Update the lastSimJsonString with the previous message's sim data
+                lastSimJsonString = jsonContent;
+                log(`Updated last_sim_stats macro with data from message ID ${i}`);
+                return;
+            }
+        }
+
+        log("No previous message with sim data found for swipe update");
+    } catch (error) {
+        log(`Error updating last sim stats on swipe: ${error.message}`);
+    }
+};
+
 // Utility function to migrate old JSON format to new format
 const migrateJsonFormat = (oldJsonData) => {
     // Check if it's already in the new format
@@ -949,6 +985,10 @@ ${exampleJson}
         eventSource.on(event_types.MESSAGE_EDITED, (mesId) => {
             log(`Message ${mesId} was edited. Re-rendering tracker card.`);
             renderTrackerWithoutSim(mesId);
+        });
+        eventSource.on(event_types.MESSAGE_SWIPE, (mesId) => {
+            log(`Message swipe detected for message ID ${mesId}. Updating last_sim_stats macro.`);
+            updateLastSimStatsOnSwipe(mesId);
         });
         refreshAllCards();
         log(`${MODULE_NAME} has been successfully loaded.`);
