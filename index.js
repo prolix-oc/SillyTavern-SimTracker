@@ -863,6 +863,13 @@ const load_settings_html_manually = async () => {
 };
 
 
+// --- INTERCEPTOR ---
+globalThis.simTrackerGenInterceptor = async function(chat, contextSize, abort, type) {
+    // This interceptor doesn't need to modify the chat for now
+    // but we keep it available for future use
+    log(`simTrackerGenInterceptor called with type: ${type}`);
+};
+
 // --- ENTRY POINT ---
 jQuery(async () => {
     try {
@@ -974,6 +981,90 @@ ${exampleJson}
 \`\`\``;
         });
         log("Macros registered successfully.");
+
+        // Register the slash command for adding sim data to messages
+        SlashCommandParser.addCommandObject(SlashCommand.fromProps({
+            name: 'sst-add',
+            callback: async () => {
+                if (!get_settings('isEnabled')) {
+                    return 'Silly Sim Tracker is not enabled.';
+                }
+                
+                try {
+                    const context = getContext();
+                    if (!context || !context.chat || context.chat.length === 0) {
+                        return 'No chat history found.';
+                    }
+                    
+                    // Get the last character message
+                    let lastCharMessageIndex = -1;
+                    for (let i = context.chat.length - 1; i >= 0; i--) {
+                        if (!context.chat[i].is_user && !context.chat[i].is_system) {
+                            lastCharMessageIndex = i;
+                            break;
+                        }
+                    }
+                    
+                    if (lastCharMessageIndex === -1) {
+                        return 'No character message found in chat history.';
+                    }
+                    
+                    const lastCharMessage = context.chat[lastCharMessageIndex];
+                    
+                    // Check if the message already contains a sim block
+                    const identifier = get_settings('codeBlockIdentifier');
+                    const simRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "m");
+                    if (simRegex.test(lastCharMessage.mes)) {
+                        return 'Last character message already contains a sim block.';
+                    }
+                    
+                    // Append the sim block to the message
+                    const simBlock = `\n\`\`\`${identifier}\n\`\`\``;
+                    lastCharMessage.mes += simBlock;
+                    
+                    // Update the message in the UI
+                    const messageElement = document.querySelector(`div[mesid="${lastCharMessageIndex}"] .mes_text`);
+                    if (messageElement) {
+                        messageElement.innerHTML = messageFormatting(
+                            lastCharMessage.mes, 
+                            lastCharMessage.name, 
+                            lastCharMessage.is_system, 
+                            lastCharMessage.is_user, 
+                            lastCharMessageIndex
+                        );
+                    }
+                    
+                    // Request continuation through the interceptor
+                    // We'll use the existing continue generation functionality
+                    await eventSource.emit(event_types.GENERATION_QUEUE, {
+                        type: 'continue',
+                        chat: context.chat,
+                        character: context.character
+                    });
+                    
+                    return 'Added sim block to last character message and requested continuation.';
+                } catch (error) {
+                    log(`Error in /sst-add command: ${error.message}`);
+                    return `Error: ${error.message}`;
+                }
+            },
+            returns: 'status message',
+            unnamedArgumentList: [],
+            helpString: `
+                <div>
+                    Adds a sim block to the last character message if it doesn't already have one, and requests continuation.
+                </div>
+                <div>
+                    <strong>Example:</strong>
+                    <ul>
+                        <li>
+                            <pre><code class="language-stscript">/sst-add</code></pre>
+                            Adds a sim block to the last character message and continues generation
+                        </li>
+                    </ul>
+                </div>
+            `,
+        }));
 
         const context = getContext();
         const { eventSource, event_types } = context;
