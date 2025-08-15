@@ -36,3 +36,43 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     max-width: 100% !important;
     box-sizing: border-box !important;
 }
+
+/* Sidebar-specific styles */
+#sst-sidebar-right-*,
+#sst-sidebar-left-* {
+    position: fixed !important;
+    z-index: 10000 !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 10px !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    display: block !important;
+    visibility: visible !important;
+    overflow: visible !important;
+}
+
+#sst-sidebar-right-* #silly-sim-tracker-container,
+#sst-sidebar-left-* #silly-sim-tracker-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    display: block !important;
+    visibility: visible !important;
+}
+
+/* Ensure sidebar content is visible */
+.sim-tracker-container {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.sim-tracker-card {
+    display: block !important;
+    visibility: visible !important;
+    box-sizing: border-box !important;
+}

@@ -35,8 +35,31 @@ function createRightSidebar(mesId, content) {
         box-shadow: none !important;
         display: block !important;
         visibility: visible !important;
+        overflow: visible !important;
     `;
-    document.body.appendChild(rightSidebar);
+    
+    // Ensure the content is visible by adding specific styles to the inner elements
+    setTimeout(() => {
+        const container = rightSidebar.querySelector('#silly-sim-tracker-container');
+        if (container) {
+            container.style.cssText += `
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+                display: block !important;
+                visibility: visible !important;
+            `;
+        }
+        
+        // Force reflow to ensure proper rendering
+        rightSidebar.offsetHeight;
+    }, 0);
+    
+    // Add a small delay before appending to the DOM to ensure proper rendering
+    setTimeout(() => {
+        document.body.appendChild(rightSidebar);
+    }, 0);
+    
     return rightSidebar;
 }
 
@@ -67,8 +90,31 @@ function createLeftSidebar(mesId, content) {
         box-shadow: none !important;
         display: block !important;
         visibility: visible !important;
+        overflow: visible !important;
     `;
-    document.body.appendChild(leftSidebar);
+    
+    // Ensure the content is visible by adding specific styles to the inner elements
+    setTimeout(() => {
+        const container = leftSidebar.querySelector('#silly-sim-tracker-container');
+        if (container) {
+            container.style.cssText += `
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+                display: block !important;
+                visibility: visible !important;
+            `;
+        }
+        
+        // Force reflow to ensure proper rendering
+        leftSidebar.offsetHeight;
+    }, 0);
+    
+    // Add a small delay before appending to the DOM to ensure proper rendering
+    setTimeout(() => {
+        document.body.appendChild(leftSidebar);
+    }, 0);
+    
     return leftSidebar;
 }
 
@@ -305,7 +351,7 @@ const migrateAllSimData = async () => {
 };
 
 // --- TEMPLATES ---
-const wrapperTemplate = `<div id="${CONTAINER_ID}" style="width:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">{{{cardsHtml}}}</div>`;
+const wrapperTemplate = `<div id="${CONTAINER_ID}" style="width:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:block !important;visibility:visible !important;">{{{cardsHtml}}}</div>`;
 let compiledWrapperTemplate = Handlebars.compile(wrapperTemplate);
 let compiledCardTemplate = null;
 
