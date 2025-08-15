@@ -57,6 +57,21 @@
         </div>
 
         <div class="setting">
+          <label for="templatePosition">Template Position</label>
+          <select id="templatePosition" class="text_pole">
+            <option value="BOTTOM">Bottom (Below message)</option>
+            <option value="ABOVE">Above Message</option>
+            <option value="LEFT">Left Sidebar</option>
+            <option value="RIGHT">Right Sidebar</option>
+            <option value="MACRO">Macro Replacement</option>
+          </select>
+        </div>
+        <div class="description">
+          Select where the tracker card should be positioned relative to the message.
+          Templates can override this setting with a POSITION comment.
+        </div>
+
+        <div class="setting">
           <label>Custom Template</label>
           <div class="flex-container">
             <button

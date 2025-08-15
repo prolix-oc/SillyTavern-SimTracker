@@ -42,6 +42,7 @@ const default_settings = {
     datingSimPrompt: "Default prompt could not be loaded. Please check file path.",
     customFields: [...defaultSimFields], // Clone the default fields
     hideSimBlocks: true, // New setting to hide sim blocks in message text
+    templatePosition: "BOTTOM", // New setting for template position
 };
 
 let settings = {};
@@ -240,7 +241,7 @@ const migrateAllSimData = async () => {
 };
 
 // --- TEMPLATES ---
-const wrapperTemplate = `<div id="${CONTAINER_ID}" style="display:flex;flex-wrap:wrap;gap:20px;justify-content:center;align-items:start;width:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">{{{cardsHtml}}}</div>`;
+const wrapperTemplate = `<div id="${CONTAINER_ID}" style="width:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;">{{{cardsHtml}}}</div>`;
 let compiledWrapperTemplate = Handlebars.compile(wrapperTemplate);
 let compiledCardTemplate = null;
 
@@ -278,7 +279,8 @@ async function populateTemplateDropdown() {
     log('Populating template dropdown with parsed friendly names...');
 
     const defaultFiles = [
-        "dating-card-template.html"
+        "dating-card-template.html",
+        "dating-card-template-positioned.html"
     ];
 
     const templateOptions = [];
@@ -365,6 +367,11 @@ const loadTemplate = async () => {
             const cardEndMarker = '<!-- CARD_TEMPLATE_END -->';
             let cardTemplate = '';
 
+            // Extract position metadata
+            const positionRegex = /<!--\s*POSITION\s*:\s*(.*?)\s*-->/i;
+            const positionMatch = customTemplateHtml.match(positionRegex);
+            const templatePosition = positionMatch ? positionMatch[1].trim().toUpperCase() : get_settings('templatePosition') || 'BOTTOM'; // Use setting as fallback
+
             const startIndex = customTemplateHtml.indexOf(cardStartMarker);
             const endIndex = customTemplateHtml.indexOf(cardEndMarker);
 
@@ -390,7 +397,9 @@ const loadTemplate = async () => {
             }
 
             compiledCardTemplate = Handlebars.compile(cardTemplate);
-            log("Custom HTML template compiled successfully.");
+            // Store the template position in settings for use during rendering
+            set_settings('templatePosition', templatePosition);
+            log(`Custom HTML template compiled successfully. Position: ${templatePosition}`);
             return; // Exit successfully
         } catch (error) {
             log(`Error parsing custom HTML template: ${error.message}. Reverting to default file-based template.`);
@@ -404,6 +413,12 @@ const loadTemplate = async () => {
         try {
             const templateContent = await $.get(defaultPath);
             log(`Loading template from default file: ${defaultPath}`);
+            
+            // Extract position metadata
+            const positionRegex = /<!--\s*POSITION\s*:\s*(.*?)\s*-->/i;
+            const positionMatch = templateContent.match(positionRegex);
+            const templatePosition = positionMatch ? positionMatch[1].trim().toUpperCase() : get_settings('templatePosition') || 'BOTTOM'; // Use setting as fallback
+            
             // Re-run the same parsing logic for the file content
             const cardStartMarker = '<!-- CARD_TEMPLATE_START -->';
             const cardEndMarker = '<!-- CARD_TEMPLATE_END -->';
@@ -431,7 +446,9 @@ const loadTemplate = async () => {
                 }
             }
             compiledCardTemplate = Handlebars.compile(cardTemplate);
-            log(`Default template '${templateFile}' compiled successfully.`);
+            // Store the template position in settings for use during rendering
+            set_settings('templatePosition', templatePosition);
+            log(`Default template '${templateFile}' compiled successfully. Position: ${templatePosition}`);
             return; // Exit successfully
         } catch (error) {
             log(`Could not load or parse default template file '${templateFile}'. Using hardcoded fallback.`);
@@ -445,6 +462,7 @@ const loadTemplate = async () => {
         No custom template is loaded and the selected default template could not be found or parsed.
     </div>`;
     compiledCardTemplate = Handlebars.compile(fallbackTemplate);
+    set_settings('templatePosition', 'BOTTOM'); // Default position for fallback
 };
 
 // --- RENDER LOGIC ---
@@ -457,7 +475,7 @@ const renderTracker = (mesId) => {
             log(`Error: Could not find message with ID ${mesId}. Aborting render.`);
             return;
         }
-        const messageElement = document.querySelector(`div[mesid=\"${mesId}\"] .mes_text`);
+        const messageElement = document.querySelector(`div[mesid="${mesId}"] .mes_text`);
         if (!messageElement) return;
 
         // Log message element dimensions for debugging layout issues
@@ -578,9 +596,75 @@ const renderTracker = (mesId) => {
             // Clear the flag since we're done processing
             isGeneratingCodeBlocks = false;
             
-            // Add a horizontal divider before the cards
-            const finalHtml = `<hr style="margin-top: 15px; margin-bottom: 20px;">` + compiledWrapperTemplate({ cardsHtml });
-            messageElement.insertAdjacentHTML('beforeend', finalHtml);
+            // Get the template position from settings
+            const templatePosition = get_settings('templatePosition') || 'BOTTOM';
+            
+            // Handle different positions
+            switch (templatePosition) {
+                case 'ABOVE':
+                    // Insert above mes_text
+                    const messageContainer = messageElement.closest('.mes');
+                    if (messageContainer) {
+                        const finalHtmlAbove = compiledWrapperTemplate({ cardsHtml });
+                        messageContainer.insertAdjacentHTML('afterbegin', finalHtmlAbove);
+                    }
+                    break;
+                case 'LEFT':
+                    // Insert as a fixed sidebar on the left
+                    const leftSidebarId = `sst-sidebar-left-${mesId}`;
+                    // Remove existing sidebar for this message if any
+                    const existingLeftSidebar = document.getElementById(leftSidebarId);
+                    if (existingLeftSidebar) existingLeftSidebar.remove();
+                    
+                    const leftSidebar = document.createElement('div');
+                    leftSidebar.id = leftSidebarId;
+                    leftSidebar.innerHTML = compiledWrapperTemplate({ cardsHtml });
+                    leftSidebar.style.cssText = `
+                        position: fixed;
+                        left: 10px;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        z-index: 1000;
+                        max-width: 300px;
+                    `;
+                    document.body.appendChild(leftSidebar);
+                    break;
+                case 'RIGHT':
+                    // Insert as a fixed sidebar on the right
+                    const rightSidebarId = `sst-sidebar-right-${mesId}`;
+                    // Remove existing sidebar for this message if any
+                    const existingRightSidebar = document.getElementById(rightSidebarId);
+                    if (existingRightSidebar) existingRightSidebar.remove();
+                    
+                    const rightSidebar = document.createElement('div');
+                    rightSidebar.id = rightSidebarId;
+                    rightSidebar.innerHTML = compiledWrapperTemplate({ cardsHtml });
+                    rightSidebar.style.cssText = `
+                        position: fixed;
+                        right: 10px;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        z-index: 1000;
+                        max-width: 300px;
+                    `;
+                    document.body.appendChild(rightSidebar);
+                    break;
+                case 'MACRO':
+                    // For MACRO position, replace the placeholder in the message
+                    const placeholder = messageElement.querySelector('#sst-macro-placeholder');
+                    if (placeholder) {
+                        const finalHtml = compiledWrapperTemplate({ cardsHtml });
+                        placeholder.insertAdjacentHTML('beforebegin', finalHtml);
+                        placeholder.remove();
+                    }
+                    break;
+                case 'BOTTOM':
+                default:
+                    // Add a horizontal divider before the cards
+                    const finalHtml = `<hr style="margin-top: 15px; margin-bottom: 20px;">` + compiledWrapperTemplate({ cardsHtml });
+                    messageElement.insertAdjacentHTML('beforeend', finalHtml);
+                    break;
+            }
         }
     } catch (error) {
         // Clear the flag on error
@@ -712,9 +796,75 @@ const renderTrackerWithoutSim = (mesId) => {
                 mesTextsWithPreparingText.delete(messageElement);
             }
             
-            // Add a horizontal divider before the cards
-            const finalHtml = `<hr style="margin-top: 15px; margin-bottom: 20px;">` + compiledWrapperTemplate({ cardsHtml });
-            messageElement.insertAdjacentHTML('beforeend', finalHtml);
+            // Get the template position from settings
+            const templatePosition = get_settings('templatePosition') || 'BOTTOM';
+            
+            // Handle different positions
+            switch (templatePosition) {
+                case 'ABOVE':
+                    // Insert above mes_text
+                    const messageContainer = messageElement.closest('.mes');
+                    if (messageContainer) {
+                        const finalHtmlAbove = compiledWrapperTemplate({ cardsHtml });
+                        messageContainer.insertAdjacentHTML('afterbegin', finalHtmlAbove);
+                    }
+                    break;
+                case 'LEFT':
+                    // Insert as a fixed sidebar on the left
+                    const leftSidebarId = `sst-sidebar-left-${mesId}`;
+                    // Remove existing sidebar for this message if any
+                    const existingLeftSidebar = document.getElementById(leftSidebarId);
+                    if (existingLeftSidebar) existingLeftSidebar.remove();
+                    
+                    const leftSidebar = document.createElement('div');
+                    leftSidebar.id = leftSidebarId;
+                    leftSidebar.innerHTML = compiledWrapperTemplate({ cardsHtml });
+                    leftSidebar.style.cssText = `
+                        position: fixed;
+                        left: 10px;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        z-index: 1000;
+                        max-width: 300px;
+                    `;
+                    document.body.appendChild(leftSidebar);
+                    break;
+                case 'RIGHT':
+                    // Insert as a fixed sidebar on the right
+                    const rightSidebarId = `sst-sidebar-right-${mesId}`;
+                    // Remove existing sidebar for this message if any
+                    const existingRightSidebar = document.getElementById(rightSidebarId);
+                    if (existingRightSidebar) existingRightSidebar.remove();
+                    
+                    const rightSidebar = document.createElement('div');
+                    rightSidebar.id = rightSidebarId;
+                    rightSidebar.innerHTML = compiledWrapperTemplate({ cardsHtml });
+                    rightSidebar.style.cssText = `
+                        position: fixed;
+                        right: 10px;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        z-index: 1000;
+                        max-width: 300px;
+                    `;
+                    document.body.appendChild(rightSidebar);
+                    break;
+                case 'MACRO':
+                    // For MACRO position, replace the placeholder in the message
+                    const placeholder = messageElement.querySelector('#sst-macro-placeholder');
+                    if (placeholder) {
+                        const finalHtml = compiledWrapperTemplate({ cardsHtml });
+                        placeholder.insertAdjacentHTML('beforebegin', finalHtml);
+                        placeholder.remove();
+                    }
+                    break;
+                case 'BOTTOM':
+                default:
+                    // Add a horizontal divider before the cards
+                    const finalHtml = `<hr style="margin-top: 15px; margin-bottom: 20px;">` + compiledWrapperTemplate({ cardsHtml });
+                    messageElement.insertAdjacentHTML('beforeend', finalHtml);
+                    break;
+            }
         }
     } catch (error) {
         log(`A critical error occurred in renderTrackerWithoutSim for message ID ${mesId}. Please check the console. Error: ${error.stack}`);
@@ -739,6 +889,11 @@ const refreshAllCards = () => {
     // First, remove all existing tracker containers to prevent duplicates
     document.querySelectorAll(`#${CONTAINER_ID}`).forEach(container => {
         container.remove();
+    });
+    
+    // Also remove any sidebars
+    document.querySelectorAll('[id^="sst-sidebar-"]').forEach(sidebar => {
+        sidebar.remove();
     });
 
     // Get all message divs currently in the chat DOM
@@ -780,6 +935,7 @@ const initialize_settings_listeners = () => {
     bind_setting('#showThoughtBubble', 'showThoughtBubble', 'boolean');
     bind_setting('#hideSimBlocks', 'hideSimBlocks', 'boolean'); // New setting
     bind_setting('#datingSimPrompt', 'datingSimPrompt', 'textarea');
+    bind_setting('#templatePosition', 'templatePosition', 'text');
 
     // Listener for the default template dropdown
     const $templateSelect = $('#templateFile');
@@ -1035,6 +1191,24 @@ jQuery(async () => {
             return `\`\`\`${identifier}
 ${exampleJson}
 \`\`\``;
+        });
+        
+        // Register a new macro for positionable tracker replacement
+        MacrosParser.registerMacro('sim_tracker_positioned', () => {
+            if (!get_settings('isEnabled')) return '';
+            log('Processed {{sim_tracker_positioned}} macro.');
+            
+            // Get the template position from settings
+            const templatePosition = get_settings('templatePosition') || 'BOTTOM';
+            
+            // Only return replacement content for MACRO position
+            if (templatePosition === 'MACRO') {
+                // This would be replaced with actual tracker content when rendering
+                return '<div id="sst-macro-placeholder" style="display: none;">SST_PLACEHOLDER</div>';
+            }
+            
+            // For other positions, return empty string
+            return '';
         });
         log("Macros registered successfully.");
 

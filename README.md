@@ -47,6 +47,7 @@ A powerful SillyTavern extension that dynamically renders visually appealing tra
 - **Responsive Design**: Cards automatically adapt to mobile and desktop layouts
 - **Visual Indicators**: Color-coded change indicators for stat modifications
 - **Status Icons**: Automatic emoji-based status indicators for health, reactions, and inactivity
+- **Positionable Templates**: Templates can define their position (Above, Bottom, Left, Right, or Macro replacement)
 
 ### Data Structure
 Supports both legacy and modern JSON formats:
@@ -104,9 +105,27 @@ The extension offers extensive configuration options through the SillyTavern set
 3. **Default Card Color**: Set the background color for cards
 4. **Thought Bubble Visibility**: Toggle display of character thoughts
 5. **Template Selection**: Choose from built-in templates or load custom ones
-6. **Custom Fields**: Define your own data fields for tracking
-7. **Data Hiding**: Hide raw JSON code blocks from chat display
-8. **System Prompt**: Customize the base prompt for sim tracking
+6. **Template Position**: Choose where cards should be displayed (can be overridden by templates)
+7. **Custom Fields**: Define your own data fields for tracking
+8. **Data Hiding**: Hide raw JSON code blocks from chat display
+9. **System Prompt**: Customize the base prompt for sim tracking
+
+## Template Positioning
+
+Templates can define their preferred position using HTML comments. The positioning options are:
+
+- **ABOVE**: Display the tracker above the message content
+- **BOTTOM**: Display the tracker below the message content (default)
+- **LEFT**: Display the tracker in a fixed sidebar on the left side of the screen
+- **RIGHT**: Display the tracker in a fixed sidebar on the right side of the screen
+- **MACRO**: Replace a specific macro (`{{sim_tracker_positioned}}`) in the message content
+
+To set a position in your template, add a comment like this at the top of your template file:
+```html
+<!-- POSITION: LEFT -->
+```
+
+If no position is specified in the template, the extension will use the position selected in the settings panel.
 
 ## Migration Tools
 
