@@ -564,6 +564,12 @@ const renderTracker = (mesId) => {
                 return compiledCardTemplate(cardData);
             }).join('');
 
+            // Remove any preparing text
+            const preparingText = messageElement.querySelector('.sst-preparing-text');
+            if (preparingText) {
+                preparingText.remove();
+            }
+            
             // Add a horizontal divider before the cards
             const finalHtml = `<hr style="margin-top: 15px; margin-bottom: 20px;">` + compiledWrapperTemplate({ cardsHtml });
             messageElement.insertAdjacentHTML('beforeend', finalHtml);
@@ -688,6 +694,12 @@ const renderTrackerWithoutSim = (mesId) => {
                 return compiledCardTemplate(cardData);
             }).join('');
 
+            // Remove any preparing text
+            const preparingText = messageElement.querySelector('.sst-preparing-text');
+            if (preparingText) {
+                preparingText.remove();
+            }
+            
             // Add a horizontal divider before the cards
             const finalHtml = `<hr style="margin-top: 15px; margin-bottom: 20px;">` + compiledWrapperTemplate({ cardsHtml });
             messageElement.insertAdjacentHTML('beforeend', finalHtml);
@@ -897,6 +909,38 @@ jQuery(async () => {
                             if (pre.closest('.mes_text')) {
                                 log(`Hiding in-flight code block in mes_text`);
                                 pre.style.display = 'none';
+                                
+                                // Add "Preparing new tracker cards..." text with pulsing animation
+                                const mesText = pre.closest('.mes_text');
+                                if (mesText) {
+                                    // Check if we've already added the preparing text
+                                    if (!mesText.querySelector('.sst-preparing-text')) {
+                                        const preparingText = document.createElement('div');
+                                        preparingText.className = 'sst-preparing-text';
+                                        preparingText.textContent = 'Preparing new tracker cards...';
+                                        preparingText.style.cssText = `
+                                            color: #6a5acd;
+                                            font-style: italic;
+                                            margin: 10px 0;
+                                            animation: sst-pulse 1.5s infinite;
+                                        `;
+                                        mesText.appendChild(preparingText);
+                                        
+                                        // Add the pulse animation to the document if not already present
+                                        if (!document.getElementById('sst-pulse-animation')) {
+                                            const style = document.createElement('style');
+                                            style.id = 'sst-pulse-animation';
+                                            style.textContent = `
+                                                @keyframes sst-pulse {
+                                                    0% { opacity: 0.5; }
+                                                    50% { opacity: 1; }
+                                                    100% { opacity: 0.5; }
+                                                }
+                                            `;
+                                            document.head.appendChild(style);
+                                        }
+                                    }
+                                }
                             }
                         });
                     }
