@@ -4,7 +4,7 @@ import { MacrosParser } from '../../../macros.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 
-const MODULE_NAME = 'SillySimTracker';
+const MODULE_NAME = 'silly-sim-tracker';
 const CONTAINER_ID = 'silly-sim-tracker-container';
 const SETTINGS_ID = 'silly-sim-tracker-settings';
 
@@ -32,7 +32,7 @@ const defaultSimFields = [
     { key: "inactiveReason", description: "Reason for inactivity (0=Not inactive, 1=Asleep, 2=Comatose, 3=Contempt/anger, 4=Incapacitated, 5=Death)" }
 ];
 
-const default_settings = {
+const default_settings = Object.freeze({
     isEnabled: true,
     codeBlockIdentifier: "sim",
     defaultBgColor: "#6a5acd",
@@ -42,13 +42,30 @@ const default_settings = {
     datingSimPrompt: "Default prompt could not be loaded. Please check file path.",
     customFields: [...defaultSimFields], // Clone the default fields
     hideSimBlocks: true, // New setting to hide sim blocks in message text
-};
+});
 
 let settings = {};
 const settings_ui_map = {};
 let lastSimJsonString = '';
 // Keep track of when we're expecting code blocks to be generated
 let isGeneratingCodeBlocks = false;
+
+function getSettings() {
+    // Initialize settings if they don't exist
+    if (!extensionSettings[MODULE_NAME]) {
+        extensionSettings[MODULE_NAME] = structuredClone(defaultSettings);
+    }
+
+    // Ensure all default keys exist (helpful after updates)
+    for (const key of Object.keys(defaultSettings)) {
+        if (!Object.hasOwn(extensionSettings[MODULE_NAME], key)) {
+            extensionSettings[MODULE_NAME][key] = defaultSettings[key];
+        }
+    }
+
+    return extensionSettings[MODULE_NAME];
+}
+
 
 // --- UTILITY FUNCTIONS ---
 const log = (message) => console.log(`[SST] [${MODULE_NAME}]`, message);
