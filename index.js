@@ -8,6 +8,70 @@ const MODULE_NAME = 'silly-sim-tracker';
 const CONTAINER_ID = 'silly-sim-tracker-container';
 const SETTINGS_ID = 'silly-sim-tracker-settings';
 
+// Helper function to create a right sidebar
+function createRightSidebar(mesId, content) {
+    const rightSidebarId = `sst-sidebar-right-${mesId}`;
+    // Remove existing sidebar for this message if any
+    const existingRightSidebar = document.getElementById(rightSidebarId);
+    if (existingRightSidebar) existingRightSidebar.remove();
+    
+    const rightSidebar = document.createElement('div');
+    rightSidebar.id = rightSidebarId;
+    rightSidebar.innerHTML = content;
+    rightSidebar.style.cssText = `
+        position: fixed !important;
+        right: 10px !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        z-index: 10000 !important;
+        max-width: 300px !important;
+        width: auto !important;
+        height: auto !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
+        padding: 10px !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        display: block !important;
+        visibility: visible !important;
+    `;
+    document.body.appendChild(rightSidebar);
+    return rightSidebar;
+}
+
+// Helper function to create a left sidebar
+function createLeftSidebar(mesId, content) {
+    const leftSidebarId = `sst-sidebar-left-${mesId}`;
+    // Remove existing sidebar for this message if any
+    const existingLeftSidebar = document.getElementById(leftSidebarId);
+    if (existingLeftSidebar) existingLeftSidebar.remove();
+    
+    const leftSidebar = document.createElement('div');
+    leftSidebar.id = leftSidebarId;
+    leftSidebar.innerHTML = content;
+    leftSidebar.style.cssText = `
+        position: fixed !important;
+        left: 10px !important;
+        top: 50% !important;
+        transform: translateY(-50%) !important;
+        z-index: 10000 !important;
+        max-width: 300px !important;
+        width: auto !important;
+        height: auto !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
+        padding: 10px !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        display: block !important;
+        visibility: visible !important;
+    `;
+    document.body.appendChild(leftSidebar);
+    return leftSidebar;
+}
+
 // Default fields for sim data, used for both initial settings and the {{sim_format}} macro
 const defaultSimFields = [
     { key: "ap", description: "Affection Points (0-200)" },
@@ -616,44 +680,12 @@ const renderTracker = (mesId) => {
                     }
                     break;
                 case 'LEFT':
-                    // Insert as a fixed sidebar on the left
-                    const leftSidebarId = `sst-sidebar-left-${mesId}`;
-                    // Remove existing sidebar for this message if any
-                    const existingLeftSidebar = document.getElementById(leftSidebarId);
-                    if (existingLeftSidebar) existingLeftSidebar.remove();
-                    
-                    const leftSidebar = document.createElement('div');
-                    leftSidebar.id = leftSidebarId;
-                    leftSidebar.innerHTML = compiledWrapperTemplate({ cardsHtml });
-                    leftSidebar.style.cssText = `
-                        position: fixed;
-                        left: 10px;
-                        top: 50%;
-                        transform: translateY(-50%);
-                        z-index: 1000;
-                        max-width: 300px;
-                    `;
-                    document.body.appendChild(leftSidebar);
+                    // Insert as a fixed sidebar on the left using helper function
+                    createLeftSidebar(mesId, compiledWrapperTemplate({ cardsHtml }));
                     break;
                 case 'RIGHT':
-                    // Insert as a fixed sidebar on the right
-                    const rightSidebarId = `sst-sidebar-right-${mesId}`;
-                    // Remove existing sidebar for this message if any
-                    const existingRightSidebar = document.getElementById(rightSidebarId);
-                    if (existingRightSidebar) existingRightSidebar.remove();
-                    
-                    const rightSidebar = document.createElement('div');
-                    rightSidebar.id = rightSidebarId;
-                    rightSidebar.innerHTML = compiledWrapperTemplate({ cardsHtml });
-                    rightSidebar.style.cssText = `
-                        position: fixed;
-                        right: 10px;
-                        top: 50%;
-                        transform: translateY(-50%);
-                        z-index: 1000;
-                        max-width: 300px;
-                    `;
-                    document.body.appendChild(rightSidebar);
+                    // Insert as a fixed sidebar on the right using helper function
+                    createRightSidebar(mesId, compiledWrapperTemplate({ cardsHtml }));
                     break;
                 case 'MACRO':
                     // For MACRO position, replace the placeholder in the message
@@ -821,44 +853,12 @@ const renderTrackerWithoutSim = (mesId) => {
                     }
                     break;
                 case 'LEFT':
-                    // Insert as a fixed sidebar on the left
-                    const leftSidebarId = `sst-sidebar-left-${mesId}`;
-                    // Remove existing sidebar for this message if any
-                    const existingLeftSidebar = document.getElementById(leftSidebarId);
-                    if (existingLeftSidebar) existingLeftSidebar.remove();
-                    
-                    const leftSidebar = document.createElement('div');
-                    leftSidebar.id = leftSidebarId;
-                    leftSidebar.innerHTML = compiledWrapperTemplate({ cardsHtml });
-                    leftSidebar.style.cssText = `
-                        position: fixed;
-                        left: 10px;
-                        top: 50%;
-                        transform: translateY(-50%);
-                        z-index: 1000;
-                        max-width: 300px;
-                    `;
-                    document.body.appendChild(leftSidebar);
+                    // Insert as a fixed sidebar on the left using helper function
+                    createLeftSidebar(mesId, compiledWrapperTemplate({ cardsHtml }));
                     break;
                 case 'RIGHT':
-                    // Insert as a fixed sidebar on the right
-                    const rightSidebarId = `sst-sidebar-right-${mesId}`;
-                    // Remove existing sidebar for this message if any
-                    const existingRightSidebar = document.getElementById(rightSidebarId);
-                    if (existingRightSidebar) existingRightSidebar.remove();
-                    
-                    const rightSidebar = document.createElement('div');
-                    rightSidebar.id = rightSidebarId;
-                    rightSidebar.innerHTML = compiledWrapperTemplate({ cardsHtml });
-                    rightSidebar.style.cssText = `
-                        position: fixed;
-                        right: 10px;
-                        top: 50%;
-                        transform: translateY(-50%);
-                        z-index: 1000;
-                        max-width: 300px;
-                    `;
-                    document.body.appendChild(rightSidebar);
+                    // Insert as a fixed sidebar on the right using helper function
+                    createRightSidebar(mesId, compiledWrapperTemplate({ cardsHtml }));
                     break;
                 case 'MACRO':
                     // For MACRO position, replace the placeholder in the message
@@ -919,7 +919,7 @@ const refreshAllCards = () => {
 };
 
 const bind_setting = (selector, key, type) => {
-    const element = $(`#${SETTINGS_ID} ${selector}`);
+    const element = $(`${SETTINGS_ID} ${selector}`);
     if (element.length === 0) { log(`Could not find settings element: ${selector}`); return; }
     settings_ui_map[key] = [element, type];
     element.on('change input', () => {
@@ -1188,7 +1188,7 @@ jQuery(async () => {
             // Add each custom field as a commented key-value pair
             fields.forEach(field => {
                 const sanitizedKey = sanitizeFieldKey(field.key);
-                exampleJson += `    "${sanitizedKey}": [${sanitizedKey.toUpperCase()}_VALUE], // ${field.description}`;
+                exampleJson += `    "${sanitizedKey}\": [${sanitizedKey.toUpperCase()}_VALUE], // ${field.description}`;
             });
 
             exampleJson += "  },";
@@ -1199,9 +1199,7 @@ jQuery(async () => {
 
             // Wrap in the code block with the identifier
             const identifier = get_settings('codeBlockIdentifier') || 'sim';
-            return `\`\`\`${identifier}
-${exampleJson}
-\`\`\``;
+            return `\`\`\`${identifier}\n${exampleJson}\n\`\`\``;
         });
         
         // Register a new macro for positionable tracker replacement

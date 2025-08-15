@@ -135,12 +135,14 @@ If no position is specified in the template, the extension will use the position
 
 These positioning options give you fine-grained control over where your tracker cards appear in relation to your messages.
 
-## Built-in Templates
+### Built-in Templates
 
 The extension includes several built-in templates for different use cases:
 
 1. **Default Template**: A clean, responsive design that works well in most situations
-2. **Sidebar Template**: A sleek design optimized for display in sidebars with progress bars and glass-morphism effects
+2. **Sidebar Templates**: Sleek designs optimized for display in sidebars with progress bars and glass-morphism effects
+   - **Right Sidebar**: Positioned on the right side of the screen
+   - **Left Sidebar**: Positioned on the left side of the screen
 3. **Positionable Template**: A template that demonstrates the macro positioning feature
 
 To use a built-in template, simply select it from the template selection dropdown in the settings panel.
