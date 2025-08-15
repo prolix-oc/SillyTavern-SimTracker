@@ -280,7 +280,8 @@ async function populateTemplateDropdown() {
 
     const defaultFiles = [
         "dating-card-template.html",
-        "dating-card-template-positioned.html"
+        "dating-card-template-positioned.html",
+        "dating-card-template-sidebar.html"
     ];
 
     const templateOptions = [];
