@@ -8,3 +8,6 @@ demo.html
 .env
 QWEN.md
 regex/*
+*.md
+!prompts/*.md
+!README.md
