@@ -3,10 +3,13 @@ srpc-ui/index.js
 srpc-ui/manifest.json
 srpc-ui/settings.html
 *.xml
-!tracker-card-templates/*
 demo.html
 .env
 QWEN.md
 regex/*
+*.md
+*.html
+!tracker-card-templates/*
+!settings.html
 !prompts/*.md
 !README.md
