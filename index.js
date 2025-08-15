@@ -47,6 +47,8 @@ const default_settings = {
 let settings = {};
 const settings_ui_map = {};
 let lastSimJsonString = '';
+// Keep track of message elements that already have the preparing text
+let mesTextsWithPreparingText = new Set();
 
 // --- UTILITY FUNCTIONS ---
 const log = (message) => console.log(`[SST] [${MODULE_NAME}]`, message);
@@ -568,6 +570,8 @@ const renderTracker = (mesId) => {
             const preparingText = messageElement.querySelector('.sst-preparing-text');
             if (preparingText) {
                 preparingText.remove();
+                // Remove this mesText from the set since it no longer has preparing text
+                mesTextsWithPreparingText.delete(messageElement);
             }
             
             // Add a horizontal divider before the cards
@@ -698,6 +702,8 @@ const renderTrackerWithoutSim = (mesId) => {
             const preparingText = messageElement.querySelector('.sst-preparing-text');
             if (preparingText) {
                 preparingText.remove();
+                // Remove this mesText from the set since it no longer has preparing text
+                mesTextsWithPreparingText.delete(messageElement);
             }
             
             // Add a horizontal divider before the cards
@@ -912,33 +918,33 @@ jQuery(async () => {
                                 
                                 // Add "Preparing new tracker cards..." text with pulsing animation
                                 const mesText = pre.closest('.mes_text');
-                                if (mesText) {
-                                    // Check if we've already added the preparing text
-                                    if (!mesText.querySelector('.sst-preparing-text')) {
-                                        const preparingText = document.createElement('div');
-                                        preparingText.className = 'sst-preparing-text';
-                                        preparingText.textContent = 'Preparing new tracker cards...';
-                                        preparingText.style.cssText = `
-                                            color: #6a5acd;
-                                            font-style: italic;
-                                            margin: 10px 0;
-                                            animation: sst-pulse 1.5s infinite;
+                                if (mesText && !mesTextsWithPreparingText.has(mesText)) {
+                                    // Mark this mesText as having preparing text
+                                    mesTextsWithPreparingText.add(mesText);
+                                    
+                                    const preparingText = document.createElement('div');
+                                    preparingText.className = 'sst-preparing-text';
+                                    preparingText.textContent = 'Preparing new tracker cards...';
+                                    preparingText.style.cssText = `
+                                        color: #6a5acd;
+                                        font-style: italic;
+                                        margin: 10px 0;
+                                        animation: sst-pulse 1.5s infinite;
+                                    `;
+                                    mesText.appendChild(preparingText);
+                                    
+                                    // Add the pulse animation to the document if not already present
+                                    if (!document.getElementById('sst-pulse-animation')) {
+                                        const style = document.createElement('style');
+                                        style.id = 'sst-pulse-animation';
+                                        style.textContent = `
+                                            @keyframes sst-pulse {
+                                                0% { opacity: 0.5; }
+                                                50% { opacity: 1; }
+                                                100% { opacity: 0.5; }
+                                            }
                                         `;
-                                        mesText.appendChild(preparingText);
-                                        
-                                        // Add the pulse animation to the document if not already present
-                                        if (!document.getElementById('sst-pulse-animation')) {
-                                            const style = document.createElement('style');
-                                            style.id = 'sst-pulse-animation';
-                                            style.textContent = `
-                                                @keyframes sst-pulse {
-                                                    0% { opacity: 0.5; }
-                                                    50% { opacity: 1; }
-                                                    100% { opacity: 0.5; }
-                                                }
-                                            `;
-                                            document.head.appendChild(style);
-                                        }
+                                        document.head.appendChild(style);
                                     }
                                 }
                             }
