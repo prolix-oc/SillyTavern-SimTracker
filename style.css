@@ -325,16 +325,16 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 }
 
 #sst-global-sidebar-left .sim-tracker-tabs {
-    left: 270px; /* Card width */
+    left: 0;
     right: auto;
 }
 
 #sst-global-sidebar-left .sim-tracker-tab {
-    transform: translateX(-70px); /* Start slightly to the left */
+    transform: translateX(-60px); /* Start hidden at the edge of the screen */
 }
 
 #sst-global-sidebar-left .sim-tracker-tab.active {
-    transform: translateX(0); /* Animate to aligned position */
+    transform: translateX(270px); /* Animate to aligned position (card width) */
 }
 
 #sst-global-sidebar-left .sim-tracker-card {
@@ -347,16 +347,16 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 }
 
 #sst-global-sidebar-right .sim-tracker-tabs {
-    right: 270px; /* Card width */
+    right: 0;
     left: auto;
 }
 
 #sst-global-sidebar-right .sim-tracker-tab {
-    transform: translateX(70px); /* Start slightly to the right */
+    transform: translateX(60px); /* Start hidden at the edge of the screen */
 }
 
 #sst-global-sidebar-right .sim-tracker-tab.active {
-    transform: translateX(0); /* Animate to aligned position */
+    transform: translateX(-270px); /* Animate to aligned position (card width) */
 }
 
 #sst-global-sidebar-right .sim-tracker-card {

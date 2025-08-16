@@ -19,7 +19,7 @@
   flex-direction: column;
   gap: 12px;
   position: absolute;
-  left: 270px; /* Position tabs to the right of the card (card width) */
+  left: 0; /* Position tabs at the edge of the screen */
   top: 0;
   bottom: 0;
   justify-content: center;
@@ -44,11 +44,11 @@
   border: 1px solid rgba(255, 255, 255, 0.05);
   flex-shrink: 0;
   margin: 0 8px; /* Add some horizontal spacing */
-  transform: translateX(-70px); /* Start slightly to the left */
+  transform: translateX(-60px); /* Start hidden at the edge of the screen */
 }
 
 .sim-tracker-tab.active {
-  transform: translateX(0); /* Animate to aligned position */
+  transform: translateX(270px); /* Animate to aligned position (card width) */
 }
 
 .tab-initials {
