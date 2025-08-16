@@ -15,6 +15,15 @@ let isGenerationInProgress = false;
 // Keep track of mesTexts that have preparing text
 const mesTextsWithPreparingText = new Set();
 
+// State management functions
+const setGenerationInProgress = (value) => {
+  isGenerationInProgress = value;
+};
+
+const getGenerationInProgress = () => {
+  return isGenerationInProgress;
+};
+
 // Helper function to create or update a global left sidebar
 function updateLeftSidebar(content) {
   // If generation is in progress, store the content for later
@@ -928,5 +937,7 @@ export {
   isGenerationInProgress,
   pendingLeftSidebarContent,
   pendingRightSidebarContent,
+  setGenerationInProgress,
+  getGenerationInProgress,
   CONTAINER_ID
 };

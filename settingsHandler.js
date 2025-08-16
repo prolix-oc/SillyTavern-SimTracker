@@ -1,6 +1,7 @@
 // settingsHandler.js - SillyTavern settings reading and management
 
 const { extensionSettings, saveSettingsDebounced } = SillyTavern.getContext();
+import { sanitizeFieldKey } from "./utils.js";
 
 const MODULE_NAME = "silly-sim-tracker";
 
@@ -155,7 +156,7 @@ const bind_setting = (selector, key, type) => {
   });
 };
 
-const initialize_settings_listeners = (loadTemplate, refreshAllCards, migrateAllSimData) => {
+const initialize_settings_listeners = (loadTemplate, refreshAllCards, migrateAllSimData, handleCustomTemplateUpload) => {
   console.log(`[SST] [${MODULE_NAME}]`, "Binding settings UI elements...");
 
   bind_setting("#isEnabled", "isEnabled", "boolean");

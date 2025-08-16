@@ -20,6 +20,8 @@ import {
   pendingLeftSidebarContent,
   pendingRightSidebarContent,
   mesTextsWithPreparingText,
+  setGenerationInProgress,
+  getGenerationInProgress,
   CONTAINER_ID
 } from "./renderer.js";
 
@@ -66,8 +68,7 @@ globalThis.simTrackerGenInterceptor = async function (
 ) {
   log(`simTrackerGenInterceptor called with type: ${type}`);
 
-  // Set generation in progress flag
-  isGenerationInProgress = true;
+  // Note: isGenerationInProgress is managed within the renderer module
 
   // Handle regenerate and swipe conditions to reset last_sim_stats macro
   if (type === "regenerate" || type === "swipe") {
@@ -94,15 +95,16 @@ jQuery(async () => {
     log(`Initializing extension: ${MODULE_NAME}`);
     await initialize_settings();
     await load_settings_html_manually();
-    await populateTemplateDropdown();
+    await populateTemplateDropdown(get_settings);
     
     // Create wrapper functions that pass the required dependencies
     const wrappedLoadTemplate = () => loadTemplate(get_settings, set_settings);
     const wrappedRefreshAllCards = () => refreshAllCards(get_settings, CONTAINER_ID, 
       (mesId) => renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString));
     const wrappedMigrateAllSimData = () => migrateAllSimData(get_settings);
+    const wrappedHandleCustomTemplateUpload = (event) => handleCustomTemplateUpload(event, set_settings, wrappedLoadTemplate, wrappedRefreshAllCards);
     
-    initialize_settings_listeners(wrappedLoadTemplate, wrappedRefreshAllCards, wrappedMigrateAllSimData);
+    initialize_settings_listeners(wrappedLoadTemplate, wrappedRefreshAllCards, wrappedMigrateAllSimData, wrappedHandleCustomTemplateUpload);
     log("Settings panel listeners initialized.");
     await wrappedLoadTemplate();
 
@@ -113,7 +115,7 @@ jQuery(async () => {
       if (
         !get_settings("isEnabled") ||
         !get_settings("hideSimBlocks") ||
-        !isGenerationInProgress
+        !getGenerationInProgress()
       )
         return;
 
@@ -385,17 +387,17 @@ ${exampleJson}
 
     // Set generation in progress flag when generation starts
     eventSource.on(event_types.GENERATION_STARTED, () => {
-      isGenerationInProgress = true;
+      setGenerationInProgress(true);
     });
 
     // Also set generation in progress flag for after commands event
     eventSource.on(event_types.GENERATION_AFTER_COMMANDS, () => {
-      isGenerationInProgress = true;
+      setGenerationInProgress(true);
     });
 
     eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (mesId) => {
       // Clear generation in progress flag when message is rendered
-      isGenerationInProgress = false;
+      setGenerationInProgress(false);
       renderTracker(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
     });
     
@@ -421,18 +423,18 @@ ${exampleJson}
     // Listen for generation ended event to update sidebars
     eventSource.on(event_types.GENERATION_ENDED, () => {
       log("Generation ended, updating sidebars if needed");
-      isGenerationInProgress = false;
+      setGenerationInProgress(false);
 
       // Update left sidebar if there's pending content
       if (pendingLeftSidebarContent) {
         updateLeftSidebar(pendingLeftSidebarContent);
-        pendingLeftSidebarContent = null;
+        // Note: pendingLeftSidebarContent is managed within renderer module
       }
 
       // Update right sidebar if there's pending content
       if (pendingRightSidebarContent) {
         updateRightSidebar(pendingRightSidebarContent);
-        pendingRightSidebarContent = null;
+        // Note: pendingRightSidebarContent is managed within renderer module
       }
 
       // Clear any remaining preparing text when generation ends

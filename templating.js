@@ -86,7 +86,7 @@ const get_extension_directory = () => {
   return index_path.substring(0, index_path.lastIndexOf("/"));
 };
 
-async function populateTemplateDropdown() {
+async function populateTemplateDropdown(get_settings) {
   console.log(`[SST] [${MODULE_NAME}]`, "Populating template dropdown with parsed friendly names...");
 
   const defaultFiles = [
@@ -138,7 +138,7 @@ async function populateTemplateDropdown() {
   templateOptions.sort((a, b) => a.friendlyName.localeCompare(b.friendlyName));
 
   const $select = $("#templateFile");
-  const currentSelection = get_settings("templateFile");
+  const currentSelection = get_settings ? get_settings("templateFile") : null;
 
   $select.empty();
   templateOptions.forEach((option) => {
@@ -155,7 +155,7 @@ async function populateTemplateDropdown() {
   console.log(`[SST] [${MODULE_NAME}]`, "Template dropdown populated with friendly names.");
 }
 
-function handleCustomTemplateUpload(event) {
+function handleCustomTemplateUpload(event, set_settings, loadTemplate, refreshAllCards) {
   const file = event.target.files[0];
   if (!file) {
     return; // User cancelled the dialog
@@ -179,6 +179,11 @@ function handleCustomTemplateUpload(event) {
 
 // Load template from file
 const loadTemplate = async (get_settings, set_settings) => {
+  if (!get_settings || !set_settings) {
+    console.error(`[SST] [${MODULE_NAME}]`, "loadTemplate called without required get_settings and set_settings functions");
+    return;
+  }
+  
   const customTemplateHtml = get_settings("customTemplateHtml");
 
   if (customTemplateHtml && customTemplateHtml.trim() !== "") {
