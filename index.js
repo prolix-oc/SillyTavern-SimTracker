@@ -681,7 +681,6 @@ const filterSimBlocksInPrompt = (chat) => {
           // Only modify if we actually made changes
           if (filteredMes !== originalMes) {
             message.mes = filteredMes;
-            log(`Removed sim block from prompt context in message ID ${index} (keeping in UI)`);
           }
         }
       });
