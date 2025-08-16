@@ -14,18 +14,18 @@
   height: 100%;
 }
 
+/* Animation system with coordinated movement */
 .sim-tracker-tabs {
   display: flex;
   flex-direction: column;
   gap: 12px;
   position: absolute;
-  left: 0; /* Position tabs at the edge of the screen */
+  left: 0;
   top: 0;
   bottom: 0;
   justify-content: center;
   height: 100%;
-  z-index: 10; /* Lower z-index so tabs are behind cards */
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  z-index: 20;
 }
 
 .sim-tracker-tab {
@@ -35,7 +35,6 @@
   box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.3);
   position: relative;
   backdrop-filter: blur(10px);
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   cursor: pointer;
   display: flex;
   justify-content: center;
@@ -43,14 +42,27 @@
   background: linear-gradient(145deg, #2c2c2c, #1a1a1a);
   border: 1px solid rgba(255, 255, 255, 0.05);
   flex-shrink: 0;
-  margin: 0 8px; /* Add some horizontal spacing */
-  transform: translateX(-60px); /* Start hidden at the edge of the screen */
-  z-index: 10; /* Lower z-index so tabs are behind cards */
+  margin: 0 8px;
+  z-index: 21;
+  /* Unified transform and transition for smooth coordinated movement */
+  transform: translateX(-60px);
+  transition: 
+    transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1),
+    filter 0.4s cubic-bezier(0.4, 0.0, 0.2, 1),
+    box-shadow 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+  will-change: transform, filter, box-shadow;
+}
+
+.sim-tracker-tab:hover {
+  filter: brightness(1.1);
+  box-shadow: -4px 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 .sim-tracker-tab.active {
-  transform: translateX(270px); /* Animate to aligned position (card width) */
-  z-index: 20; /* Higher z-index for active tab */
+  transform: translateX(270px);
+  filter: brightness(1.2);
+  z-index: 22;
+  box-shadow: -6px 6px 16px rgba(0, 0, 0, 0.5);
 }
 
 .tab-initials {
@@ -63,6 +75,11 @@
   align-items: center;
   font-weight: bold;
   font-size: 18px;
+  transition: transform 0.2s ease;
+}
+
+.sim-tracker-tab.active .tab-initials {
+  transform: scale(1.05);
 }
 
 .sim-tracker-card {
@@ -73,49 +90,55 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   position: absolute;
   backdrop-filter: blur(10px);
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   left: 0;
   top: 50%;
-  transform: translateY(-50%) translateX(-100%);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  z-index: 10;
+  /* Unified transform system - all movement coordinated */
+  transform: translateY(-50%) translateX(-100%) scale(0.95);
   opacity: 0;
   visibility: hidden;
-  z-index: 5; /* Lower z-index for inactive cards */
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  overflow: hidden; /* Prevent overlay from spilling over */
+  
+  transition: 
+    transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1),
+    opacity 0.4s cubic-bezier(0.4, 0.0, 0.2, 1),
+    visibility 0.4s cubic-bezier(0.4, 0.0, 0.2, 1),
+    box-shadow 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
+  will-change: transform, opacity, visibility, box-shadow;
 }
 
 .sim-tracker-card.active {
-  transform: translateY(-50%) translateX(0);
+  transform: translateY(-50%) translateX(0) scale(1);
   opacity: 1;
   visibility: visible;
-  z-index: 30; /* Much higher z-index for active card to cover all tabs */
+  z-index: 30;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.4);
 }
 
+/* Smooth state transitions for better UX */
 .sim-tracker-card.sliding-in {
-  transform: translateY(-50%) translateX(0);
+  transform: translateY(-50%) translateX(0) scale(1);
   opacity: 1;
   visibility: visible;
-  z-index: 30; /* Much higher z-index for active card to cover all tabs */
+  z-index: 30;
 }
 
 .sim-tracker-card.sliding-out {
-  transform: translateY(-50%) translateX(-300px);
+  transform: translateY(-50%) translateX(-120%) scale(0.95);
   opacity: 0;
   visibility: hidden;
-  z-index: 5;
+  z-index: 10;
 }
 
-.sim-tracker-card.tab-hidden {
-  display: none;
-}
-
+/* Enhanced inactive state styling */
 .sim-tracker-card.inactive {
-  opacity: 1; /* Reset opacity since we're using overlay */
-  z-index: 25; /* Higher z-index for inactive cards to prevent tab overlap */
+  transform: translateY(-50%) translateX(-100%) scale(0.98);
 }
 
 .sim-tracker-card.inactive.active {
-  z-index: 30; /* Even higher for active inactive cards */
+  transform: translateY(-50%) translateX(0) scale(1);
+  z-index: 30;
 }
 
 .character-header {
