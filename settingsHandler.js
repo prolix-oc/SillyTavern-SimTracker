@@ -246,6 +246,163 @@ const initialize_settings_listeners = (loadTemplate, refreshAllCards, migrateAll
   $("#managePresetsBtn").on("click", () => {
     showManagePresetsModal(loadTemplate, refreshAllCards);
   });
+
+  // --- Custom Fields UI Logic ---
+  const $manageFieldsButton = $("#manageCustomFieldsBtn");
+
+  // Function to create and show the modal
+  const createAndShowModal = () => {
+    // Remove any existing modal
+    $("#sst-custom-fields-modal").remove();
+
+    // Create modal HTML using SillyTavern's built-in classes with dialog element
+    const modalHtml = `
+            <dialog id="sst-custom-fields-modal" class="popup wide_dialogue_popup large_dialogue_popup vertical_scrolling_dialogue_popup popup--animation-fast">
+                <div class="popup-header">
+                    <h3 style="margin: 0; padding: 10px 0;">Manage Custom Fields</h3>
+                </div>
+                <div class="popup-content" style="padding: 15px; flex: 1; display: flex; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <div style="flex: 1;"></div>
+                        <button id="addCustomFieldBtn" class="menu_button">Add New Field</button>
+                    </div>
+                    <div id="customFieldsList" class="sst-fields-container" style="flex: 1; overflow-y: auto;">
+                        <!-- Fields will be populated here by JavaScript -->
+                    </div>
+                </div>
+                <div class="popup-footer" style="display: flex; justify-content: center; padding: 15px;">
+                    <button id="sst-modal-close" class="menu_button">Close</button>
+                </div>
+            </dialog>
+        `;
+
+    // Append modal to body
+    $("body").append(modalHtml);
+
+    // Get references to modal elements
+    const $modal = $("#sst-custom-fields-modal");
+    const $fieldsContainer = $modal.find("#customFieldsList");
+    const $addFieldButton = $modal.find("#addCustomFieldBtn");
+    const $modalClose = $modal.find("#sst-modal-close");
+
+    // Create field template
+    const createFieldTemplate = () => {
+      return $(`
+                <div class="sst-field-item">
+                    <div class="sst-field-header">
+                        <input type="text" class="field-key-display field-key text_pole" placeholder="Field key" style="margin-right: 10px;" />
+                        <div>
+                            <button class="sst-toggle-field menu_button">Expand</button>
+                            <button class="remove-field-btn menu_button" style="margin-left: 5px;">Remove</button>
+                        </div>
+                    </div>
+                    <div class="sst-field-details" style="display: none; padding: 10px; border-top: 1px solid #444; margin-top: 5px;">
+                        <div style="display: flex; flex-direction: column; gap: 10px;">
+                            <div>
+                                <label>Description for LLM:</label>
+                                <input type="text" class="field-description text_pole" placeholder="Field description" style="width: 100%;" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `);
+    };
+
+    // Function to render the list of fields
+    const renderFields = () => {
+      const fields = get_settings("customFields") || [];
+      $fieldsContainer.empty();
+      fields.forEach((field, index) => {
+        const $fieldElement = createFieldTemplate();
+
+        // Set values in the key input (which is now at the top level)
+        const fieldKey = field.key || "";
+        $fieldElement
+          .find(".field-key-display")
+          .val(fieldKey)
+          .on("input", function () {
+            const newValue = $(this).val();
+            const updatedFields = [...fields];
+            updatedFields[index].key = sanitizeFieldKey(newValue); // Sanitize on input
+            set_settings("customFields", updatedFields);
+          });
+
+        // Set values in the description input
+        $fieldElement
+          .find(".field-description")
+          .val(field.description)
+          .on("input", function () {
+            const newValue = $(this).val();
+            const updatedFields = [...fields];
+            updatedFields[index].description = newValue;
+            set_settings("customFields", updatedFields);
+          });
+
+        $fieldElement.find(".remove-field-btn").on("click", function () {
+          const updatedFields = fields.filter((_, i) => i !== index);
+          set_settings("customFields", updatedFields);
+          renderFields(); // Re-render the list
+        });
+
+        // Handle toggle button
+        const $toggleButton = $fieldElement.find(".sst-toggle-field");
+        const $details = $fieldElement.find(".sst-field-details");
+        $toggleButton.on("click", function () {
+          if ($details.is(":visible")) {
+            $details.hide();
+            $toggleButton.text("Expand");
+          } else {
+            $details.show();
+            $toggleButton.text("Collapse");
+          }
+        });
+
+        $fieldsContainer.append($fieldElement);
+      });
+    };
+
+    // Add new field button listener
+    $addFieldButton.on("click", () => {
+      const fields = get_settings("customFields") || [];
+      const newField = {
+        key: "new_field_key",
+        description: "Description for the LLM",
+      };
+      set_settings("customFields", [...fields, newField]);
+      renderFields(); // Re-render the list
+
+      // Scroll to the bottom where the new field was added
+      $fieldsContainer.scrollTop($fieldsContainer[0].scrollHeight);
+    });
+
+    // Close modal when clicking the Close button
+    $modalClose.on("click", () => {
+      $modal.remove();
+    });
+
+    // Close modal with Escape key
+    $modal.on("keydown", function (e) {
+      if (e.key === "Escape") {
+        $modal.remove();
+      }
+    });
+
+    // Also close when clicking on the backdrop (dialog native behavior)
+    $modal.on("click", function (e) {
+      if (e.target === this) {
+        $modal.remove();
+      }
+    });
+
+    // Render fields and show modal
+    renderFields();
+    $modal[0].showModal(); // Use the native dialog showModal() method
+  };
+
+  // Manage fields button opens the modal
+  $manageFieldsButton.on("click", () => {
+    createAndShowModal();
+  });
 };
 
 const initialize_settings = async () => {
