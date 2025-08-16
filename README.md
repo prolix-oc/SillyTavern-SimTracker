@@ -48,7 +48,8 @@ A powerful SillyTavern extension that dynamically renders visually appealing tra
 - **Visual Indicators**: Color-coded change indicators for stat modifications
 - **Status Icons**: Automatic emoji-based status indicators for health, reactions, and inactivity
 - **Positionable Templates**: Templates can define their display position (Above, Bottom, Left, Right, or Macro replacement)
-- **Multiple Built-in Templates**: Choose from different designs including a sleek sidebar template
+- **Multiple Built-in Templates**: Choose from different designs including sleek sidebar templates and tabbed interfaces
+- **Tabbed Interface**: Navigate between multiple character cards using tabs with smooth slide animations
 
 ### Data Structure
 Supports both legacy and modern JSON formats:
@@ -145,7 +146,10 @@ The extension includes several built-in templates for different use cases:
 2. **Sidebar Templates**: Sleek designs optimized for display in sidebars with progress bars and glass-morphism effects
    - **Right Sidebar**: Positioned on the right side of the screen
    - **Left Sidebar**: Positioned on the left side of the screen
-3. **Positionable Template**: A template that demonstrates the macro positioning feature
+3. **Tabbed Interface Templates**: Alternative sidebar designs with tabbed navigation for multiple characters
+   - **Right Sidebar with Tabs**: Tabbed interface on the right side of the screen
+   - **Left Sidebar with Tabs**: Tabbed interface on the left side of the screen
+4. **Positionable Template**: A template that demonstrates the macro positioning feature
 
 To use a built-in template, simply select it from the template selection dropdown in the settings panel.
 
