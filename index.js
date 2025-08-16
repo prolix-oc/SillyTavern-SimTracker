@@ -1156,7 +1156,7 @@ const refreshAllCards = () => {
 };
 
 const bind_setting = (selector, key, type) => {
-    const element = $(`${SETTINGS_ID} ${selector}`);
+    const element = $(selector);
     if (element.length === 0) { log(`Could not find settings element: ${selector}`); return; }
     settings_ui_map[key] = [element, type];
     element.on('change input', () => {
