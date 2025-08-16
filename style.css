@@ -361,9 +361,11 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 
 #sst-global-sidebar-right .sim-tracker-card {
     right: 0 !important;
-    transform: translateY(-50%) translateX(100%) !important;
+    transform: translateY(-50%) translateX(270px) !important;
+    z-index: 25;
 }
 
 #sst-global-sidebar-right .sim-tracker-card.active {
-    transform: translateY(-50%) translateX(0) !important;
+    transform: translateY(-50%) translateX(-270px) !important;
+    z-index: 25;
 }
