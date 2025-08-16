@@ -264,19 +264,21 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 .sim-tracker-tabs {
     position: relative;
     width: 100%;
+    height: 100%;
 }
 
 .sim-tracker-tab {
-    transition: transform 0.3s ease-in-out;
+    transition: filter 0.3s ease-in-out;
     cursor: pointer;
+    position: absolute;
 }
 
 .sim-tracker-tab:hover {
-    transform: translateX(-150px) !important;
+    filter: brightness(1.2) !important;
 }
 
 .sim-tracker-tab.active {
-    transform: translateX(0) !important;
+    filter: brightness(1.3) !important;
     z-index: 20 !important;
 }
 
@@ -285,29 +287,29 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     position: absolute !important;
     opacity: 0;
     visibility: hidden;
-    transform: translateX(100%) !important;
+    transform: translateY(-50%) translateX(-100%) !important;
 }
 
 .sim-tracker-card.active {
     opacity: 1;
     visibility: visible;
-    transform: translateX(0) !important;
+    transform: translateY(-50%) translateX(0) !important;
 }
 
 #sst-global-sidebar-left .sim-tracker-card {
     left: 0 !important;
-    transform: translateX(-100%) !important;
+    transform: translateY(-50%) translateX(-100%) !important;
 }
 
 #sst-global-sidebar-left .sim-tracker-card.active {
-    transform: translateX(0) !important;
+    transform: translateY(-50%) translateX(0) !important;
 }
 
 #sst-global-sidebar-right .sim-tracker-card {
     right: 0 !important;
-    transform: translateX(100%) !important;
+    transform: translateY(-50%) translateX(100%) !important;
 }
 
 #sst-global-sidebar-right .sim-tracker-card.active {
-    transform: translateX(0) !important;
+    transform: translateY(-50%) translateX(0) !important;
 }

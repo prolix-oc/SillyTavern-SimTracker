@@ -101,15 +101,21 @@ function updateLeftSidebar(content) {
             // Add click listeners to tabs
             tabs.forEach((tab, index) => {
                 tab.addEventListener('click', () => {
+                    // Check if this tab is already active
+                    const isActive = tab.classList.contains('active');
+                    
                     // Remove active class from all tabs and cards
                     tabs.forEach(t => t.classList.remove('active'));
                     cards.forEach(c => c.classList.remove('active'));
                     
-                    // Add active class to clicked tab and corresponding card
-                    tab.classList.add('active');
-                    if (cards[index]) {
-                        cards[index].classList.add('active');
+                    // If the clicked tab wasn't already active, activate it and its card
+                    if (!isActive) {
+                        tab.classList.add('active');
+                        if (cards[index]) {
+                            cards[index].classList.add('active');
+                        }
                     }
+                    // If it was already active, we just deselected it, hiding the card
                 });
             });
         }
@@ -252,15 +258,21 @@ function updateRightSidebar(content) {
             // Add click listeners to tabs
             tabs.forEach((tab, index) => {
                 tab.addEventListener('click', () => {
+                    // Check if this tab is already active
+                    const isActive = tab.classList.contains('active');
+                    
                     // Remove active class from all tabs and cards
                     tabs.forEach(t => t.classList.remove('active'));
                     cards.forEach(c => c.classList.remove('active'));
                     
-                    // Add active class to clicked tab and corresponding card
-                    tab.classList.add('active');
-                    if (cards[index]) {
-                        cards[index].classList.add('active');
+                    // If the clicked tab wasn't already active, activate it and its card
+                    if (!isActive) {
+                        tab.classList.add('active');
+                        if (cards[index]) {
+                            cards[index].classList.add('active');
+                        }
                     }
+                    // If it was already active, we just deselected it, hiding the card
                 });
             });
         }
@@ -611,6 +623,18 @@ Handlebars.registerHelper('tabZIndex', function (index) {
     // Calculate z-index for tabs (higher for first tabs)
     // This creates a stacking effect where the first tab is on top
     return 20 - index;
+});
+
+Handlebars.registerHelper('tabOffset', function (index) {
+    // Calculate vertical offset for tabs to prevent overlapping
+    // Each tab is about 60px high, so we offset by 65px to add some spacing
+    return index * 65;
+});
+
+Handlebars.registerHelper('initials', function (name) {
+    // Extract the first letter of the name and capitalize it
+    if (!name || name.length === 0) return '?';
+    return name.charAt(0).toUpperCase();
 });
 
 Handlebars.registerHelper('unless', function (conditional, options) {
