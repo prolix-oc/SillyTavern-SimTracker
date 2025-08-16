@@ -339,8 +339,7 @@
 </style>
 
 <div class="sst-card-container">
-  {{#each characters}}
-  <div class="tracker-card {{#if inactive}}inactive{{/if}}" style="background: linear-gradient(145deg, {{bgColor}} 0%, {{darkerBgColor}} 50%, {{darkerBgColor}} 100%);">
+  <div class="tracker-card {{#if stats.inactive}}inactive{{/if}}" style="background: linear-gradient(145deg, {{bgColor}} 0%, {{darkerBgColor}} 50%, {{darkerBgColor}} 100%);">
     <div class="gradient-overlay"></div>
     
     <!-- Combined Header Section -->
@@ -349,22 +348,22 @@
       <div class="header-row-top">
         <div class="header-badge">{{currentDate}}</div>
         <div style="display: flex; gap: 8px;">
-          <div class="header-badge">Day {{days_since_first_meeting}}</div>
-          {{#if preg}}<div class="header-badge">🤰{{days_preg}}d</div>{{/if}}
+          <div class="header-badge">Day {{stats.days_since_first_meeting}}</div>
+          {{#if stats.preg}}<div class="header-badge">🤰{{stats.days_preg}}d</div>{{/if}}
         </div>
       </div>
       
       <!-- Character Name and Icons Row -->
       <div class="header-row-middle">
-        <div class="character-name">{{name}}</div>
+        <div class="character-name">{{characterName}}</div>
         <div class="icon-container">
           {{#if healthIcon}}<span>{{healthIcon}}</span>{{/if}}
-          {{#if inactive}}
-            {{#if (eq inactiveReason 1)}}<span>😴</span>{{/if}}
-            {{#if (eq inactiveReason 2)}}<span>🏥</span>{{/if}}
-            {{#if (eq inactiveReason 3)}}<span>😡</span>{{/if}}
-            {{#if (eq inactiveReason 4)}}<span>🫠</span>{{/if}}
-            {{#if (eq inactiveReason 5)}}<span>🪦</span>{{/if}}
+          {{#if stats.inactive}}
+            {{#if (eq stats.inactiveReason 1)}}<span>😴</span>{{/if}}
+            {{#if (eq stats.inactiveReason 2)}}<span>🏥</span>{{/if}}
+            {{#if (eq stats.inactiveReason 3)}}<span>😡</span>{{/if}}
+            {{#if (eq stats.inactiveReason 4)}}<span>🫠</span>{{/if}}
+            {{#if (eq stats.inactiveReason 5)}}<span>🪦</span>{{/if}}
           {{/if}}
           <span>{{reactionEmoji}}</span>
         </div>
@@ -373,8 +372,8 @@
       <!-- Character Status Row -->
       <div class="header-row-bottom">
         <div class="character-status">
-          {{#if relationshipStatus}}<span>{{relationshipStatus}}</span>{{/if}}
-          {{#if desireStatus}}<span class="status-divider">|</span><span>{{desireStatus}}</span>{{/if}}
+          {{#if stats.relationshipStatus}}<span>{{stats.relationshipStatus}}</span>{{/if}}
+          {{#if stats.desireStatus}}<span class="status-divider">|</span><span>{{stats.desireStatus}}</span>{{/if}}
         </div>
       </div>
     </div>
@@ -385,10 +384,10 @@
         <div class="stat-title">AFFECTION</div>
         <div class="stat-container">
           <div class="stat-icon">❤️</div>
-          <div class="stat-value">{{ap}}</div>
-          {{#if apChange}}{{#unless (eq apChange 0)}}
+          <div class="stat-value">{{stats.ap}}</div>
+          {{#if stats.apChange}}{{#unless (eq stats.apChange 0)}}
           <div class="change-indicator positive">
-            {{#if (gt apChange 0)}}+{{/if}}{{apChange}}
+            {{#if (gt stats.apChange 0)}}+{{/if}}{{stats.apChange}}
           </div>
           {{/unless}}{{/if}}
         </div>
@@ -398,10 +397,10 @@
         <div class="stat-title">DESIRE</div>
         <div class="stat-container">
           <div class="stat-icon">🔥</div>
-          <div class="stat-value">{{dp}}</div>
-          {{#if dpChange}}{{#unless (eq dpChange 0)}}
+          <div class="stat-value">{{stats.dp}}</div>
+          {{#if stats.dpChange}}{{#unless (eq stats.dpChange 0)}}
           <div class="change-indicator negative">
-            {{#if (gt dpChange 0)}}+{{/if}}{{dpChange}}
+            {{#if (gt stats.dpChange 0)}}+{{/if}}{{stats.dpChange}}
           </div>
           {{/unless}}{{/if}}
         </div>
@@ -411,10 +410,10 @@
         <div class="stat-title">TRUST</div>
         <div class="stat-container">
           <div class="stat-icon">🤝</div>
-          <div class="stat-value">{{tp}}</div>
-          {{#if tpChange}}{{#unless (eq tpChange 0)}}
+          <div class="stat-value">{{stats.tp}}</div>
+          {{#if stats.tpChange}}{{#unless (eq stats.tpChange 0)}}
           <div class="change-indicator positive">
-            {{#if (gt tpChange 0)}}+{{/if}}{{tpChange}}
+            {{#if (gt stats.tpChange 0)}}+{{/if}}{{stats.tpChange}}
           </div>
           {{/unless}}{{/if}}
         </div>
@@ -424,10 +423,10 @@
         <div class="stat-title">CONTEMPT</div>
         <div class="stat-container">
           <div class="stat-icon">💔</div>
-          <div class="stat-value">{{cp}}</div>
-          {{#if cpChange}}{{#unless (eq cpChange 0)}}
+          <div class="stat-value">{{stats.cp}}</div>
+          {{#if stats.cpChange}}{{#unless (eq stats.cpChange 0)}}
           <div class="change-indicator negative-alt">
-            {{#if (gt cpChange 0)}}+{{/if}}{{cpChange}}
+            {{#if (gt stats.cpChange 0)}}+{{/if}}{{stats.cpChange}}
           </div>
           {{/unless}}{{/if}}
         </div>
@@ -438,39 +437,38 @@
     {{#if showThoughtBubble}}
     <div class="thought-label-divider"></div>
     <div class="thought-bubble">
-      <div class="thought-label">{{name}} thinks:</div>
+      <div class="thought-label">{{characterName}} thinks:</div>
       <div style="font-size: 22px; flex-shrink: 0;">💭</div>
-      <div style="flex: 1; font-size: 13px; font-weight: 400; line-height: 1.4; overflow: hidden;">{{internal_thought}}</div>
+      <div style="flex: 1; font-size: 13px; font-weight: 400; line-height: 1.4; overflow: hidden;">{{stats.internal_thought}}</div>
     </div>
     {{/if}}
   </div>
-  {{/each}}
 </div>
 <!-- CARD_TEMPLATE_END -->
 
 <!-- 
 TEMPLATE VARIABLES:
-- {{name}}: Character's name
+- {{characterName}}: Character's name
 - {{currentDate}}: Current date in YYYY-MM-DD format
 - {{bgColor}}: Primary background color
 - {{darkerBgColor}}: Darker variant of background color
 - {{contrastColor}}: Contrast color for text against background
-- {{ap}}: Affection points
-- {{dp}}: Desire points
-- {{tp}}: Trust points
-- {{cp}}: Contempt points
-- {{apChange}}: Change in affection points (positive/negative/zero)
-- {{dpChange}}: Change in desire points (positive/negative/zero)
-- {{tpChange}}: Change in trust points (positive/negative/zero)
-- {{cpChange}}: Change in contempt points (positive/negative/zero)
-- {{days_since_first_meeting}}: Days since first meeting
-- {{preg}}: Boolean for pregnancy status
-- {{days_preg}}: Days pregnant (if applicable)
-- {{internal_thought}}: Character's internal thoughts
-- {{relationshipStatus}}: Relationship status text
-- {{desireStatus}}: Desire status text
-- {{inactive}}: Boolean for inactive status
-- {{inactiveReason}}: Number indicating reason for inactivity (0-5)
+- {{stats.ap}}: Affection points
+- {{stats.dp}}: Desire points
+- {{stats.tp}}: Trust points
+- {{stats.cp}}: Contempt points
+- {{stats.apChange}}: Change in affection points (positive/negative/zero)
+- {{stats.dpChange}}: Change in desire points (positive/negative/zero)
+- {{stats.tpChange}}: Change in trust points (positive/negative/zero)
+- {{stats.cpChange}}: Change in contempt points (positive/negative/zero)
+- {{stats.days_since_first_meeting}}: Days since first meeting
+- {{stats.preg}}: Boolean for pregnancy status
+- {{stats.days_preg}}: Days pregnant (if applicable)
+- {{stats.internal_thought}}: Character's internal thoughts
+- {{stats.relationshipStatus}}: Relationship status text
+- {{stats.desireStatus}}: Desire status text
+- {{stats.inactive}}: Boolean for inactive status
+- {{stats.inactiveReason}}: Number indicating reason for inactivity (0-5)
 - {{healthIcon}}: Health status icon (🤕 or 💀)
 - {{reactionEmoji}}: Reaction emoji (👍, 👎, or 😐)
 - {{showThoughtBubble}}: Boolean to show/hide thought bubble
