@@ -291,7 +291,7 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    z-index: 20;
+    z-index: 10; /* Lower z-index so tabs are behind cards */
     transition: all 0.3s ease-in-out;
 }
 
@@ -301,11 +301,12 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     position: relative;
     flex-shrink: 0;
     margin: 0 8px;
+    z-index: 10; /* Lower z-index so tabs are behind cards */
 }
 
 .sim-tracker-tab.active {
     filter: brightness(1.3) !important;
-    z-index: 20 !important;
+    z-index: 20 !important; /* Higher z-index for active tab */
 }
 
 .sim-tracker-tab:hover {
@@ -317,11 +318,18 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     position: absolute !important;
     opacity: 0;
     visibility: hidden;
+    z-index: 5; /* Lower z-index for inactive cards */
 }
 
 .sim-tracker-card.active {
     opacity: 1;
     visibility: visible;
+    z-index: 30; /* Much higher z-index for active card to cover all tabs */
+}
+
+.sim-tracker-card.inactive {
+    opacity: 0.6;
+    z-index: 5; /* Lower z-index for inactive cards */
 }
 
 #sst-global-sidebar-left .sim-tracker-tabs {
@@ -330,7 +338,7 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 }
 
 #sst-global-sidebar-left .sim-tracker-tab {
-    transform: translateX(0px); /* Start hidden at the edge of the screen */
+    transform: translateX(-60px); /* Start hidden at the edge of the screen */
 }
 
 #sst-global-sidebar-left .sim-tracker-tab.active {
@@ -352,7 +360,7 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 }
 
 #sst-global-sidebar-right .sim-tracker-tab {
-    transform: translateX(0px); /* Start hidden at the edge of the screen */
+    transform: translateX(60px); /* Start hidden at the edge of the screen */
 }
 
 #sst-global-sidebar-right .sim-tracker-tab.active {

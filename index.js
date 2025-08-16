@@ -108,9 +108,18 @@ function updateLeftSidebar(content) {
     const cards = leftSidebar.querySelectorAll(".sim-tracker-card");
 
     if (tabs.length > 0 && cards.length > 0) {
-      // Initially activate the first tab and card
-      if (tabs[0]) tabs[0].classList.add("active");
-      if (cards[0]) cards[0].classList.add("active");
+      // Initially activate the first non-inactive tab and card
+      let firstActiveIndex = 0;
+      // Find the first non-inactive card
+      for (let i = 0; i < cards.length; i++) {
+        if (!cards[i].classList.contains("inactive")) {
+          firstActiveIndex = i;
+          break;
+        }
+      }
+      
+      if (tabs[firstActiveIndex]) tabs[firstActiveIndex].classList.add("active");
+      if (cards[firstActiveIndex]) cards[firstActiveIndex].classList.add("active");
 
       // Add click listeners to tabs
       tabs.forEach((tab, index) => {
@@ -305,9 +314,18 @@ function updateRightSidebar(content) {
     const cards = rightSidebar.querySelectorAll(".sim-tracker-card");
 
     if (tabs.length > 0 && cards.length > 0) {
-      // Initially activate the first tab and card
-      if (tabs[0]) tabs[0].classList.add("active");
-      if (cards[0]) cards[0].classList.add("active");
+      // Initially activate the first non-inactive tab and card
+      let firstActiveIndex = 0;
+      // Find the first non-inactive card
+      for (let i = 0; i < cards.length; i++) {
+        if (!cards[i].classList.contains("inactive")) {
+          firstActiveIndex = i;
+          break;
+        }
+      }
+      
+      if (tabs[firstActiveIndex]) tabs[firstActiveIndex].classList.add("active");
+      if (cards[firstActiveIndex]) cards[firstActiveIndex].classList.add("active");
 
       // Add click listeners to tabs
       tabs.forEach((tab, index) => {
