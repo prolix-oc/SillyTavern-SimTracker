@@ -2,6 +2,7 @@ import { getContext, extension_settings } from "../../../extensions.js";
 import {
   saveSettingsDebounced,
   messageFormatting,
+  Generate
 } from "../../../../script.js";
 import { MacrosParser } from "../../../macros.js";
 import { SlashCommand } from "../../../slash-commands/SlashCommand.js";
@@ -2225,7 +2226,7 @@ jQuery(async () => {
             }
 
             // Append the sim block to the message
-            const simBlock = `\n\`\`\`${identifier}\n\`\`\``;
+            const simBlock = `\n\`\`\`${identifier}\n`;
             lastCharMessage.mes += simBlock;
 
             // Update the message in the UI
@@ -2242,13 +2243,8 @@ jQuery(async () => {
               );
             }
 
-            // Request continuation through the interceptor
-            // We'll use the existing continue generation functionality
-            await eventSource.emit(event_types.GENERATION_QUEUE, {
-              type: "continue",
-              chat: context.chat,
-              character: context.character,
-            });
+            // Use the proper Generate function to continue generation
+            await Generate("continue", {});
 
             return "Added sim block to last character message and requested continuation.";
           } catch (error) {
