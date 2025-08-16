@@ -26,9 +26,6 @@ let pendingLeftSidebarContent = null;
 let pendingRightSidebarContent = null;
 let isGenerationInProgress = false;
 
-// Set to track mesText elements that already have preparing text to avoid duplicates
-const mesTextsWithPreparingText = new Set();
-
 // Helper function to create or update a global left sidebar
 function updateLeftSidebar(content) {
   // If generation is in progress, store the content for later
@@ -1112,7 +1109,8 @@ const renderTracker = (mesId) => {
       lastSimJsonString = jsonContent;
       log(`Captured last sim stats JSON from message ID ${mesId}.`);
 
-      // Remove any preparing text since we've found valid sim data
+      // Remove any preparing text
+      const preparingText = messageElement.parentNode.querySelector(".sst-preparing-text");
       if (preparingText) {
         preparingText.remove();
         // Remove this mesText from the set since it no longer has preparing text
@@ -1260,10 +1258,6 @@ const renderTracker = (mesId) => {
           .join("");
       }
 
-      // Remove any preparing text
-      const preparingText = messageElement.parentNode.querySelector(
-        ".sst-preparing-text"
-      );
       if (preparingText) {
         preparingText.remove();
         // Remove this mesText from the set since it no longer has preparing text
@@ -1398,7 +1392,8 @@ const renderTrackerWithoutSim = (mesId) => {
       lastSimJsonString = jsonContent;
       log(`Captured last sim stats JSON from message ID ${mesId}.`);
 
-      // Remove any preparing text since we've found valid sim data
+      // Remove any preparing text
+      const preparingText = messageElement.parentNode.querySelector(".sst-preparing-text");
       if (preparingText) {
         preparingText.remove();
         // Remove this mesText from the set since it no longer has preparing text
@@ -1544,10 +1539,6 @@ const renderTrackerWithoutSim = (mesId) => {
           .join("");
       }
 
-      // Remove any preparing text
-      const preparingText = messageElement.parentNode.querySelector(
-        ".sst-preparing-text"
-      );
       if (preparingText) {
         preparingText.remove();
         // Remove this mesText from the set since it no longer has preparing text
