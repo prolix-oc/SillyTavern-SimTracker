@@ -23,6 +23,9 @@ const set_settings = (key, value) => {
 let globalLeftSidebar = null;
 let globalRightSidebar = null;
 
+// Set to track mesText elements that already have preparing text to avoid duplicates
+const mesTextsWithPreparingText = new Set();
+
 // Helper function to create or update a global left sidebar
 function updateLeftSidebar(content) {
   // Remove existing global sidebar if it exists
@@ -1350,7 +1353,9 @@ const renderTracker = (mesId) => {
       // Remove any preparing text
       const preparingText = messageElement.querySelector(".sst-preparing-text");
       if (preparingText) {
-        preparingText.style.display = "none";
+        preparingText.remove();
+        // Remove this mesText from the set since it no longer has preparing text
+        mesTextsWithPreparingText.delete(messageElement);
       }
 
       // Clear the flag since we're done processing
@@ -1682,6 +1687,8 @@ const renderTrackerWithoutSim = (mesId) => {
       }
     }
   } catch (error) {
+    // Clear the flag on error
+    isGeneratingCodeBlocks = false;
     log(
       `A critical error occurred in renderTrackerWithoutSim for message ID ${mesId}. Please check the console. Error: ${error.stack}`
     );
