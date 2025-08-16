@@ -334,7 +334,7 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 }
 
 #sst-global-sidebar-left .sim-tracker-tab.active {
-    transform: translateX(244px); /* Animate to aligned position (card width) */
+    transform: translateX(270px); /* Animate to aligned position (card width) */
 }
 
 #sst-global-sidebar-left .sim-tracker-card {
@@ -352,7 +352,7 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 }
 
 #sst-global-sidebar-right .sim-tracker-tab {
-    transform: translateX(60px); /* Start hidden at the edge of the screen */
+    transform: translateX(120px); /* Start hidden at the edge of the screen */
 }
 
 #sst-global-sidebar-right .sim-tracker-tab.active {
