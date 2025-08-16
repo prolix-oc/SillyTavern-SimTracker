@@ -14,13 +14,18 @@ let globalRightSidebar = null;
 
 // Helper function to create or update a global left sidebar
 function updateLeftSidebar(content) {
+    console.log('[SST] updateLeftSidebar called');
+    console.log('[SST] Content received:', content);
+    
     // Remove existing global sidebar if it exists
     if (globalLeftSidebar) {
+        console.log('[SST] Removing existing left sidebar');
         globalLeftSidebar.remove();
     }
     
     // Find the sheld container
     const sheld = document.getElementById('sheld');
+    console.log('[SST] Found sheld element:', sheld);
     if (!sheld) {
         console.warn('[SST] Could not find sheld container for sidebar');
         return;
@@ -51,11 +56,13 @@ function updateLeftSidebar(content) {
         visibility: visible !important;
         overflow: visible !important;
     `;
+    console.log('[SST] Created verticalContainer');
     
     // Create the actual sidebar content container
     const leftSidebar = document.createElement('div');
     leftSidebar.id = 'sst-sidebar-left-content';
     leftSidebar.innerHTML = content;
+    console.log('[SST] Set innerHTML on leftSidebar. New innerHTML:', leftSidebar.innerHTML);
     leftSidebar.style.cssText = `
         width: auto !important;
         height: auto !important;
@@ -70,10 +77,20 @@ function updateLeftSidebar(content) {
         visibility: visible !important;
         overflow: visible !important;
     `;
+    console.log('[SST] Applied styles to leftSidebar');
+    
+    // Debug: Check what we actually have
+    const trackerContainer = leftSidebar.querySelector('#silly-sim-tracker-container');
+    console.log('[SST] Found trackerContainer:', trackerContainer);
+    if (trackerContainer) {
+        console.log('[SST] trackerContainer innerHTML:', trackerContainer.innerHTML);
+        console.log('[SST] trackerContainer children count:', trackerContainer.children.length);
+    }
     
     // Ensure the content is visible by adding specific styles to the inner elements
     setTimeout(() => {
         const container = leftSidebar.querySelector('#silly-sim-tracker-container');
+        console.log('[SST] Found container in setTimeout:', container);
         if (container) {
             container.style.cssText += `
                 width: 100% !important;
@@ -82,7 +99,16 @@ function updateLeftSidebar(content) {
                 display: block !important;
                 visibility: visible !important;
             `;
+            console.log('[SST] Applied additional styles to container');
         }
+        
+        // Log dimensions for debugging
+        console.log('[SST] Left sidebar dimensions:', {
+            offsetWidth: leftSidebar.offsetWidth,
+            offsetHeight: leftSidebar.offsetHeight,
+            clientWidth: leftSidebar.clientWidth,
+            clientHeight: leftSidebar.clientHeight
+        });
         
         // Force reflow to ensure proper rendering
         verticalContainer.offsetHeight;
@@ -90,25 +116,42 @@ function updateLeftSidebar(content) {
     
     // Add the sidebar to the vertical container
     verticalContainer.appendChild(leftSidebar);
+    console.log('[SST] Appended leftSidebar to verticalContainer');
     
     // Store reference to global sidebar
     globalLeftSidebar = verticalContainer;
+    console.log('[SST] Stored reference to globalLeftSidebar');
     
     // Insert the sidebar container directly before the sheld div in the body
-    sheld.parentNode.insertBefore(verticalContainer, sheld);
+    if (sheld.parentNode) {
+        sheld.parentNode.insertBefore(verticalContainer, sheld);
+        console.log('[SST] Successfully inserted left sidebar before sheld');
+    } else {
+        console.error('[SST] sheld has no parent node!');
+        // Fallback: append to body
+        document.body.appendChild(verticalContainer);
+    }
+    
+    // Debug: Log the final container
+    console.log('[SST] Created left sidebar container:', verticalContainer);
     
     return verticalContainer;
 }
 
 // Helper function to create or update a global right sidebar
 function updateRightSidebar(content) {
+    console.log('[SST] updateRightSidebar called');
+    console.log('[SST] Content received:', content);
+    
     // Remove existing global sidebar if it exists
     if (globalRightSidebar) {
+        console.log('[SST] Removing existing right sidebar');
         globalRightSidebar.remove();
     }
     
     // Find the sheld container
     const sheld = document.getElementById('sheld');
+    console.log('[SST] Found sheld element:', sheld);
     if (!sheld) {
         console.warn('[SST] Could not find sheld container for sidebar');
         return;
@@ -139,11 +182,13 @@ function updateRightSidebar(content) {
         visibility: visible !important;
         overflow: visible !important;
     `;
+    console.log('[SST] Created verticalContainer');
     
     // Create the actual sidebar content container
     const rightSidebar = document.createElement('div');
     rightSidebar.id = 'sst-sidebar-right-content';
     rightSidebar.innerHTML = content;
+    console.log('[SST] Set innerHTML on rightSidebar. New innerHTML:', rightSidebar.innerHTML);
     rightSidebar.style.cssText = `
         width: auto !important;
         height: auto !important;
@@ -158,10 +203,20 @@ function updateRightSidebar(content) {
         visibility: visible !important;
         overflow: visible !important;
     `;
+    console.log('[SST] Applied styles to rightSidebar');
+    
+    // Debug: Check what we actually have
+    const trackerContainer = rightSidebar.querySelector('#silly-sim-tracker-container');
+    console.log('[SST] Found trackerContainer:', trackerContainer);
+    if (trackerContainer) {
+        console.log('[SST] trackerContainer innerHTML:', trackerContainer.innerHTML);
+        console.log('[SST] trackerContainer children count:', trackerContainer.children.length);
+    }
     
     // Ensure the content is visible by adding specific styles to the inner elements
     setTimeout(() => {
         const container = rightSidebar.querySelector('#silly-sim-tracker-container');
+        console.log('[SST] Found container in setTimeout:', container);
         if (container) {
             container.style.cssText += `
                 width: 100% !important;
@@ -170,7 +225,16 @@ function updateRightSidebar(content) {
                 display: block !important;
                 visibility: visible !important;
             `;
+            console.log('[SST] Applied additional styles to container');
         }
+        
+        // Log dimensions for debugging
+        console.log('[SST] Right sidebar dimensions:', {
+            offsetWidth: rightSidebar.offsetWidth,
+            offsetHeight: rightSidebar.offsetHeight,
+            clientWidth: rightSidebar.clientWidth,
+            clientHeight: rightSidebar.clientHeight
+        });
         
         // Force reflow to ensure proper rendering
         verticalContainer.offsetHeight;
@@ -178,12 +242,24 @@ function updateRightSidebar(content) {
     
     // Add the sidebar to the vertical container
     verticalContainer.appendChild(rightSidebar);
+    console.log('[SST] Appended rightSidebar to verticalContainer');
     
     // Store reference to global sidebar
     globalRightSidebar = verticalContainer;
+    console.log('[SST] Stored reference to globalRightSidebar');
     
     // Insert the sidebar container directly before the sheld div in the body
-    sheld.parentNode.insertBefore(verticalContainer, sheld);
+    if (sheld.parentNode) {
+        sheld.parentNode.insertBefore(verticalContainer, sheld);
+        console.log('[SST] Successfully inserted right sidebar before sheld');
+    } else {
+        console.error('[SST] sheld has no parent node!');
+        // Fallback: append to body
+        document.body.appendChild(verticalContainer);
+    }
+    
+    // Debug: Log the final container
+    console.log('[SST] Created right sidebar container:', verticalContainer);
     
     return verticalContainer;
 }
