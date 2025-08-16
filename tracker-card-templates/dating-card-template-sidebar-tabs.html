@@ -4,234 +4,219 @@
 
 <!-- CARD_TEMPLATE_START -->
 <style>
-  /* The actual template styling */
-  .sim-tracker-container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-    width: 100%;
-    position: relative;
-    height: 100%;
-  }
+/* The actual template styling */
+.sim-tracker-container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  width: 100%;
+  position: relative;
+  height: 100%;
+}
 
-  .sim-tracker-tabs {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    position: absolute;
-    left: -68px; /* 60px tab width + 8px gap */
-    top: 20%;
-    z-index: 10;
-    top: 0;
-    bottom: 0;
-    justify-content: center;
-    height: 100%;
-  }
+.sim-tracker-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  position: absolute;
+  left: -68px; /* 60px tab width + 8px gap */
+  top: 20%;
+  z-index: 10;
+}
 
-  .sim-tracker-tab {
-    width: 60px;
-    height: 60px;
-    border-radius: 8px;
-    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
-    position: relative;
-    backdrop-filter: blur(10px);
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    cursor: pointer;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background: linear-gradient(145deg, #2c2c2c, #1a1a1a);
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    flex-shrink: 0;
-  }
+.sim-tracker-tab {
+  width: 60px;
+  height: 60px;
+  border-radius: 8px;
+  box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+  position: relative;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: linear-gradient(145deg, #2c2c2c, #1a1a1a);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
 
-  .sim-tracker-tab:hover {
-    filter: brightness(1.2);
-  }
+.sim-tracker-tab:hover {
+  filter: brightness(1.2);
+}
 
-  .sim-tracker-tab.active {
-    filter: brightness(1.3);
-    z-index: 20;
-  }
+.sim-tracker-tab.active {
+  filter: brightness(1.3);
+  z-index: 20;
+}
 
-  .tab-initials {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: linear-gradient(145deg, #6a5acd, #5a4abc);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    font-weight: bold;
-    font-size: 18px;
-  }
+.tab-initials {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #6a5acd, #5a4abc);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+  font-size: 18px;
+}
 
-  .sim-tracker-card {
-    background: linear-gradient(145deg, #2c2c2c, #1a1a1a);
-    border-radius: 18px;
-    padding: 20px;
-    width: 270px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    position: absolute;
-    backdrop-filter: blur(10px);
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%) translateX(100%);
-    opacity: 0;
-    visibility: hidden;
-    z-index: 15;
-    border: 1px solid rgba(255, 255, 255, 0.05);
-  }
+.sim-tracker-card {
+  background: linear-gradient(145deg, #2c2c2c, #1a1a1a);
+  border-radius: 18px;
+  padding: 20px;
+  width: 270px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  position: absolute;
+  backdrop-filter: blur(10px);
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%) translateX(-100%);
+  opacity: 0;
+  visibility: hidden;
+  z-index: 15;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
 
-  .sim-tracker-card.active {
-    transform: translateY(-50%) translateX(0);
-    opacity: 1;
-    visibility: visible;
-  }
+.sim-tracker-card.active {
+  transform: translateY(-50%) translateX(0);
+  opacity: 1;
+  visibility: visible;
+}
 
-  .sim-tracker-card.sliding-in {
-    transform: translateY(-50%) translateX(0);
-    opacity: 1;
-    visibility: visible;
-  }
+.sim-tracker-card.inactive {
+  opacity: 0.6;
+}
 
-  .sim-tracker-card.sliding-out {
-    transform: translateY(-50%) translateX(-300px);
-    opacity: 0;
-    visibility: hidden;
-  }
+.character-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 18px;
+}
 
-  .sim-tracker-card.inactive {
-    opacity: 0.6;
-  }
+.character-name {
+  font-size: 1.3em;
+  font-weight: 600;
+  color: #ffffff;
+}
 
-  .character-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 18px;
-  }
+.status-indicator {
+  font-size: 1.4em;
+}
 
-  .character-name {
-    font-size: 1.3em;
-    font-weight: 600;
-    color: #ffffff;
-  }
+.stats-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
 
-  .status-indicator {
-    font-size: 1.4em;
-  }
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
 
-  .stats-container {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-  }
+.stat-header {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9em;
+  color: rgba(255, 255, 255, 0.7);
+}
 
-  .stat-item {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
+.stat-bar-bg {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
 
-  .stat-header {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.9em;
-    color: rgba(255, 255, 255, 0.7);
-  }
+.stat-bar-fill {
+  height: 100%;
+  border-radius: 4px;
+}
 
-  .stat-bar-bg {
-    height: 8px;
-    background: rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-    overflow: hidden;
-  }
+.status-container {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
 
-  .stat-bar-fill {
-    height: 100%;
-    border-radius: 4px;
-  }
+.relationship-status, .desire-status {
+  margin-bottom: 10px;
+  font-size: 0.95em;
+  color: rgba(255, 255, 255, 0.9);
+}
 
-  .status-container {
-    margin-top: 20px;
-    padding-top: 16px;
-    border-top: 1px solid rgba(255, 255, 255, 0.05);
-  }
+.days-counter {
+  text-align: left;
+  font-style: italic;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 1em;
+  margin-bottom: 15px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
 
-  .relationship-status,
-  .desire-status {
-    margin-bottom: 10px;
-    font-size: 0.95em;
-    color: rgba(255, 255, 255, 0.9);
-  }
+.thought-bubble {
+  margin-top: 6px;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
 
-  .days-counter {
-    text-align: left;
-    font-style: italic;
-    color: rgba(255, 255, 255, 0.8);
-    font-size: 1em;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  }
-
-  .thought-bubble {
-    margin-top: 6px;
-    padding: 15px;
-    background: rgba(255, 255, 255, 0.05);
-    border-radius: 12px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
-  .thought-label {
-    position: relative;
-    padding-top: 8px;
-    font-size: 11px;
-    font-weight: 500;
-    color: rgba(255, 255, 255, 0.7);
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
-    letter-spacing: 0.25px;
-  }
+.thought-label {
+  position: relative;
+  padding-top: 8px;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.25px;
+}
 </style>
 
 <div class="sim-tracker-container">
   <div class="sim-tracker-tabs">
     {{#each characters}}
-    <div
-      class="sim-tracker-tab"
-      data-character="{{@index}}"
-      style="background: linear-gradient(145deg, {{adjustColorBrightness bgColor 70}} 0%, {{adjustColorBrightness darkerBgColor 60}} 50%, {{adjustColorBrightness darkerBgColor 50}} 100%);"
-    >
-      <div
-        class="tab-initials"
-        style="background: linear-gradient(145deg, {{adjustColorBrightness bgColor 90}} 0%, {{adjustColorBrightness bgColor 70}} 100%);"
-      >
+    <div class="sim-tracker-tab" data-character="{{@index}}" style="background: linear-gradient(145deg, {{adjustColorBrightness bgColor 70}} 0%, {{adjustColorBrightness darkerBgColor 60}} 50%, {{adjustColorBrightness darkerBgColor 50}} 100%);">
+      <div class="tab-initials" style="background: linear-gradient(145deg, {{adjustColorBrightness bgColor 90}} 0%, {{adjustColorBrightness bgColor 70}} 100%);">
         {{initials characterName}}
       </div>
     </div>
     {{/each}}
   </div>
-
+  
   {{#each characters}}
-  <div
-    class="sim-tracker-card {{#if stats.inactive}}inactive{{/if}}"
-    data-character="{{@index}}"
-    style="background: linear-gradient(145deg, {{adjustColorBrightness bgColor 70}} 0%, {{adjustColorBrightness darkerBgColor 60}} 50%, {{adjustColorBrightness darkerBgColor 50}} 100%);"
-  >
+  <div class="sim-tracker-card {{#if stats.inactive}}inactive{{/if}}" data-character="{{@index}}" style="background: linear-gradient(145deg, {{adjustColorBrightness bgColor 70}} 0%, {{adjustColorBrightness darkerBgColor 60}} 50%, {{adjustColorBrightness darkerBgColor 50}} 100%);">
+    
     <!-- Days counter at the top -->
-    <div class="days-counter">Day {{stats.days_since_first_meeting}}</div>
-
+    <div class="days-counter">
+      Day {{stats.days_since_first_meeting}}
+    </div>
+    
     <!-- Character header with name and status -->
     <div class="character-header">
-      <div class="character-name">{{characterName}}</div>
+      <div class="character-name">
+        {{characterName}}
+      </div>
       <div class="status-indicator">
-        {{#if stats.inactive}} 💤 {{else}} {{#if (gt stats.ap 70)}} 😊 {{else if
-        (gt stats.ap 40)}} 😐 {{else}} 😞 {{/if}} {{/if}}
+        {{#if stats.inactive}}
+          💤
+        {{else}}
+          {{#if (gt stats.ap 70)}}
+            😊
+          {{else if (gt stats.ap 40)}}
+            😐
+          {{else}}
+            😞
+          {{/if}}
+        {{/if}}
       </div>
     </div>
-
+    
     <!-- Stats grid with progress bars -->
     <div class="stats-container">
       <!-- Affection -->
@@ -241,13 +226,10 @@
           <span>{{stats.ap}}</span>
         </div>
         <div class="stat-bar-bg">
-          <div
-            class="stat-bar-fill"
-            style="width: {{#if (gt stats.ap 200)}}100{{else}}{{#if stats.ap}}{{divide stats.ap 2}}{{else}}0{{/if}}{{/if}}%; height: 100%; background: linear-gradient(90deg, #ff9a9e, #fad0c4); border-radius: 4px;"
-          ></div>
+          <div class="stat-bar-fill" style="width: {{#if (gt stats.ap 200)}}100{{else}}{{#if stats.ap}}{{divide stats.ap 2}}{{else}}0{{/if}}{{/if}}%; height: 100%; background: linear-gradient(90deg, #ff9a9e, #fad0c4); border-radius: 4px;"></div>
         </div>
       </div>
-
+      
       <!-- Desire -->
       <div class="stat-item">
         <div class="stat-header">
@@ -255,13 +237,10 @@
           <span>{{stats.dp}}</span>
         </div>
         <div class="stat-bar-bg">
-          <div
-            class="stat-bar-fill"
-            style="width: {{#if (gt stats.dp 150)}}100{{else}}{{#if stats.dp}}{{divideRoundUp stats.dp 1.5}}{{else}}0{{/if}}{{/if}}%; height: 100%; background: linear-gradient(90deg, #a1c4fd, #c2e9fb); border-radius: 4px;"
-          ></div>
+          <div class="stat-bar-fill" style="width: {{#if (gt stats.dp 150)}}100{{else}}{{#if stats.dp}}{{divideRoundUp stats.dp 1.5}}{{else}}0{{/if}}{{/if}}%; height: 100%; background: linear-gradient(90deg, #a1c4fd, #c2e9fb); border-radius: 4px;"></div>
         </div>
       </div>
-
+      
       <!-- Trust -->
       <div class="stat-item">
         <div class="stat-header">
@@ -269,13 +248,10 @@
           <span>{{stats.tp}}</span>
         </div>
         <div class="stat-bar-bg">
-          <div
-            class="stat-bar-fill"
-            style="width: {{#if (gt stats.tp 150)}}100{{else}}{{#if stats.tp}}{{divideRoundUp stats.tp 1.5}}{{else}}0{{/if}}{{/if}}%; height: 100%; background: linear-gradient(90deg, #84fab0, #8fd3f4); border-radius: 4px;"
-          ></div>
+          <div class="stat-bar-fill" style="width: {{#if (gt stats.tp 150)}}100{{else}}{{#if stats.tp}}{{divideRoundUp stats.tp 1.5}}{{else}}0{{/if}}{{/if}}%; height: 100%; background: linear-gradient(90deg, #84fab0, #8fd3f4); border-radius: 4px;"></div>
         </div>
       </div>
-
+      
       <!-- Contempt -->
       <div class="stat-item">
         <div class="stat-header">
@@ -283,14 +259,11 @@
           <span>{{stats.cp}}</span>
         </div>
         <div class="stat-bar-bg">
-          <div
-            class="stat-bar-fill"
-            style="width: {{#if (gt stats.cp 150)}}100{{else}}{{#if stats.cp}}{{divideRoundUp stats.cp 1.5}}{{else}}0{{/if}}{{/if}}%; height: 100%; background: linear-gradient(90deg, #d4fc79, #96e6a1); border-radius: 4px;"
-          ></div>
+          <div class="stat-bar-fill" style="width: {{#if (gt stats.cp 150)}}100{{else}}{{#if stats.cp}}{{divideRoundUp stats.cp 1.5}}{{else}}0{{/if}}{{/if}}%; height: 100%; background: linear-gradient(90deg, #d4fc79, #96e6a1); border-radius: 4px;"></div>
         </div>
       </div>
     </div>
-
+    
     <!-- Status -->
     <div class="status-container">
       <div class="relationship-status">
@@ -300,20 +273,14 @@
         <strong>Desire:</strong> {{stats.desireStatus}}
       </div>
     </div>
-
+    
     <!-- Internal thought bubble (conditionally shown) -->
     {{#if stats.internal_thought}}
     <div class="thought-label">Thinks:</div>
     <div class="thought-bubble">
-      <div style="display: flex; align-items: flex-start; gap: 10px">
-        <div style="font-size: 1.2em; flex-shrink: 0">💭</div>
-        <div
-          style="
-            font-size: 0.95em;
-            line-height: 1.4;
-            color: rgba(255, 255, 255, 0.85);
-          "
-        >
+      <div style="display: flex; align-items: flex-start; gap: 10px;">
+        <div style="font-size: 1.2em; flex-shrink: 0;">💭</div>
+        <div style="font-size: 0.95em; line-height: 1.4; color: rgba(255, 255, 255, 0.85);">
           {{stats.internal_thought}}
         </div>
       </div>
