@@ -1225,9 +1225,9 @@ const initialize_settings_listeners = () => {
         // Remove any existing modal
         $('#sst-custom-fields-modal').remove();
         
-        // Create modal HTML using SillyTavern's built-in classes
+        // Create modal HTML using SillyTavern's built-in classes with dialog element
         const modalHtml = `
-            <div id="sst-custom-fields-modal" class="popup wide_dialogue_popup large_dialogue_popup vertical_scrolling_dialogue_popup popup--animation-fast">
+            <dialog id="sst-custom-fields-modal" class="popup wide_dialogue_popup large_dialogue_popup vertical_scrolling_dialogue_popup popup--animation-fast">
                 <div class="popup-header">
                     <h3>Manage Custom Fields</h3>
                     <div class="popup-close-button close_popups" id="sst-modal-close">&times;</div>
@@ -1240,7 +1240,7 @@ const initialize_settings_listeners = () => {
                         <button id="addCustomFieldBtn" class="menu_button">Add New Field</button>
                     </div>
                 </div>
-            </div>
+            </dialog>
         `;
         
         // Append modal to body
@@ -1344,9 +1344,16 @@ const initialize_settings_listeners = () => {
             $modal.remove();
         });
         
+        // Close modal with Escape key
+        $modal.on('keydown', function(e) {
+            if (e.key === 'Escape') {
+                $modal.remove();
+            }
+        });
+        
         // Render fields and show modal
         renderFields();
-        $modal.show();
+        $modal[0].showModal(); // Use the native dialog showModal() method
     };
     
     // Manage fields button opens the modal
