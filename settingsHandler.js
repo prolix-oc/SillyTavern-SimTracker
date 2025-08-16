@@ -1,5 +1,6 @@
 // settingsHandler.js - SillyTavern settings reading and management
-import { extension_settings, saveSettingsDebounced } from "../../../extensions.js";
+
+const { extensionSettings, saveSettingsDebounced } = SillyTavern.getContext();
 
 const MODULE_NAME = "silly-sim-tracker";
 
@@ -371,12 +372,12 @@ const initialize_settings = async () => {
   }
 
   // Now, merge the defaults with any user-saved settings.
-  extension_settings[MODULE_NAME] = Object.assign(
+  extensionSettings[MODULE_NAME] = Object.assign(
     {},
     default_settings,
-    extension_settings[MODULE_NAME]
+    extensionSettings[MODULE_NAME]
   );
-  settings = extension_settings[MODULE_NAME];
+  settings = extensionSettings[MODULE_NAME];
 };
 
 const load_settings_html_manually = async () => {
