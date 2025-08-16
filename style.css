@@ -334,7 +334,7 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 }
 
 #sst-global-sidebar-left .sim-tracker-tab.active {
-    transform: translateX(270px); /* Animate to aligned position (card width) */
+    transform: translateX(244px); /* Animate to aligned position (card width) */
 }
 
 #sst-global-sidebar-left .sim-tracker-card {
