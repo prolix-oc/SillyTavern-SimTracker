@@ -26,6 +26,8 @@
     justify-content: center;
     height: 100%;
     z-index: 20;
+    padding-right: 60px;
+
   }
 
   .sim-tracker-tab {
@@ -44,10 +46,9 @@
     flex-shrink: 0;
     margin: 0 8px;
     z-index: 21;
-    padding-right: 60px;
     /* Unified transform and transition for smooth coordinated movement */
     transform: translateX(0px);
-    transition: 
+    transition:
       transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1),
       filter 0.4s cubic-bezier(0.4, 0.0, 0.2, 1),
       box-shadow 0.4s cubic-bezier(0.4, 0.0, 0.2, 1);
@@ -100,8 +101,8 @@
     transform: translateY(-50%) translateX(100%) scale(0.95);
     opacity: 0;
     visibility: hidden;
-    
-    transition: 
+
+    transition:
       transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1),
       opacity 0.4s cubic-bezier(0.4, 0.0, 0.2, 1),
       visibility 0.4s cubic-bezier(0.4, 0.0, 0.2, 1),
@@ -292,7 +293,7 @@
   >
     <!-- Overlay for inactive characters -->
     <div class="narrative-inactive-overlay"></div>
-    
+
     <!-- Days counter at the top -->
     <div class="days-counter">Day {{stats.days_since_first_meeting}}</div>
 
