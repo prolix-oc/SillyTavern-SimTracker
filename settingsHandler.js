@@ -13,8 +13,7 @@ const defaultSimFields = [
   { key: "cp", description: "Contempt Points (0-150)" },
   {
     key: "apChange",
-    description:
-      "Change in Affection from last action (positive/negative/zero)",
+    description: "Change in Affection from last action (positive/negative/zero)",
   },
   {
     key: "dpChange",
@@ -258,12 +257,24 @@ const initialize_settings = async () => {
   }
 
   // Now, merge the defaults with any user-saved settings.
+  // For first-time users, this will populate the settings with our default values.
+  // For existing users, it will preserve their existing settings while adding any new default values.
   extensionSettings[MODULE_NAME] = Object.assign(
     {},
     default_settings,
     extensionSettings[MODULE_NAME]
   );
   settings = extensionSettings[MODULE_NAME];
+  
+  // Ensure that customFields always has the default values if it's empty or missing
+  if (!settings.customFields || settings.customFields.length === 0) {
+    settings.customFields = [...defaultSimFields];
+  }
+  
+  // Ensure that userPresets always exists
+  if (!settings.userPresets) {
+    settings.userPresets = [];
+  }
 };
 
 const load_settings_html_manually = async () => {

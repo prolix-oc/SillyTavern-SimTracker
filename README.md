@@ -112,6 +112,30 @@ The extension offers extensive configuration options through the SillyTavern set
 8. **Data Hiding**: Hide raw JSON code blocks from chat display
 9. **System Prompt**: Customize the base prompt for sim tracking
 
+### Default Settings
+
+For first-time users, the extension comes with a comprehensive set of default settings:
+
+- **Code Block Identifier**: "sim"
+- **Default Card Color**: #6a5acd (a pleasant purple)
+- **Template**: Dating Sim Tracker (built-in)
+- **Default Fields**: A rich set of fields for tracking character relationships including:
+  - Affection Points (AP)
+  - Desire Points (DP)
+  - Trust Points (TP)
+  - Contempt Points (CP)
+  - Change tracking for each stat
+  - Relationship and desire status text
+  - Pregnancy tracking
+  - Health status
+  - Background color customization
+  - Reaction tracking
+  - Internal thoughts
+  - Day counter
+  - Inactivity tracking with reasons
+
+These defaults provide a solid foundation for most dating sim scenarios, but can be fully customized to suit your specific needs.
+
 ### Template Positioning
 
 Templates can define their preferred position using HTML comments. The positioning options are:
