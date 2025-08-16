@@ -1343,7 +1343,7 @@ const renderTracker = (mesId) => {
       }
 
       // Remove any preparing text
-      const preparingText = messageElement.querySelector(".sst-preparing-text");
+      const preparingText = messageElement.parentNode.querySelector(".sst-preparing-text");
       if (preparingText) {
         preparingText.remove();
         // Remove this mesText from the set since it no longer has preparing text
@@ -1618,7 +1618,7 @@ const renderTrackerWithoutSim = (mesId) => {
       }
 
       // Remove any preparing text
-      const preparingText = messageElement.querySelector(".sst-preparing-text");
+      const preparingText = messageElement.parentNode.querySelector(".sst-preparing-text");
       if (preparingText) {
         preparingText.remove();
         // Remove this mesText from the set since it no longer has preparing text
@@ -2051,12 +2051,13 @@ jQuery(async () => {
                   preparingText.className = "sst-preparing-text";
                   preparingText.textContent = "Preparing new tracker cards...";
                   preparingText.style.cssText = `
-                                        color: #6a5acd;
+                                        color: #4a3a9d; /* Darker blue */
                                         font-style: italic;
                                         margin: 10px 0;
                                         animation: sst-pulse 1.5s infinite;
                                     `;
-                  mesText.appendChild(preparingText);
+                  // Insert after mesText instead of appending to it
+                  mesText.parentNode.insertBefore(preparingText, mesText.nextSibling);
 
                   // Add the pulse animation to the document if not already present
                   if (!document.getElementById("sst-pulse-animation")) {
