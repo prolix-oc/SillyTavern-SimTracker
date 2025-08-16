@@ -6,7 +6,6 @@ srpc-ui/settings.html
 demo.html
 .env
 QWEN.md
-regex/*
 *.md
 *.html
 *.css
@@ -16,3 +15,4 @@ regex/*
 !README.md
 !style.css
 *.json
+regex/*

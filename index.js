@@ -644,6 +644,96 @@ const updateLastSimStatsOnSwipe = (currentMesId) => {
   }
 };
 
+// Function to update lastSimJsonString when regenerating or swiping
+const updateLastSimStatsOnRegenerateOrSwipe = () => {
+  try {
+    const context = getContext();
+    if (!context || !context.chat) {
+      log("Context or chat not available for regenerate/swipe update");
+      return;
+    }
+
+    // Look for the most recent message with sim data
+    for (let i = context.chat.length - 1; i >= 0; i--) {
+      const message = context.chat[i];
+      if (!message || !message.mes) continue;
+
+      // Check if this message contains sim data
+      const identifier = get_settings("codeBlockIdentifier");
+      const simRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "m");
+      const match = message.mes.match(simRegex);
+
+      if (match) {
+        // Extract JSON content from the match
+        const jsonContent = match[0]
+          .replace(/```/g, "")
+          .replace(new RegExp(`^${identifier}\\s*`), "")
+          .trim();
+
+        // Update the lastSimJsonString with the most recent message's sim data
+        lastSimJsonString = jsonContent;
+        log(`Updated last_sim_stats macro with data from message ID ${i} during regenerate/swipe`);
+        return;
+      }
+    }
+
+    log("No message with sim data found for regenerate/swipe update");
+  } catch (error) {
+    log(`Error updating last sim stats on regenerate/swipe: ${error.message}`);
+  }
+};
+
+// Function to filter sim blocks in prompt (keep only last 3)
+const filterSimBlocksInPrompt = (chat) => {
+  try {
+    if (!chat || !Array.isArray(chat)) {
+      log("Invalid chat data for filtering sim blocks");
+      return;
+    }
+
+    // Find all messages with sim data
+    const identifier = get_settings("codeBlockIdentifier");
+    const simRegexPattern = "```" + identifier + "[\\s\\S]*?```";
+    
+    // Collect all messages with sim data along with their positions
+    const messagesWithSim = [];
+    chat.forEach((message, index) => {
+      if (message && message.mes) {
+        // Create a new regex instance for each test to avoid state issues
+        const testRegex = new RegExp(simRegexPattern, "m");
+        if (testRegex.test(message.mes)) {
+          messagesWithSim.push({ index, message });
+        }
+      }
+    });
+
+    // If we have more than 3 messages with sim data, remove the older ones from the prompt context
+    if (messagesWithSim.length > 3) {
+      // Get the messages to remove from prompt (all except the last 3)
+      const messagesToRemove = messagesWithSim.slice(0, messagesWithSim.length - 3);
+      
+      messagesToRemove.forEach(({ index, message }) => {
+        // Remove sim blocks entirely from the prompt context
+        if (message.mes) {
+          // Create a new regex for replacement to avoid state issues
+          const replaceRegex = new RegExp(simRegexPattern, "gm");
+          // Remove the sim blocks completely from the prompt context
+          const originalMes = message.mes;
+          const filteredMes = originalMes.replace(replaceRegex, "");
+          
+          // Only modify if we actually made changes
+          if (filteredMes !== originalMes) {
+            message.mes = filteredMes;
+            log(`Removed sim block from prompt context in message ID ${index} (keeping in UI)`);
+          }
+        }
+      });
+    }
+  } catch (error) {
+    log(`Error filtering sim blocks in prompt: ${error.message}`);
+  }
+};
+
 // Utility function to migrate old JSON format to new format
 const migrateJsonFormat = (oldJsonData) => {
   // Check if it's already in the new format
@@ -1155,8 +1245,10 @@ const renderTracker = (mesId) => {
         .trim();
 
       // --- NEW --- Capture the raw JSON string for the {{last_sim_stats}} macro
+      // Always update the lastSimJsonString when we find a new sim block
+      // This ensures it always contains the most recent data
       lastSimJsonString = jsonContent;
-      log(`Captured last sim stats JSON.`);
+      log(`Captured last sim stats JSON from message ID ${mesId}.`);
 
       let jsonData;
       try {
@@ -1426,6 +1518,12 @@ const renderTrackerWithoutSim = (mesId) => {
         .replace(/```/g, "")
         .replace(new RegExp(`^${identifier}\\s*`), "")
         .trim();
+      
+      // --- NEW --- Capture the raw JSON string for the {{last_sim_stats}} macro
+      // Always update the lastSimJsonString when we find a new sim block
+      // This ensures it always contains the most recent data
+      lastSimJsonString = jsonContent;
+      log(`Captured last sim stats JSON from message ID ${mesId}.`);
       let jsonData;
 
       try {
@@ -1945,9 +2043,18 @@ globalThis.simTrackerGenInterceptor = async function (
   abort,
   type
 ) {
-  // This interceptor doesn't need to modify the chat for now
-  // but we keep it available for future use
   log(`simTrackerGenInterceptor called with type: ${type}`);
+  
+  // Handle regenerate and swipe conditions to reset last_sim_stats macro
+  if (type === "regenerate" || type === "swipe") {
+    log(`Handling ${type} condition - updating last_sim_stats macro`);
+    updateLastSimStatsOnRegenerateOrSwipe();
+  }
+  
+  // Filter out sim blocks from messages beyond the last 3
+  filterSimBlocksInPrompt(chat);
+  
+  return { chat, contextSize, abort };
 };
 
 // --- ENTRY POINT ---
@@ -2227,7 +2334,7 @@ jQuery(async () => {
       log(
         `Message swipe detected for message ID ${mesId}. Updating last_sim_stats macro.`
       );
-      updateLastSimStatsOnSwipe(mesId);
+      updateLastSimStatsOnRegenerateOrSwipe();
     });
     refreshAllCards();
     log(`${MODULE_NAME} has been successfully loaded.`);
