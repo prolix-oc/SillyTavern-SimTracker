@@ -76,6 +76,7 @@ function updateLeftSidebar(content) {
         display: block !important;
         visibility: visible !important;
         overflow: visible !important;
+        position: relative !important;
     `;
     console.log('[SST] Applied styles to leftSidebar');
     
@@ -87,8 +88,32 @@ function updateLeftSidebar(content) {
         console.log('[SST] trackerContainer children count:', trackerContainer.children.length);
     }
     
-    // Ensure the content is visible by adding specific styles to the inner elements
+    // Add event listeners for tabs if this is a tabbed template
     setTimeout(() => {
+        const tabs = leftSidebar.querySelectorAll('.sim-tracker-tab');
+        const cards = leftSidebar.querySelectorAll('.sim-tracker-card');
+        
+        if (tabs.length > 0 && cards.length > 0) {
+            // Initially activate the first tab and card
+            if (tabs[0]) tabs[0].classList.add('active');
+            if (cards[0]) cards[0].classList.add('active');
+            
+            // Add click listeners to tabs
+            tabs.forEach((tab, index) => {
+                tab.addEventListener('click', () => {
+                    // Remove active class from all tabs and cards
+                    tabs.forEach(t => t.classList.remove('active'));
+                    cards.forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked tab and corresponding card
+                    tab.classList.add('active');
+                    if (cards[index]) {
+                        cards[index].classList.add('active');
+                    }
+                });
+            });
+        }
+        
         const container = leftSidebar.querySelector('#silly-sim-tracker-container');
         console.log('[SST] Found container in setTimeout:', container);
         if (container) {
@@ -202,6 +227,7 @@ function updateRightSidebar(content) {
         display: block !important;
         visibility: visible !important;
         overflow: visible !important;
+        position: relative !important;
     `;
     console.log('[SST] Applied styles to rightSidebar');
     
@@ -213,8 +239,32 @@ function updateRightSidebar(content) {
         console.log('[SST] trackerContainer children count:', trackerContainer.children.length);
     }
     
-    // Ensure the content is visible by adding specific styles to the inner elements
+    // Add event listeners for tabs if this is a tabbed template
     setTimeout(() => {
+        const tabs = rightSidebar.querySelectorAll('.sim-tracker-tab');
+        const cards = rightSidebar.querySelectorAll('.sim-tracker-card');
+        
+        if (tabs.length > 0 && cards.length > 0) {
+            // Initially activate the first tab and card
+            if (tabs[0]) tabs[0].classList.add('active');
+            if (cards[0]) cards[0].classList.add('active');
+            
+            // Add click listeners to tabs
+            tabs.forEach((tab, index) => {
+                tab.addEventListener('click', () => {
+                    // Remove active class from all tabs and cards
+                    tabs.forEach(t => t.classList.remove('active'));
+                    cards.forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked tab and corresponding card
+                    tab.classList.add('active');
+                    if (cards[index]) {
+                        cards[index].classList.add('active');
+                    }
+                });
+            });
+        }
+        
         const container = rightSidebar.querySelector('#silly-sim-tracker-container');
         console.log('[SST] Found container in setTimeout:', container);
         if (container) {
@@ -557,6 +607,12 @@ Handlebars.registerHelper('adjustColorBrightness', function (hexColor, brightnes
     return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
 });
 
+Handlebars.registerHelper('tabZIndex', function (index) {
+    // Calculate z-index for tabs (higher for first tabs)
+    // This creates a stacking effect where the first tab is on top
+    return 20 - index;
+});
+
 Handlebars.registerHelper('unless', function (conditional, options) {
     if (!conditional) {
         return options.fn(this);
@@ -584,7 +640,10 @@ async function populateTemplateDropdown() {
     const defaultFiles = [
         "dating-card-template.html",
         "dating-card-template-positioned.html",
-        "dating-card-template-sidebar.html"
+        "dating-card-template-sidebar.html",
+        "dating-card-template-sidebar-left.html",
+        "dating-card-template-sidebar-tabs.html",
+        "dating-card-template-sidebar-left-tabs.html"
     ];
 
     const templateOptions = [];
@@ -862,34 +921,78 @@ const renderTracker = (mesId) => {
             
             if (!characterList.length) return;
 
-            const cardsHtml = characterList.map(character => {
-                const stats = character;
-                const name = character.name;
-                if (!stats) {
-                    log(`No stats found for character "${name}" in message ID ${mesId}. Skipping card.`);
-                    return '';
-                }
-                const bgColor = stats.bg || get_settings('defaultBgColor');
-                const cardData = {
-                    characterName: name,
+            // For tabbed templates, we need to pass all characters to the template
+            const isTabbedTemplate = get_settings('templateFile').includes('tabs');
+            
+            let cardsHtml = '';
+            if (isTabbedTemplate) {
+                // Prepare data for all characters
+                const charactersData = characterList.map((character, index) => {
+                    const stats = character;
+                    const name = character.name;
+                    if (!stats) {
+                        log(`No stats found for character "${name}" in message ID ${mesId}. Skipping card.`);
+                        return null;
+                    }
+                    const bgColor = stats.bg || get_settings('defaultBgColor');
+                    return {
+                        characterName: name,
+                        currentDate: currentDate,
+                        currentTime: currentTime,
+                        stats: {
+                            ...stats,
+                            internal_thought: stats.internal_thought || stats.thought || "No thought recorded.",
+                            relationshipStatus: stats.relationshipStatus || "Unknown Status",
+                            desireStatus: stats.desireStatus || "Unknown Desire",
+                            inactive: stats.inactive || false,
+                            inactiveReason: stats.inactiveReason || 0
+                        },
+                        bgColor: bgColor,
+                        darkerBgColor: darkenColor(bgColor),
+                        reactionEmoji: getReactionEmoji(stats.last_react),
+                        healthIcon: stats.health === 1 ? '🤕' : stats.health === 2 ? '💀' : null,
+                        showThoughtBubble: get_settings('showThoughtBubble'),
+                    };
+                }).filter(Boolean); // Remove any null entries
+                
+                // For tabbed templates, we pass all characters in one data object
+                const templateData = {
+                    characters: charactersData,
                     currentDate: currentDate,
-                    currentTime: currentTime,
-                    stats: {
-                        ...stats,
-                        internal_thought: stats.internal_thought || stats.thought || "No thought recorded.",
-                        relationshipStatus: stats.relationshipStatus || "Unknown Status",
-                        desireStatus: stats.desireStatus || "Unknown Desire",
-                        inactive: stats.inactive || false,
-                        inactiveReason: stats.inactiveReason || 0
-                    },
-                    bgColor: bgColor,
-                    darkerBgColor: darkenColor(bgColor),
-                    reactionEmoji: getReactionEmoji(stats.last_react),
-                    healthIcon: stats.health === 1 ? '🤕' : stats.health === 2 ? '💀' : null,
-                    showThoughtBubble: get_settings('showThoughtBubble'),
+                    currentTime: currentTime
                 };
-                return compiledCardTemplate(cardData);
-            }).join('');
+                
+                cardsHtml = compiledCardTemplate(templateData);
+            } else {
+                cardsHtml = characterList.map(character => {
+                    const stats = character;
+                    const name = character.name;
+                    if (!stats) {
+                        log(`No stats found for character "${name}" in message ID ${mesId}. Skipping card.`);
+                        return '';
+                    }
+                    const bgColor = stats.bg || get_settings('defaultBgColor');
+                    const cardData = {
+                        characterName: name,
+                        currentDate: currentDate,
+                        currentTime: currentTime,
+                        stats: {
+                            ...stats,
+                            internal_thought: stats.internal_thought || stats.thought || "No thought recorded.",
+                            relationshipStatus: stats.relationshipStatus || "Unknown Status",
+                            desireStatus: stats.desireStatus || "Unknown Desire",
+                            inactive: stats.inactive || false,
+                            inactiveReason: stats.inactiveReason || 0
+                        },
+                        bgColor: bgColor,
+                        darkerBgColor: darkenColor(bgColor),
+                        reactionEmoji: getReactionEmoji(stats.last_react),
+                        healthIcon: stats.health === 1 ? '🤕' : stats.health === 2 ? '💀' : null,
+                        showThoughtBubble: get_settings('showThoughtBubble'),
+                    };
+                    return compiledCardTemplate(cardData);
+                }).join('');
+            }
 
             // Remove any preparing text
             const preparingText = messageElement.querySelector('.sst-preparing-text');
@@ -1036,34 +1139,78 @@ const renderTrackerWithoutSim = (mesId) => {
             
             if (!characterList.length) return;
 
-            const cardsHtml = characterList.map(character => {
-                const stats = character;
-                const name = character.name;
-                if (!stats) {
-                    log(`No stats found for character "${name}" in message ID ${mesId}. Skipping card.`);
-                    return '';
-                }
-                const bgColor = stats.bg || get_settings('defaultBgColor');
-                const cardData = {
-                    characterName: name,
+            // For tabbed templates, we need to pass all characters to the template
+            const isTabbedTemplate = get_settings('templateFile').includes('tabs');
+            
+            let cardsHtml = '';
+            if (isTabbedTemplate) {
+                // Prepare data for all characters
+                const charactersData = characterList.map((character, index) => {
+                    const stats = character;
+                    const name = character.name;
+                    if (!stats) {
+                        log(`No stats found for character "${name}" in message ID ${mesId}. Skipping card.`);
+                        return null;
+                    }
+                    const bgColor = stats.bg || get_settings('defaultBgColor');
+                    return {
+                        characterName: name,
+                        currentDate: currentDate,
+                        currentTime: currentTime,
+                        stats: {
+                            ...stats,
+                            internal_thought: stats.internal_thought || stats.thought || "No thought recorded.",
+                            relationshipStatus: stats.relationshipStatus || "Unknown Status",
+                            desireStatus: stats.desireStatus || "Unknown Desire",
+                            inactive: stats.inactive || false,
+                            inactiveReason: stats.inactiveReason || 0
+                        },
+                        bgColor: bgColor,
+                        darkerBgColor: darkenColor(bgColor),
+                        reactionEmoji: getReactionEmoji(stats.last_react),
+                        healthIcon: stats.health === 1 ? '🤕' : stats.health === 2 ? '💀' : null,
+                        showThoughtBubble: get_settings('showThoughtBubble'),
+                    };
+                }).filter(Boolean); // Remove any null entries
+                
+                // For tabbed templates, we pass all characters in one data object
+                const templateData = {
+                    characters: charactersData,
                     currentDate: currentDate,
-                    currentTime: currentTime,
-                    stats: {
-                        ...stats,
-                        internal_thought: stats.internal_thought || stats.thought || "No thought recorded.",
-                        relationshipStatus: stats.relationshipStatus || "Unknown Status",
-                        desireStatus: stats.desireStatus || "Unknown Desire",
-                        inactive: stats.inactive || false,
-                        inactiveReason: stats.inactiveReason || 0
-                    },
-                    bgColor: bgColor,
-                    darkerBgColor: darkenColor(bgColor),
-                    reactionEmoji: getReactionEmoji(stats.last_react),
-                    healthIcon: stats.health === 1 ? '🤕' : stats.health === 2 ? '💀' : null,
-                    showThoughtBubble: get_settings('showThoughtBubble'),
+                    currentTime: currentTime
                 };
-                return compiledCardTemplate(cardData);
-            }).join('');
+                
+                cardsHtml = compiledCardTemplate(templateData);
+            } else {
+                cardsHtml = characterList.map(character => {
+                    const stats = character;
+                    const name = character.name;
+                    if (!stats) {
+                        log(`No stats found for character "${name}" in message ID ${mesId}. Skipping card.`);
+                        return '';
+                    }
+                    const bgColor = stats.bg || get_settings('defaultBgColor');
+                    const cardData = {
+                        characterName: name,
+                        currentDate: currentDate,
+                        currentTime: currentTime,
+                        stats: {
+                            ...stats,
+                            internal_thought: stats.internal_thought || stats.thought || "No thought recorded.",
+                            relationshipStatus: stats.relationshipStatus || "Unknown Status",
+                            desireStatus: stats.desireStatus || "Unknown Desire",
+                            inactive: stats.inactive || false,
+                            inactiveReason: stats.inactiveReason || 0
+                        },
+                        bgColor: bgColor,
+                        darkerBgColor: darkenColor(bgColor),
+                        reactionEmoji: getReactionEmoji(stats.last_react),
+                        healthIcon: stats.health === 1 ? '🤕' : stats.health === 2 ? '💀' : null,
+                        showThoughtBubble: get_settings('showThoughtBubble'),
+                    };
+                    return compiledCardTemplate(cardData);
+                }).join('');
+            }
 
             // Remove any preparing text
             const preparingText = messageElement.querySelector('.sst-preparing-text');

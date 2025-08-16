@@ -202,21 +202,6 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     box-sizing: border-box !important;
 }
 
-/* Ensure sidebar content is visible */
-.sim-tracker-container {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 20px !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-}
-
-.sim-tracker-card {
-    display: block !important;
-    visibility: visible !important;
-    box-sizing: border-box !important;
-}
-
 /* Custom Fields Dialog Styles */
 #sst-custom-fields-modal {
     max-height: 80vh;
@@ -273,4 +258,56 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 .sst-toggle-field {
     padding: 5px 10px;
     min-width: auto;
+}
+
+/* Tabbed interface styles */
+.sim-tracker-tabs {
+    position: relative;
+    width: 100%;
+}
+
+.sim-tracker-tab {
+    transition: transform 0.3s ease-in-out;
+    cursor: pointer;
+}
+
+.sim-tracker-tab:hover {
+    transform: translateX(-150px) !important;
+}
+
+.sim-tracker-tab.active {
+    transform: translateX(0) !important;
+    z-index: 20 !important;
+}
+
+.sim-tracker-card {
+    transition: all 0.3s ease-in-out;
+    position: absolute !important;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(100%) !important;
+}
+
+.sim-tracker-card.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0) !important;
+}
+
+#sst-global-sidebar-left .sim-tracker-card {
+    left: 0 !important;
+    transform: translateX(-100%) !important;
+}
+
+#sst-global-sidebar-left .sim-tracker-card.active {
+    transform: translateX(0) !important;
+}
+
+#sst-global-sidebar-right .sim-tracker-card {
+    right: 0 !important;
+    transform: translateX(100%) !important;
+}
+
+#sst-global-sidebar-right .sim-tracker-card.active {
+    transform: translateX(0) !important;
 }
