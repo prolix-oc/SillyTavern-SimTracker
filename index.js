@@ -1672,7 +1672,250 @@ const refresh_settings_ui = () => {
   }
 };
 
-const refreshAllCards = () => {\n  log(\"Refreshing all tracker cards on screen.\");\n\n  // First, remove all existing tracker containers to prevent duplicates\n  document.querySelectorAll(`#${CONTAINER_ID}`).forEach((container) => {\n    container.remove();\n  });\n\n  // Hide global sidebars initially\n  hideGlobalSidebars();\n\n  // Get all message divs currently in the chat DOM\n  const visibleMessages = document.querySelectorAll(\"div#chat .mes\");\n  visibleMessages.forEach((messageElement) => {\n    const mesId = messageElement.getAttribute(\"mesid\");\n    if (mesId) {\n      // Call the existing render function for each visible message\n      renderTrackerWithoutSim(parseInt(mesId, 10));\n    }\n  });\n};\n\n// New function to render trackers after generation ends\nconst renderTrackersAfterGeneration = () => {\n  try {\n    if (!get_settings(\"isEnabled\")) return;\n    \n    log(\"Rendering trackers after generation ended\");\n    \n    // Get the current chat context\n    const context = getContext();\n    if (!context || !context.chat) {\n      log(\"No chat context available\");\n      return;\n    }\n    \n    // Find all character messages with sim data\n    const identifier = get_settings(\"codeBlockIdentifier\");\n    const simRegex = new RegExp(\"```\" + identifier + \"[\\\\s\\\\S]*?```\", \"gm\");\n    \n    // Trackers for sidebar positioning\n    let leftSidebarContent = \"\";\n    let rightSidebarContent = \"\";\n    let hasLeftContent = false;\n    let hasRightContent = false;\n    \n    // Process all messages in the chat\n    context.chat.forEach((message, index) => {\n      if (!message || !message.mes) return;\n      \n      // Only process character messages (not user or system messages)\n      if (message.is_user || message.is_system) return;\n      \n      // Check if this message contains sim data\n      const match = message.mes.match(simRegex);\n      if (!match) return;\n      \n      // Process the sim data for this message\n      const jsonContent = match[0]\n        .replace(/```/g, \"\")\n        .replace(new RegExp(`^${identifier}\\\\s*`), \"\")\n        .trim();\n      \n      // Update lastSimJsonString with the most recent sim data\n      lastSimJsonString = jsonContent;\n      \n      let jsonData;\n      try {\n        jsonData = JSON.parse(jsonContent);\n      } catch (jsonError) {\n        log(`Failed to parse JSON in message ID ${index}. Error: ${jsonError.message}`);\n        return;\n      }\n      \n      if (typeof jsonData !== \"object\" || jsonData === null) {\n        log(`Parsed data in message ID ${index} is not a valid object.`);\n        return;\n      }\n      \n      // Handle both old and new JSON formats\n      let worldData, characterList;\n      \n      // Check if it's the new format (with worldData and characters array)\n      if (jsonData.worldData && Array.isArray(jsonData.characters)) {\n        worldData = jsonData.worldData;\n        characterList = jsonData.characters;\n      } else {\n        // Handle old format - convert object structure to array format\n        const worldDataFields = [\"current_date\", \"current_time\"];\n        worldData = {};\n        characterList = [];\n        \n        Object.keys(jsonData).forEach((key) => {\n          if (worldDataFields.includes(key)) {\n            worldData[key] = jsonData[key];\n          } else {\n            // Convert character object to array item\n            characterList.push({\n              name: key,\n              ...jsonData[key],\n            });\n          }\n        });\n      }\n      \n      const currentDate = worldData.current_date || \"Unknown Date\";\n      const currentTime = worldData.current_time || \"Unknown Time\";\n      \n      if (!characterList.length) return;\n      \n      // For tabbed templates, we need to pass all characters to the template\n      const isTabbedTemplate = get_settings(\"templateFile\").includes(\"tabs\");\n      \n      let cardsHtml = \"\";\n      if (isTabbedTemplate) {\n        // Prepare data for all characters\n        const charactersData = characterList\n          .map((character) => {\n            const stats = character;\n            const name = character.name;\n            if (!stats) {\n              log(`No stats found for character \"${name}\" in message ID ${index}. Skipping card.`);\n              return null;\n            }\n            const bgColor = stats.bg || get_settings(\"defaultBgColor\");\n            return {\n              characterName: name,\n              currentDate: currentDate,\n              currentTime: currentTime,\n              stats: {\n                ...stats,\n                internal_thought:\n                  stats.internal_thought ||\n                  stats.thought ||\n                  \"No thought recorded.\",\n                relationshipStatus:\n                  stats.relationshipStatus || \"Unknown Status\",\n                desireStatus: stats.desireStatus || \"Unknown Desire\",\n                inactive: stats.inactive || false,\n                inactiveReason: stats.inactiveReason || 0,\n              },\n              bgColor: bgColor,\n              darkerBgColor: darkenColor(bgColor),\n              reactionEmoji: getReactionEmoji(stats.last_react),\n              healthIcon:\n                stats.health === 1 ? \"🤕\" : stats.health === 2 ? \"💀\" : null,\n              showThoughtBubble: get_settings(\"showThoughtBubble\"),\n            };\n          })\n          .filter(Boolean); // Remove any null entries\n        \n        // For tabbed templates, we pass all characters in one data object\n        const templateData = {\n          characters: charactersData,\n          currentDate: currentDate,\n          currentTime: currentTime,\n        };\n        \n        cardsHtml = compiledCardTemplate(templateData);\n      } else {\n        cardsHtml = characterList\n          .map((character) => {\n            const stats = character;\n            const name = character.name;\n            if (!stats) {\n              log(`No stats found for character \"${name}\" in message ID ${index}. Skipping card.`);\n              return \"\";\n            }\n            const bgColor = stats.bg || get_settings(\"defaultBgColor\");\n            const cardData = {\n              characterName: name,\n              currentDate: currentDate,\n              currentTime: currentTime,\n              stats: {\n                ...stats,\n                internal_thought:\n                  stats.internal_thought ||\n                  stats.thought ||\n                  \"No thought recorded.\",\n                relationshipStatus:\n                  stats.relationshipStatus || \"Unknown Status\",\n                desireStatus: stats.desireStatus || \"Unknown Desire\",\n                inactive: stats.inactive || false,\n                inactiveReason: stats.inactiveReason || 0,\n              },\n              bgColor: bgColor,\n              darkerBgColor: darkenColor(bgColor),\n              reactionEmoji: getReactionEmoji(stats.last_react),\n              healthIcon:\n                stats.health === 1 ? \"🤕\" : stats.health === 2 ? \"💀\" : null,\n              showThoughtBubble: get_settings(\"showThoughtBubble\"),\n            };\n            return compiledCardTemplate(cardData);\n          })\n          .join(\"\");\n      }\n      \n      // Get the template position from settings or template metadata\n      const templatePosition = get_settings(\"templatePosition\") || \"BOTTOM\";\n      \n      // Handle different positions\n      switch (templatePosition) {\n        case \"LEFT\":\n          leftSidebarContent += compiledWrapperTemplate({ cardsHtml });\n          hasLeftContent = true;\n          break;\n        case \"RIGHT\":\n          rightSidebarContent += compiledWrapperTemplate({ cardsHtml });\n          hasRightContent = true;\n          break;\n        // For ABOVE, BOTTOM, and MACRO positions, we still need to render in the message\n        // These will be handled by the existing render functions\n        default:\n          // For these positions, we'll rely on the existing message rendering logic\n          break;\n      }\n    });\n    \n    // Update sidebars if they have content\n    if (hasLeftContent) {\n      updateLeftSidebar(leftSidebarContent);\n    }\n    \n    if (hasRightContent) {\n      updateRightSidebar(rightSidebarContent);\n    }\n    \n    // For non-sidebar positions, we still need to update the message-specific trackers\n    // Get all message divs currently in the chat DOM\n    const visibleMessages = document.querySelectorAll(\"div#chat .mes\");\n    visibleMessages.forEach((messageElement) => {\n      const mesId = messageElement.getAttribute(\"mesid\");\n      if (mesId) {\n        // Call the existing render function for each visible message\n        // This will handle ABOVE, BOTTOM, and MACRO positions\n        renderTrackerWithoutSim(parseInt(mesId, 10));\n      }\n    });\n    \n    log(\"Finished rendering trackers after generation ended\");\n  } catch (error) {\n    log(`Error in renderTrackersAfterGeneration: ${error.message}`);\n  }\n};
+const refreshAllCards = () => {
+  log("Refreshing all tracker cards on screen.");
+
+  // First, remove all existing tracker containers to prevent duplicates
+  document.querySelectorAll(`#${CONTAINER_ID}`).forEach((container) => {
+    container.remove();
+  });
+
+  // Hide global sidebars initially
+  hideGlobalSidebars();
+
+  // Get all message divs currently in the chat DOM
+  const visibleMessages = document.querySelectorAll("div#chat .mes");
+  visibleMessages.forEach((messageElement) => {
+    const mesId = messageElement.getAttribute("mesid");
+    if (mesId) {
+      // Call the existing render function for each visible message
+      renderTrackerWithoutSim(parseInt(mesId, 10));
+    }
+  });
+};
+
+// New function to render trackers after generation ends
+const renderTrackersAfterGeneration = () => {
+  try {
+    if (!get_settings("isEnabled")) return;
+    
+    log("Rendering trackers after generation ended");
+    
+    // Get the current chat context
+    const context = getContext();
+    if (!context || !context.chat) {
+      log("No chat context available");
+      return;
+    }
+    
+    // Find all character messages with sim data
+    const identifier = get_settings("codeBlockIdentifier");
+    const simRegex = new RegExp("```" + identifier + "[\\\\s\\\\S]*?```", "gm");
+    
+    // Trackers for sidebar positioning
+    let leftSidebarContent = "";
+    let rightSidebarContent = "";
+    let hasLeftContent = false;
+    let hasRightContent = false;
+    
+    // Process all messages in the chat
+    context.chat.forEach((message, index) => {
+      if (!message || !message.mes) return;
+      
+      // Only process character messages (not user or system messages)
+      if (message.is_user || message.is_system) return;
+      
+      // Check if this message contains sim data
+      const match = message.mes.match(simRegex);
+      if (!match) return;
+      
+      // Process the sim data for this message
+      const jsonContent = match[0]
+        .replace(/```/g, "")
+        .replace(new RegExp(`^${identifier}\\\\s*`), "")
+        .trim();
+      
+      // Update lastSimJsonString with the most recent sim data
+      lastSimJsonString = jsonContent;
+      
+      let jsonData;
+      try {
+        jsonData = JSON.parse(jsonContent);
+      } catch (jsonError) {
+        log(`Failed to parse JSON in message ID ${index}. Error: ${jsonError.message}`);
+        return;
+      }
+      
+      if (typeof jsonData !== "object" || jsonData === null) {
+        log(`Parsed data in message ID ${index} is not a valid object.`);
+        return;
+      }
+      
+      // Handle both old and new JSON formats
+      let worldData, characterList;
+      
+      // Check if it's the new format (with worldData and characters array)
+      if (jsonData.worldData && Array.isArray(jsonData.characters)) {
+        worldData = jsonData.worldData;
+        characterList = jsonData.characters;
+      } else {
+        // Handle old format - convert object structure to array format
+        const worldDataFields = ["current_date", "current_time"];
+        worldData = {};
+        characterList = [];
+        
+        Object.keys(jsonData).forEach((key) => {
+          if (worldDataFields.includes(key)) {
+            worldData[key] = jsonData[key];
+          } else {
+            // Convert character object to array item
+            characterList.push({
+              name: key,
+              ...jsonData[key],
+            });
+          }
+        });
+      }
+      
+      const currentDate = worldData.current_date || "Unknown Date";
+      const currentTime = worldData.current_time || "Unknown Time";
+      
+      if (!characterList.length) return;
+      
+      // For tabbed templates, we need to pass all characters to the template
+      const isTabbedTemplate = get_settings("templateFile").includes("tabs");
+      
+      let cardsHtml = "";
+      if (isTabbedTemplate) {
+        // Prepare data for all characters
+        const charactersData = characterList
+          .map((character) => {
+            const stats = character;
+            const name = character.name;
+            if (!stats) {
+              log(`No stats found for character "${name}" in message ID ${index}. Skipping card.`);
+              return null;
+            }
+            const bgColor = stats.bg || get_settings("defaultBgColor");
+            return {
+              characterName: name,
+              currentDate: currentDate,
+              currentTime: currentTime,
+              stats: {
+                ...stats,
+                internal_thought:
+                  stats.internal_thought ||
+                  stats.thought ||
+                  "No thought recorded.",
+                relationshipStatus:
+                  stats.relationshipStatus || "Unknown Status",
+                desireStatus: stats.desireStatus || "Unknown Desire",
+                inactive: stats.inactive || false,
+                inactiveReason: stats.inactiveReason || 0,
+              },
+              bgColor: bgColor,
+              darkerBgColor: darkenColor(bgColor),
+              reactionEmoji: getReactionEmoji(stats.last_react),
+              healthIcon:
+                stats.health === 1 ? "🤕" : stats.health === 2 ? "💀" : null,
+              showThoughtBubble: get_settings("showThoughtBubble"),
+            };
+          })
+          .filter(Boolean); // Remove any null entries
+        
+        // For tabbed templates, we pass all characters in one data object
+        const templateData = {
+          characters: charactersData,
+          currentDate: currentDate,
+          currentTime: currentTime,
+        };
+        
+        cardsHtml = compiledCardTemplate(templateData);
+      } else {
+        cardsHtml = characterList
+          .map((character) => {
+            const stats = character;
+            const name = character.name;
+            if (!stats) {
+              log(`No stats found for character "${name}" in message ID ${index}. Skipping card.`);
+              return "";
+            }
+            const bgColor = stats.bg || get_settings("defaultBgColor");
+            const cardData = {
+              characterName: name,
+              currentDate: currentDate,
+              currentTime: currentTime,
+              stats: {
+                ...stats,
+                internal_thought:
+                  stats.internal_thought ||
+                  stats.thought ||
+                  "No thought recorded.",
+                relationshipStatus:
+                  stats.relationshipStatus || "Unknown Status",
+                desireStatus: stats.desireStatus || "Unknown Desire",
+                inactive: stats.inactive || false,
+                inactiveReason: stats.inactiveReason || 0,
+              },
+              bgColor: bgColor,
+              darkerBgColor: darkenColor(bgColor),
+              reactionEmoji: getReactionEmoji(stats.last_react),
+              healthIcon:
+                stats.health === 1 ? "🤕" : stats.health === 2 ? "💀" : null,
+              showThoughtBubble: get_settings("showThoughtBubble"),
+            };
+            return compiledCardTemplate(cardData);
+          })
+          .join("");
+      }
+      
+      // Get the template position from settings or template metadata
+      const templatePosition = get_settings("templatePosition") || "BOTTOM";
+      
+      // Handle different positions
+      switch (templatePosition) {
+        case "LEFT":
+          leftSidebarContent += compiledWrapperTemplate({ cardsHtml });
+          hasLeftContent = true;
+          break;
+        case "RIGHT":
+          rightSidebarContent += compiledWrapperTemplate({ cardsHtml });
+          hasRightContent = true;
+          break;
+        // For ABOVE, BOTTOM, and MACRO positions, we still need to render in the message
+        // These will be handled by the existing render functions
+        default:
+          // For these positions, we'll rely on the existing message rendering logic
+          break;
+      }
+    });
+    
+    // Update sidebars if they have content
+    if (hasLeftContent) {
+      updateLeftSidebar(leftSidebarContent);
+    }
+    
+    if (hasRightContent) {
+      updateRightSidebar(rightSidebarContent);
+    }
+    
+    // For non-sidebar positions, we still need to update the message-specific trackers
+    // Get all message divs currently in the chat DOM
+    const visibleMessages = document.querySelectorAll("div#chat .mes");
+    visibleMessages.forEach((messageElement) => {
+      const mesId = messageElement.getAttribute("mesid");
+      if (mesId) {
+        // Call the existing render function for each visible message
+        // This will handle ABOVE, BOTTOM, and MACRO positions
+        renderTrackerWithoutSim(parseInt(mesId, 10));
+      }
+    });
+    
+    log("Finished rendering trackers after generation ended");
+  } catch (error) {
+    log(`Error in renderTrackersAfterGeneration: ${error.message}`);
+  }
+};
 
 const bind_setting = (selector, key, type) => {
   const element = $(selector);
@@ -2014,12 +2257,7 @@ jQuery(async () => {
                   const preparingText = document.createElement("div");
                   preparingText.className = "sst-preparing-text";
                   preparingText.textContent = "Preparing new tracker cards...";
-                  preparingText.style.cssText = `
-                                        color: #4a3a9d; /* Darker blue */
-                                        font-style: italic;
-                                        margin: 10px 0;
-                                        animation: sst-pulse 1.5s infinite;
-                                    `;
+                  preparingText.style.cssText = `color: #4a3a9d; /* Darker blue */ font-style: italic; margin: 10px 0; animation: sst-pulse 1.5s infinite;`;
                   // Insert after mesText instead of appending to it
                   mesText.parentNode.insertBefore(preparingText, mesText.nextSibling);
 
@@ -2027,13 +2265,7 @@ jQuery(async () => {
                   if (!document.getElementById("sst-pulse-animation")) {
                     const style = document.createElement("style");
                     style.id = "sst-pulse-animation";
-                    style.textContent = `
-                                            @keyframes sst-pulse {
-                                                0% { opacity: 0.5; }
-                                                50% { opacity: 1; }
-                                                100% { opacity: 0.5; }
-                                            }
-                                        `;
+                    style.textContent = `@keyframes sst-pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }`;
                     document.head.appendChild(style);
                   }
                 }
@@ -2043,51 +2275,6 @@ jQuery(async () => {
         });
       });
     });
-          // Check if the added node is a pre element or contains pre elements
-          if (node.nodeType === Node.ELEMENT_NODE) {
-            const preElements =
-              node.tagName === "PRE" ? [node] : node.querySelectorAll("pre");
-            preElements.forEach((pre) => {
-              // Check if this pre element is within a mes_text div
-              if (pre.closest(".mes_text")) {
-                log(`Hiding in-flight code block in mes_text`);
-                pre.style.display = "none";
-
-                // Add "Preparing new tracker cards..." text with pulsing animation
-                const mesText = pre.closest(".mes_text");
-                if (mesText && !mesTextsWithPreparingText.has(mesText)) {
-                  // Mark this mesText as having preparing text
-                  mesTextsWithPreparingText.add(mesText);
-
-                  const preparingText = document.createElement("div");
-                  preparingText.className = "sst-preparing-text";
-                  preparingText.textContent = "Preparing new tracker cards...";
-                  preparingText.style.cssText = `
-                                        color: #4a3a9d; /* Darker blue */
-                                        font-style: italic;
-                                        margin: 10px 0;
-                                        animation: sst-pulse 1.5s infinite;
-                                    `;
-                  // Insert after mesText instead of appending to it
-                  mesText.parentNode.insertBefore(preparingText, mesText.nextSibling);
-
-                  // Add the pulse animation to the document if not already present
-                  if (!document.getElementById("sst-pulse-animation")) {
-                    const style = document.createElement("style");
-                    style.id = "sst-pulse-animation";
-                    style.textContent = `
-                                            @keyframes sst-pulse {
-                                                0% { opacity: 0.5; }
-                                                50% { opacity: 1; }
-                                                100% { opacity: 0.5; }
-                                            }
-                                        `;
-                    document.head.appendChild(style);
-                  }
-                }
-              }
-            });
-          });
 
     // Start observing for changes in the document
     observer.observe(document.body, {
@@ -2287,135 +2474,167 @@ ${exampleJson}
     );
 
     // Function to initialize global sidebar elements
-function initializeGlobalSidebars() {
-  // Create global sidebar elements if they don't exist
-  if (!globalLeftSidebar) {
-    // Find the sheld container
-    const sheld = document.getElementById("sheld");
-    if (sheld) {
-      // Create a container that stretches vertically for left sidebar
-      const verticalContainer = document.createElement("div");
-      verticalContainer.id = "sst-global-sidebar-left";
-      verticalContainer.className = "vertical-container";
-      verticalContainer.style.cssText = `
-            position: absolute !important;
-            left: 0 !important;
-            top: 0 !important;
-            bottom: 0 !important;
-            width: auto !important;
-            height: 100% !important;
-            z-index: 999 !important;
-            box-sizing: border-box !important;
-            margin: 0 !important;
-            padding: 10px !important;
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            display: none !important; /* Start hidden */
-            flex-direction: column !important;
-            justify-content: center !important;
-            align-items: flex-start !important;
-            visibility: visible !important;
-            overflow: visible !important;
-        `;
+    function initializeGlobalSidebars() {
+      // Create global sidebar elements if they don't exist
+      if (!globalLeftSidebar) {
+        // Find the sheld container
+        const sheld = document.getElementById("sheld");
+        if (sheld) {
+          // Create a container that stretches vertically for left sidebar
+          const verticalContainer = document.createElement("div");
+          verticalContainer.id = "sst-global-sidebar-left";
+          verticalContainer.className = "vertical-container";
+          verticalContainer.style.cssText = `
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                bottom: 0 !important;
+                width: auto !important;
+                height: 100% !important;
+                z-index: 999 !important;
+                box-sizing: border-box !important;
+                margin: 0 !important;
+                padding: 10px !important;
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                display: none !important; /* Start hidden */
+                flex-direction: column !important;
+                justify-content: center !important;
+                align-items: flex-start !important;
+                visibility: visible !important;
+                overflow: visible !important;
+            `;
 
-      // Create the actual sidebar content container
-      globalLeftSidebarContent = document.createElement("div");
-      globalLeftSidebarContent.id = "sst-sidebar-left-content";
-      globalLeftSidebarContent.style.cssText = `
-            width: auto !important;
-            height: 100% !important;
-            max-width: 300px !important;
-            box-sizing: border-box !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            display: block !important;
-            visibility: visible !important;
-            overflow: visible !important;
-            position: relative !important;
-        `;
+          // Create the actual sidebar content container
+          globalLeftSidebarContent = document.createElement("div");
+          globalLeftSidebarContent.id = "sst-sidebar-left-content";
+          globalLeftSidebarContent.style.cssText = `
+                width: auto !important;
+                height: 100% !important;
+                max-width: 300px !important;
+                box-sizing: border-box !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                display: block !important;
+                visibility: visible !important;
+                overflow: visible !important;
+                position: relative !important;
+            `;
 
-      // Add the sidebar content to the vertical container
-      verticalContainer.appendChild(globalLeftSidebarContent);
+          // Add the sidebar content to the vertical container
+          verticalContainer.appendChild(globalLeftSidebarContent);
 
-      // Store reference to global sidebar
-      globalLeftSidebar = verticalContainer;
+          // Store reference to global sidebar
+          globalLeftSidebar = verticalContainer;
 
-      // Insert the sidebar container directly before the sheld div in the body
-      if (sheld.parentNode) {
-        sheld.parentNode.insertBefore(verticalContainer, sheld);
-      } else {
-        // Fallback: append to body
-        document.body.appendChild(verticalContainer);
+          // Insert the sidebar container directly before the sheld div in the body
+          if (sheld.parentNode) {
+            sheld.parentNode.insertBefore(verticalContainer, sheld);
+          } else {
+            // Fallback: append to body
+            document.body.appendChild(verticalContainer);
+          }
+        }
+      }
+
+      if (!globalRightSidebar) {
+        // Find the sheld container
+        const sheld = document.getElementById("sheld");
+        if (sheld) {
+          // Create a container that stretches vertically for right sidebar
+          const verticalContainer = document.createElement("div");
+          verticalContainer.id = "sst-global-sidebar-right";
+          verticalContainer.className = "vertical-container";
+          verticalContainer.style.cssText = `
+                position: absolute !important;
+                right: 0 !important;
+                top: 0 !important;
+                bottom: 0 !important;
+                width: auto !important;
+                height: 100% !important;
+                z-index: 999 !important;
+                box-sizing: border-box !important;
+                margin: 0 !important;
+                padding: 10px !important;
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                display: none !important; /* Start hidden */
+                flex-direction: column !important;
+                justify-content: center !important;
+                align-items: flex-end !important;
+                visibility: visible !important;
+                overflow: visible !important;
+            `;
+
+          // Create the actual sidebar content container
+          globalRightSidebarContent = document.createElement("div");
+          globalRightSidebarContent.id = "sst-sidebar-right-content";
+          globalRightSidebarContent.style.cssText = `
+                width: auto !important;
+                height: 100% !important;
+                max-width: 300px !important;
+                box-sizing: border-box !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                display: block !important;
+                visibility: visible !important;
+                overflow: visible !important;
+                position: relative !important;
+            `;
+
+          // Add the sidebar content to the vertical container
+          verticalContainer.appendChild(globalRightSidebarContent);
+
+          // Store reference to global sidebar
+          globalRightSidebar = verticalContainer;
+
+          // Insert the sidebar container directly before the sheld div in the body
+          if (sheld.parentNode) {
+            sheld.parentNode.insertBefore(verticalContainer, sheld);
+          } else {
+            // Fallback: append to body
+            document.body.appendChild(verticalContainer);
+          }
+        }
       }
     }
+
+    const context = getContext();
+    const { eventSource, event_types } = context;
+
+    // New approach: Render on GENERATION_ENDED for better performance
+    eventSource.on(event_types.GENERATION_ENDED, renderTrackersAfterGeneration);
+    
+    // Still need to handle CHAT_CHANGED for initial load and swipes
+    eventSource.on(event_types.CHAT_CHANGED, refreshAllCards);
+    
+    // Other events that might need to trigger a refresh
+    eventSource.on(event_types.MORE_MESSAGES_LOADED, refreshAllCards);
+    eventSource.on(event_types.MESSAGE_UPDATED, refreshAllCards);
+    eventSource.on(event_types.MESSAGE_EDITED, (mesId) => {
+      log(`Message ${mesId} was edited. Re-rendering tracker card.`);
+      renderTrackerWithoutSim(mesId);
+    });
+    eventSource.on(event_types.MESSAGE_SWIPE, (mesId) => {
+      log(
+        `Message swipe detected for message ID ${mesId}. Updating last_sim_stats macro.`
+      );
+      updateLastSimStatsOnRegenerateOrSwipe(mesId);
+      // Also refresh cards after swipe
+      refreshAllCards();
+    });
+    log(`${MODULE_NAME} has been successfully loaded.`);
+  } catch (error) {
+    console.error(
+      `[${MODULE_NAME}] A critical error occurred during initialization. The extension may not work correctly. Error: ${error.stack}`
+    );
   }
-
-  if (!globalRightSidebar) {
-    // Find the sheld container
-    const sheld = document.getElementById("sheld");
-    if (sheld) {
-      // Create a container that stretches vertically for right sidebar
-      const verticalContainer = document.createElement("div");
-      verticalContainer.id = "sst-global-sidebar-right";
-      verticalContainer.className = "vertical-container";
-      verticalContainer.style.cssText = `
-            position: absolute !important;
-            right: 0 !important;
-            top: 0 !important;
-            bottom: 0 !important;
-            width: auto !important;
-            height: 100% !important;
-            z-index: 999 !important;
-            box-sizing: border-box !important;
-            margin: 0 !important;
-            padding: 10px !important;
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            display: none !important; /* Start hidden */
-            flex-direction: column !important;
-            justify-content: center !important;
-            align-items: flex-end !important;
-            visibility: visible !important;
-            overflow: visible !important;
-        `;
-
-      // Create the actual sidebar content container
-      globalRightSidebarContent = document.createElement("div");
-      globalRightSidebarContent.id = "sst-sidebar-right-content";
-      globalRightSidebarContent.style.cssText = `
-            width: auto !important;
-            height: 100% !important;
-            max-width: 300px !important;
-            box-sizing: border-box !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            background: transparent !important;
-            border: none !important;
-            box-shadow: none !important;
-            display: block !important;
-            visibility: visible !important;
-            overflow: visible !important;
-            position: relative !important;
-        `;
-
-      // Add the sidebar content to the vertical container
-      verticalContainer.appendChild(globalRightSidebarContent);
-
-      // Store reference to global sidebar
-      globalRightSidebar = verticalContainer;
-
-      // Insert the sidebar container directly before the sheld div in the body
-      if (sheld.parentNode) {
-        sheld.parentNode.insertBefore(verticalContainer, sheld);
-      } else {
-        // Fallback: append to body
-        document.body.appendChild(verticalContainer);
-      }
-    }
-  }
-}
+});
