@@ -105,41 +105,6 @@
             <label>Define the data fields for your sim tracker.</label>
             <button id="manageCustomFieldsBtn" class="menu_button" style="margin-top: 5px;">Manage Fields</button>
         </div>
-        
-        <!-- Custom Fields Modal -->
-        <div id="customFieldsModal" class="sst-modal" style="display: none;">
-            <div class="sst-modal-content">
-                <div class="sst-modal-header">
-                    <h3>Manage Custom Fields</h3>
-                    <span class="sst-close">&times;</span>
-                </div>
-                <div class="sst-modal-body">
-                    <div id="customFieldsList" class="sst-fields-container">
-                        <!-- Fields will be populated here by JavaScript -->
-                    </div>
-                    <button id="addCustomFieldBtn" class="menu_button" style="margin-top: 15px;">Add New Field</button>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Template for custom field rows (hidden) -->
-        <div id="customFieldTemplate" class="sst-field-item hidden">
-            <div class="sst-field-header">
-                <input type="text" class="field-key-display field-key text_pole" placeholder="Field key" style="flex: 1; margin-right: 10px;" />
-                <div>
-                    <button class="sst-toggle-field menu_button">Expand</button>
-                    <button class="remove-field-btn menu_button" style="margin-left: 5px;">Remove</button>
-                </div>
-            </div>
-            <div class="sst-field-details" style="display: none; padding: 10px; border-top: 1px solid #444; margin-top: 5px;">
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <div>
-                        <label>Description for LLM:</label>
-                        <input type="text" class="field-description text_pole" placeholder="Field description" style="width: 100%;" />
-                    </div>
-                </div>
-            </div>
-        </div>
         <p class="description">
           These fields define the structure of your sim data and are used by the <code>{{sim_format}}</code> macro in prompts.
         </p>
