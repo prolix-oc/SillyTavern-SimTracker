@@ -45,7 +45,7 @@
     margin: 0 8px;
     z-index: 21;
     /* Unified transform and transition for smooth coordinated movement */
-    transform: translateX(60px);
+    transform: translateX(0px);
     transition: 
       transform 0.4s cubic-bezier(0.4, 0.0, 0.2, 1),
       filter 0.4s cubic-bezier(0.4, 0.0, 0.2, 1),
@@ -131,13 +131,28 @@
     z-index: 10;
   }
 
+    --card-x-offset: 0;
+    --card-opacity: 1;
+    --card-visibility: visible;
+    --card-scale: 1;
+    z-index: 30;
+  }
+
+  .sim-tracker-card.sliding-out {
+    --card-x-offset: 120%;
+    --card-opacity: 0;
+    --card-visibility: hidden;
+    --card-scale: 0.95;
+    z-index: 10;
+  }
+
   /* Enhanced inactive state styling */
   .sim-tracker-card.inactive {
-    transform: translateY(-50%) translateX(100%) scale(0.98);
+    --card-scale: 0.98;
   }
 
   .sim-tracker-card.inactive.active {
-    transform: translateY(-50%) translateX(0) scale(1);
+    --card-scale: 1;
     z-index: 30;
   }
 
