@@ -44,18 +44,12 @@
     border: 1px solid rgba(255, 255, 255, 0.05);
     flex-shrink: 0;
     margin: 0 8px; /* Add some horizontal spacing */
-    transform: translateX(60px);
-    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      filter 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: transform, filter, box-shadow;
+    transform: translateX(60px); /* Start hidden at the edge of the screen */
     z-index: 10; /* Lower z-index so tabs are behind cards */
   }
 
   .sim-tracker-tab.active {
-    transform: translateX(
-      -270px
-    ); /* Animate to aligned position (card width) */
+    transform: translateX(-270px); /* Animate to aligned position (card width) */
     z-index: 20; /* Higher z-index for active tab */
   }
 
@@ -255,7 +249,7 @@
   >
     <!-- Overlay for inactive characters -->
     <div class="narrative-inactive-overlay"></div>
-
+    
     <!-- Days counter at the top -->
     <div class="days-counter">Day {{stats.days_since_first_meeting}}</div>
 
