@@ -22,404 +22,439 @@ const set_settings = (key, value) => {
 // Global sidebar tracker elements
 let globalLeftSidebar = null;
 let globalRightSidebar = null;
+let globalLeftSidebarContent = null;
+let globalRightSidebarContent = null;
 
 // Set to track mesText elements that already have preparing text to avoid duplicates
 const mesTextsWithPreparingText = new Set();
 
 // Helper function to create or update a global left sidebar
 function updateLeftSidebar(content) {
-  // Remove existing global sidebar if it exists
-  if (globalLeftSidebar) {
-    log("Removing existing left sidebar");
-    globalLeftSidebar.remove();
+  // Create global sidebar elements once if they don't exist
+  if (!globalLeftSidebar) {
+    // Find the sheld container
+    const sheld = document.getElementById("sheld");
+    log("Found sheld element:", sheld);
+    if (!sheld) {
+      console.warn("[SST] Could not find sheld container for sidebar");
+      return;
+    }
+
+    // Create a container that stretches vertically and position it before sheld
+    const verticalContainer = document.createElement("div");
+    verticalContainer.id = "sst-global-sidebar-left";
+    verticalContainer.className = "vertical-container";
+    verticalContainer.style.cssText = `
+          position: absolute !important;
+          left: 0 !important;
+          top: 0 !important;
+          bottom: 0 !important;
+          width: auto !important;
+          height: 100% !important;
+          z-index: 999 !important;
+          box-sizing: border-box !important;
+          margin: 0 !important;
+          padding: 10px !important;
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+          display: flex !important;
+          flex-direction: column !important;
+          justify-content: center !important;
+          align-items: flex-start !important;
+          visibility: visible !important;
+          overflow: visible !important;
+      `;
+    log("Created verticalContainer");
+
+    // Create the actual sidebar content container
+    globalLeftSidebarContent = document.createElement("div");
+    globalLeftSidebarContent.id = "sst-sidebar-left-content";
+    globalLeftSidebarContent.style.cssText = `
+          width: auto !important;
+          height: 100% !important;
+          max-width: 300px !important;
+          box-sizing: border-box !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+          display: block !important;
+          visibility: visible !important;
+          overflow: visible !important;
+          position: relative !important;
+      `;
+    log("Created globalLeftSidebarContent");
+
+    // Add the sidebar content to the vertical container
+    verticalContainer.appendChild(globalLeftSidebarContent);
+    log("Appended globalLeftSidebarContent to verticalContainer");
+
+    // Store reference to global sidebar
+    globalLeftSidebar = verticalContainer;
+    log("Stored reference to globalLeftSidebar");
+
+    // Insert the sidebar container directly before the sheld div in the body
+    if (sheld.parentNode) {
+      sheld.parentNode.insertBefore(verticalContainer, sheld);
+      log("Successfully inserted left sidebar before sheld");
+    } else {
+      console.error("[SST] sheld has no parent node!");
+      // Fallback: append to body
+      document.body.appendChild(verticalContainer);
+    }
+
+    // Debug: Log the final container
+    log("Created left sidebar container:", verticalContainer);
   }
 
-  // Find the sheld container
-  const sheld = document.getElementById("sheld");
-  log("Found sheld element:", sheld);
-  if (!sheld) {
-    console.warn("[SST] Could not find sheld container for sidebar");
-    return;
-  }
+  // Update the content of the sidebar
+  if (globalLeftSidebarContent) {
+    globalLeftSidebarContent.innerHTML = content;
+    
+    // Use setTimeout to ensure DOM is fully rendered before attaching event listeners
+    setTimeout(() => {
+      // Add event listeners for tabs if this is a tabbed template
+      const tabs = globalLeftSidebarContent.querySelectorAll(".sim-tracker-tab");
+      const cards = globalLeftSidebarContent.querySelectorAll(".sim-tracker-card");
 
-  // Create a container that stretches vertically and position it before sheld
-  const verticalContainer = document.createElement("div");
-  verticalContainer.id = "sst-global-sidebar-left";
-  verticalContainer.className = "vertical-container";
-  verticalContainer.style.cssText = `
-        position: absolute !important;
-        left: 0 !important;
-        top: 0 !important;
-        bottom: 0 !important;
-        width: auto !important;
-        height: 100% !important;
-        z-index: 999 !important;
-        box-sizing: border-box !important;
-        margin: 0 !important;
-        padding: 10px !important;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: center !important;
-        align-items: flex-start !important;
-        visibility: visible !important;
-        overflow: visible !important;
-    `;
-  log("Created verticalContainer");
-
-  // Create the actual sidebar content container
-  const leftSidebar = document.createElement("div");
-  leftSidebar.id = "sst-sidebar-left-content";
-  leftSidebar.innerHTML = content;
-  leftSidebar.style.cssText = `
-        width: auto !important;
-        height: 100% !important;
-        max-width: 300px !important;
-        box-sizing: border-box !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        display: block !important;
-        visibility: visible !important;
-        overflow: visible !important;
-        position: relative !important;
-    `;
-  log("Applied styles to leftSidebar");
-
-  // Debug: Check what we actually have
-  const trackerContainer = leftSidebar.querySelector(
-    "#silly-sim-tracker-container"
-  );
-
-  // Add event listeners for tabs if this is a tabbed template
-  setTimeout(() => {
-    const tabs = leftSidebar.querySelectorAll(".sim-tracker-tab");
-    const cards = leftSidebar.querySelectorAll(".sim-tracker-card");
-
-    if (tabs.length > 0 && cards.length > 0) {
-      // Initially activate the first non-inactive tab and card
-      let firstActiveIndex = 0;
-      // Find the first non-inactive card
-      for (let i = 0; i < cards.length; i++) {
-        if (!cards[i].classList.contains("inactive")) {
-          firstActiveIndex = i;
-          break;
-        }
-      }
-      
-      if (tabs[firstActiveIndex]) tabs[firstActiveIndex].classList.add("active");
-      if (cards[firstActiveIndex]) cards[firstActiveIndex].classList.add("active");
-
-      // Add click listeners to tabs
-      tabs.forEach((tab, index) => {
-        tab.addEventListener("click", () => {
-          // Check if this tab is already active
-          const isActive = tab.classList.contains("active");
-
-          // Remove active class from all tabs
-          tabs.forEach((t) => t.classList.remove("active"));
-
-          // Handle card and tab animations
-          cards.forEach((card, cardIndex) => {
-            const correspondingTab = tabs[cardIndex];
-            if (cardIndex === index && !isActive) {
-              // Slide in the selected card and tab
-              card.classList.remove("sliding-out", "tab-hidden");
-              card.classList.add("sliding-in");
-              if (correspondingTab) {
-                correspondingTab.classList.remove("sliding-out", "tab-hidden");
-                correspondingTab.classList.add("sliding-in");
-              }
-              // Add active class after a short delay to ensure the animation works
-              setTimeout(() => {
-                card.classList.remove("sliding-in");
-                card.classList.add("active");
-                if (correspondingTab) {
-                  correspondingTab.classList.remove("sliding-in");
-                  correspondingTab.classList.add("active");
-                }
-              }, 10);
-            } else {
-              // Slide out all other cards and tabs
-              if (card.classList.contains("active")) {
-                card.classList.remove("active");
-                card.classList.remove("sliding-in");
-                card.classList.add("sliding-out");
-                if (correspondingTab) {
-                  correspondingTab.classList.remove("active");
-                  correspondingTab.classList.remove("sliding-in");
-                  correspondingTab.classList.add("sliding-out");
-                }
-                // Add tab-hidden class after animation completes
-                setTimeout(() => {
-                  card.classList.add("tab-hidden");
-                  card.classList.remove("sliding-out");
-                  if (correspondingTab) {
-                    correspondingTab.classList.add("tab-hidden");
-                    correspondingTab.classList.remove("sliding-out");
-                  }
-                }, 300);
-              }
-            }
-          });
-
-          // If the clicked tab wasn't already active, activate it
-          if (!isActive) {
-            tab.classList.add("active");
+      if (tabs.length > 0 && cards.length > 0) {
+        // Remove any existing active classes
+        tabs.forEach(tab => tab.classList.remove("active"));
+        cards.forEach(card => card.classList.remove("active"));
+        
+        // Initially activate the first non-inactive tab and card
+        let firstActiveIndex = 0;
+        // Find the first non-inactive card
+        for (let i = 0; i < cards.length; i++) {
+          if (!cards[i].classList.contains("narrative-inactive")) {
+            firstActiveIndex = i;
+            break;
           }
+        }
+        
+        // If all cards are inactive, just activate the first one
+        if (tabs[firstActiveIndex]) tabs[firstActiveIndex].classList.add("active");
+        if (cards[firstActiveIndex]) cards[firstActiveIndex].classList.add("active");
+
+        // Add click listeners to tabs
+        tabs.forEach((tab, index) => {
+          // Store the event listener function so we can remove it later
+          const clickHandler = () => {
+            // Check if this tab is already active
+            const isActive = tab.classList.contains("active");
+
+            // Remove active class from all tabs
+            tabs.forEach((t) => t.classList.remove("active"));
+
+            // Handle card and tab animations
+            cards.forEach((card, cardIndex) => {
+              const correspondingTab = tabs[cardIndex];
+              if (cardIndex === index && !isActive) {
+                // Slide in the selected card and tab
+                card.classList.remove("sliding-out", "tab-hidden");
+                card.classList.add("sliding-in");
+                if (correspondingTab) {
+                  correspondingTab.classList.remove("sliding-out", "tab-hidden");
+                  correspondingTab.classList.add("sliding-in");
+                }
+                // Add active class after a short delay to ensure the animation works
+                setTimeout(() => {
+                  card.classList.remove("sliding-in");
+                  card.classList.add("active");
+                  if (correspondingTab) {
+                    correspondingTab.classList.remove("sliding-in");
+                    correspondingTab.classList.add("active");
+                  }
+                }, 10);
+              } else {
+                // Slide out all other cards and tabs
+                if (card.classList.contains("active")) {
+                  card.classList.remove("active");
+                  card.classList.remove("sliding-in");
+                  card.classList.add("sliding-out");
+                  if (correspondingTab) {
+                    correspondingTab.classList.remove("active");
+                    correspondingTab.classList.remove("sliding-in");
+                    correspondingTab.classList.add("sliding-out");
+                  }
+                  // Add tab-hidden class after animation completes
+                  setTimeout(() => {
+                    card.classList.add("tab-hidden");
+                    card.classList.remove("sliding-out");
+                    if (correspondingTab) {
+                      correspondingTab.classList.add("tab-hidden");
+                      correspondingTab.classList.remove("sliding-out");
+                    }
+                  }, 300);
+                }
+              }
+            });
+
+            // If the clicked tab wasn't already active, activate it
+            if (!isActive) {
+              tab.classList.add("active");
+            }
+          };
+          
+          // Remove any existing event listeners by cloning and replacing the element
+          const newTab = tab.cloneNode(true);
+          tab.parentNode.replaceChild(newTab, tab);
+          // Update the tabs array with the new element
+          tabs[index] = newTab;
+          
+          // Add the new event listener
+          newTab.addEventListener("click", clickHandler);
         });
+      }
+
+      const container = globalLeftSidebarContent.querySelector("#silly-sim-tracker-container");
+      if (container) {
+        container.style.cssText += `
+                  width: 100% !important;
+                  max-width: 100% !important;
+                  box-sizing: border-box !important;
+                  display: block !important;
+                  visibility: visible !important;
+                  height: 100%;
+              `;
+      }
+
+      // Log dimensions for debugging
+      log("Left sidebar dimensions:", {
+        offsetWidth: globalLeftSidebarContent.offsetWidth,
+        offsetHeight: globalLeftSidebarContent.offsetHeight,
+        clientWidth: globalLeftSidebarContent.clientWidth,
+        clientHeight: globalLeftSidebarContent.clientHeight,
       });
-    }
 
-    const container = leftSidebar.querySelector("#silly-sim-tracker-container");
-    if (container) {
-      container.style.cssText += `
-                width: 100% !important;
-                max-width: 100% !important;
-                box-sizing: border-box !important;
-                display: block !important;
-                visibility: visible !important;
-                height: 100%;
-            `;
-    }
-
-    // Log dimensions for debugging
-    log("Left sidebar dimensions:", {
-      offsetWidth: leftSidebar.offsetWidth,
-      offsetHeight: leftSidebar.offsetHeight,
-      clientWidth: leftSidebar.clientWidth,
-      clientHeight: leftSidebar.clientHeight,
-    });
-
-    // Force reflow to ensure proper rendering
-    verticalContainer.offsetHeight;
-  }, 0);
-
-  // Add the sidebar to the vertical container
-  verticalContainer.appendChild(leftSidebar);
-  log("Appended leftSidebar to verticalContainer");
-
-  // Store reference to global sidebar
-  globalLeftSidebar = verticalContainer;
-  log("Stored reference to globalLeftSidebar");
-
-  // Insert the sidebar container directly before the sheld div in the body
-  if (sheld.parentNode) {
-    sheld.parentNode.insertBefore(verticalContainer, sheld);
-    log("Successfully inserted left sidebar before sheld");
-  } else {
-    console.error("[SST] sheld has no parent node!");
-    // Fallback: append to body
-    document.body.appendChild(verticalContainer);
+      // Force reflow to ensure proper rendering
+      globalLeftSidebar.offsetHeight;
+    }, 0);
   }
 
-  // Debug: Log the final container
-  log("Created left sidebar container:", verticalContainer);
+  // Show the sidebar
+  if (globalLeftSidebar) {
+    globalLeftSidebar.style.display = "flex";
+  }
 
-  return verticalContainer;
+  return globalLeftSidebar;
 }
 
 // Helper function to create or update a global right sidebar
 function updateRightSidebar(content) {
+  // Create global sidebar elements once if they don't exist
+  if (!globalRightSidebar) {
+    // Find the sheld container
+    const sheld = document.getElementById("sheld");
+    if (!sheld) {
+      console.warn("[SST] Could not find sheld container for sidebar");
+      return;
+    }
 
-  // Remove existing global sidebar if it exists
-  if (globalRightSidebar) {
-    log("Removing existing right sidebar");
-    globalRightSidebar.remove();
+    // Create a container that stretches vertically and position it before sheld
+    const verticalContainer = document.createElement("div");
+    verticalContainer.id = "sst-global-sidebar-right";
+    verticalContainer.className = "vertical-container";
+    verticalContainer.style.cssText = `
+          position: absolute !important;
+          right: 0 !important;
+          top: 0 !important;
+          bottom: 0 !important;
+          width: auto !important;
+          height: 100% !important;
+          z-index: 999 !important;
+          box-sizing: border-box !important;
+          margin: 0 !important;
+          padding: 10px !important;
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+          display: flex !important;
+          flex-direction: column !important;
+          justify-content: center !important;
+          align-items: flex-end !important;
+          visibility: visible !important;
+          overflow: visible !important;
+      `;
+    log("Created verticalContainer");
+
+    // Create the actual sidebar content container
+    globalRightSidebarContent = document.createElement("div");
+    globalRightSidebarContent.id = "sst-sidebar-right-content";
+    globalRightSidebarContent.style.cssText = `
+          width: auto !important;
+          height: 100% !important;
+          max-width: 300px !important;
+          box-sizing: border-box !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+          display: block !important;
+          visibility: visible !important;
+          overflow: visible !important;
+          position: relative !important;
+      `;
+    log("Created globalRightSidebarContent");
+
+    // Add the sidebar content to the vertical container
+    verticalContainer.appendChild(globalRightSidebarContent);
+    log("Appended globalRightSidebarContent to verticalContainer");
+
+    // Store reference to global sidebar
+    globalRightSidebar = verticalContainer;
+    log("Stored reference to globalRightSidebar");
+
+    // Insert the sidebar container directly before the sheld div in the body
+    if (sheld.parentNode) {
+      sheld.parentNode.insertBefore(verticalContainer, sheld);
+      log("Successfully inserted right sidebar before sheld");
+    } else {
+      console.error("[SST] sheld has no parent node!");
+      // Fallback: append to body
+      document.body.appendChild(verticalContainer);
+    }
+
+    // Debug: Log the final container
+    log("Created right sidebar container:", verticalContainer);
   }
 
-  // Find the sheld container
-  const sheld = document.getElementById("sheld");
-  if (!sheld) {
-    console.warn("[SST] Could not find sheld container for sidebar");
-    return;
-  }
+  // Update the content of the sidebar
+  if (globalRightSidebarContent) {
+    globalRightSidebarContent.innerHTML = content;
+    
+    // Use setTimeout to ensure DOM is fully rendered before attaching event listeners
+    setTimeout(() => {
+      // Add event listeners for tabs if this is a tabbed template
+      const tabs = globalRightSidebarContent.querySelectorAll(".sim-tracker-tab");
+      const cards = globalRightSidebarContent.querySelectorAll(".sim-tracker-card");
 
-  // Create a container that stretches vertically and position it before sheld
-  const verticalContainer = document.createElement("div");
-  verticalContainer.id = "sst-global-sidebar-right";
-  verticalContainer.className = "vertical-container";
-  verticalContainer.style.cssText = `
-        position: absolute !important;
-        right: 0 !important;
-        top: 0 !important;
-        bottom: 0 !important;
-        width: auto !important;
-        height: 100% !important;
-        z-index: 999 !important;
-        box-sizing: border-box !important;
-        margin: 0 !important;
-        padding: 10px !important;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: center !important;
-        align-items: flex-end !important;
-        visibility: visible !important;
-        overflow: visible !important;
-    `;
-  log("Created verticalContainer");
-
-  // Create the actual sidebar content container
-  const rightSidebar = document.createElement("div");
-  rightSidebar.id = "sst-sidebar-right-content";
-  rightSidebar.innerHTML = content;
-  rightSidebar.style.cssText = `
-        width: auto !important;
-        height: 100% !important;
-        max-width: 300px !important;
-        box-sizing: border-box !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        display: block !important;
-        visibility: visible !important;
-        overflow: visible !important;
-        position: relative !important;
-    `;
-
-  // Debug: Check what we actually have
-  const trackerContainer = rightSidebar.querySelector(
-    "#silly-sim-tracker-container"
-  );
-
-  // Add event listeners for tabs if this is a tabbed template
-  setTimeout(() => {
-    const tabs = rightSidebar.querySelectorAll(".sim-tracker-tab");
-    const cards = rightSidebar.querySelectorAll(".sim-tracker-card");
-
-    if (tabs.length > 0 && cards.length > 0) {
-      // Initially activate the first non-inactive tab and card
-      let firstActiveIndex = 0;
-      // Find the first non-inactive card
-      for (let i = 0; i < cards.length; i++) {
-        if (!cards[i].classList.contains("inactive")) {
-          firstActiveIndex = i;
-          break;
-        }
-      }
-      
-      if (tabs[firstActiveIndex]) tabs[firstActiveIndex].classList.add("active");
-      if (cards[firstActiveIndex]) cards[firstActiveIndex].classList.add("active");
-
-      // Add click listeners to tabs
-      tabs.forEach((tab, index) => {
-        tab.addEventListener("click", () => {
-          // Check if this tab is already active
-          const isActive = tab.classList.contains("active");
-
-          // Remove active class from all tabs
-          tabs.forEach((t) => t.classList.remove("active"));
-
-          // Handle card and tab animations
-          cards.forEach((card, cardIndex) => {
-            const correspondingTab = tabs[cardIndex];
-            if (cardIndex === index && !isActive) {
-              // Slide in the selected card and tab
-              card.classList.remove("sliding-out", "tab-hidden");
-              card.classList.add("sliding-in");
-              if (correspondingTab) {
-                correspondingTab.classList.remove("sliding-out", "tab-hidden");
-                correspondingTab.classList.add("sliding-in");
-              }
-              // Add active class after a short delay to ensure the animation works
-              setTimeout(() => {
-                card.classList.remove("sliding-in");
-                card.classList.add("active");
-                if (correspondingTab) {
-                  correspondingTab.classList.remove("sliding-in");
-                  correspondingTab.classList.add("active");
-                }
-              }, 10);
-            } else {
-              // Slide out all other cards and tabs
-              if (card.classList.contains("active")) {
-                card.classList.remove("active");
-                card.classList.remove("sliding-in");
-                card.classList.add("sliding-out");
-                if (correspondingTab) {
-                  correspondingTab.classList.remove("active");
-                  correspondingTab.classList.remove("sliding-in");
-                  correspondingTab.classList.add("sliding-out");
-                }
-                // Add tab-hidden class after animation completes
-                setTimeout(() => {
-                  card.classList.add("tab-hidden");
-                  card.classList.remove("sliding-out");
-                  if (correspondingTab) {
-                    correspondingTab.classList.add("tab-hidden");
-                    correspondingTab.classList.remove("sliding-out");
-                  }
-                }, 300);
-              }
-            }
-          });
-
-          // If the clicked tab wasn't already active, activate it
-          if (!isActive) {
-            tab.classList.add("active");
+      if (tabs.length > 0 && cards.length > 0) {
+        // Remove any existing active classes
+        tabs.forEach(tab => tab.classList.remove("active"));
+        cards.forEach(card => card.classList.remove("active"));
+        
+        // Initially activate the first non-inactive tab and card
+        let firstActiveIndex = 0;
+        // Find the first non-inactive card
+        for (let i = 0; i < cards.length; i++) {
+          if (!cards[i].classList.contains("narrative-inactive")) {
+            firstActiveIndex = i;
+            break;
           }
+        }
+        
+        // If all cards are inactive, just activate the first one
+        if (tabs[firstActiveIndex]) tabs[firstActiveIndex].classList.add("active");
+        if (cards[firstActiveIndex]) cards[firstActiveIndex].classList.add("active");
+
+        // Add click listeners to tabs
+        tabs.forEach((tab, index) => {
+          // Store the event listener function so we can remove it later
+          const clickHandler = () => {
+            // Check if this tab is already active
+            const isActive = tab.classList.contains("active");
+
+            // Remove active class from all tabs
+            tabs.forEach((t) => t.classList.remove("active"));
+
+            // Handle card and tab animations
+            cards.forEach((card, cardIndex) => {
+              const correspondingTab = tabs[cardIndex];
+              if (cardIndex === index && !isActive) {
+                // Slide in the selected card and tab
+                card.classList.remove("sliding-out", "tab-hidden");
+                card.classList.add("sliding-in");
+                if (correspondingTab) {
+                  correspondingTab.classList.remove("sliding-out", "tab-hidden");
+                  correspondingTab.classList.add("sliding-in");
+                }
+                // Add active class after a short delay to ensure the animation works
+                setTimeout(() => {
+                  card.classList.remove("sliding-in");
+                  card.classList.add("active");
+                  if (correspondingTab) {
+                    correspondingTab.classList.remove("sliding-in");
+                    correspondingTab.classList.add("active");
+                  }
+                }, 10);
+              } else {
+                // Slide out all other cards and tabs
+                if (card.classList.contains("active")) {
+                  card.classList.remove("active");
+                  card.classList.remove("sliding-in");
+                  card.classList.add("sliding-out");
+                  if (correspondingTab) {
+                    correspondingTab.classList.remove("active");
+                    correspondingTab.classList.remove("sliding-in");
+                    correspondingTab.classList.add("sliding-out");
+                  }
+                  // Add tab-hidden class after animation completes
+                  setTimeout(() => {
+                    card.classList.add("tab-hidden");
+                    card.classList.remove("sliding-out");
+                    if (correspondingTab) {
+                      correspondingTab.classList.add("tab-hidden");
+                      correspondingTab.classList.remove("sliding-out");
+                    }
+                  }, 300);
+                }
+              }
+            });
+
+            // If the clicked tab wasn't already active, activate it
+            if (!isActive) {
+              tab.classList.add("active");
+            }
+          };
+          
+          // Remove any existing event listeners by cloning and replacing the element
+          const newTab = tab.cloneNode(true);
+          tab.parentNode.replaceChild(newTab, tab);
+          // Update the tabs array with the new element
+          tabs[index] = newTab;
+          
+          // Add the new event listener
+          newTab.addEventListener("click", clickHandler);
         });
-      });
-    }
+      }
 
-    const container = rightSidebar.querySelector(
-      "#silly-sim-tracker-container"
-    );
-    if (container) {
-      container.style.cssText += `
-                width: 100% !important;
-                max-width: 100% !important;
-                box-sizing: border-box !important;
-                display: block !important;
-                visibility: visible !important;
-                height: 100%;
-            `;
-      log("Applied additional styles to container");
-    }
+      const container = globalRightSidebarContent.querySelector("#silly-sim-tracker-container");
+      if (container) {
+        container.style.cssText += `
+                  width: 100% !important;
+                  max-width: 100% !important;
+                  box-sizing: border-box !important;
+                  display: block !important;
+                  visibility: visible !important;
+                  height: 100%;
+              `;
+        log("Applied additional styles to container");
+      }
 
-    // Force reflow to ensure proper rendering
-    verticalContainer.offsetHeight;
-  }, 0);
-
-  // Add the sidebar to the vertical container
-  verticalContainer.appendChild(rightSidebar);
-  log("Appended rightSidebar to verticalContainer");
-
-  // Store reference to global sidebar
-  globalRightSidebar = verticalContainer;
-  log("Stored reference to globalRightSidebar");
-
-  // Insert the sidebar container directly before the sheld div in the body
-  if (sheld.parentNode) {
-    sheld.parentNode.insertBefore(verticalContainer, sheld);
-    log("Successfully inserted right sidebar before sheld");
-  } else {
-    console.error("[SST] sheld has no parent node!");
-    // Fallback: append to body
-    document.body.appendChild(verticalContainer);
+      // Force reflow to ensure proper rendering
+      globalRightSidebar.offsetHeight;
+    }, 0);
   }
 
-  return verticalContainer;
+  // Show the sidebar
+  if (globalRightSidebar) {
+    globalRightSidebar.style.display = "flex";
+  }
+
+  return globalRightSidebar;
 }
 
-// Helper function to remove global sidebars
-function removeGlobalSidebars() {
+// Helper function to hide global sidebars
+function hideGlobalSidebars() {
   if (globalLeftSidebar) {
-    globalLeftSidebar.remove();
-    globalLeftSidebar = null;
+    globalLeftSidebar.style.display = "none";
   }
   if (globalRightSidebar) {
-    globalRightSidebar.remove();
-    globalRightSidebar = null;
+    globalRightSidebar.style.display = "none";
   }
 }
 
@@ -1677,8 +1712,8 @@ const refreshAllCards = () => {
     container.remove();
   });
 
-  // Remove global sidebars
-  removeGlobalSidebars();
+  // Hide global sidebars initially
+  hideGlobalSidebars();
 
   // Get all message divs currently in the chat DOM
   const visibleMessages = document.querySelectorAll("div#chat .mes");
@@ -1689,6 +1724,229 @@ const refreshAllCards = () => {
       renderTrackerWithoutSim(parseInt(mesId, 10));
     }
   });
+};
+
+// New function to render trackers after generation ends
+const renderTrackersAfterGeneration = () => {
+  try {
+    if (!get_settings("isEnabled")) return;
+    
+    log("Rendering trackers after generation ended");
+    
+    // Get the current chat context
+    const context = getContext();
+    if (!context || !context.chat) {
+      log("No chat context available");
+      return;
+    }
+    
+    // Find all character messages with sim data
+    const identifier = get_settings("codeBlockIdentifier");
+    const simRegex = new RegExp("```" + identifier + "[\\\\s\\\\S]*?```", "gm");
+    
+    // Trackers for sidebar positioning
+    let leftSidebarContent = "";
+    let rightSidebarContent = "";
+    let hasLeftContent = false;
+    let hasRightContent = false;
+    
+    // Process all messages in the chat
+    context.chat.forEach((message, index) => {
+      if (!message || !message.mes) return;
+      
+      // Only process character messages (not user or system messages)
+      if (message.is_user || message.is_system) return;
+      
+      // Check if this message contains sim data
+      const match = message.mes.match(simRegex);
+      if (!match) return;
+      
+      // Process the sim data for this message
+      const jsonContent = match[0]
+        .replace(/```/g, "")
+        .replace(new RegExp(`^${identifier}\\\\s*`), "")
+        .trim();
+      
+      // Update lastSimJsonString with the most recent sim data
+      lastSimJsonString = jsonContent;
+      
+      let jsonData;
+      try {
+        jsonData = JSON.parse(jsonContent);
+      } catch (jsonError) {
+        log(`Failed to parse JSON in message ID ${index}. Error: ${jsonError.message}`);
+        return;
+      }
+      
+      if (typeof jsonData !== "object" || jsonData === null) {
+        log(`Parsed data in message ID ${index} is not a valid object.`);
+        return;
+      }
+      
+      // Handle both old and new JSON formats
+      let worldData, characterList;
+      
+      // Check if it's the new format (with worldData and characters array)
+      if (jsonData.worldData && Array.isArray(jsonData.characters)) {
+        worldData = jsonData.worldData;
+        characterList = jsonData.characters;
+      } else {
+        // Handle old format - convert object structure to array format
+        const worldDataFields = ["current_date", "current_time"];
+        worldData = {};
+        characterList = [];
+        
+        Object.keys(jsonData).forEach((key) => {
+          if (worldDataFields.includes(key)) {
+            worldData[key] = jsonData[key];
+          } else {
+            // Convert character object to array item
+            characterList.push({
+              name: key,
+              ...jsonData[key],
+            });
+          }
+        });
+      }
+      
+      const currentDate = worldData.current_date || "Unknown Date";
+      const currentTime = worldData.current_time || "Unknown Time";
+      
+      if (!characterList.length) return;
+      
+      // For tabbed templates, we need to pass all characters to the template
+      const isTabbedTemplate = get_settings("templateFile").includes("tabs");
+      
+      let cardsHtml = "";
+      if (isTabbedTemplate) {
+        // Prepare data for all characters
+        const charactersData = characterList
+          .map((character) => {
+            const stats = character;
+            const name = character.name;
+            if (!stats) {
+              log(`No stats found for character "${name}" in message ID ${index}. Skipping card.`);
+              return null;
+            }
+            const bgColor = stats.bg || get_settings("defaultBgColor");
+            return {
+              characterName: name,
+              currentDate: currentDate,
+              currentTime: currentTime,
+              stats: {
+                ...stats,
+                internal_thought:
+                  stats.internal_thought ||
+                  stats.thought ||
+                  "No thought recorded.",
+                relationshipStatus:
+                  stats.relationshipStatus || "Unknown Status",
+                desireStatus: stats.desireStatus || "Unknown Desire",
+                inactive: stats.inactive || false,
+                inactiveReason: stats.inactiveReason || 0,
+              },
+              bgColor: bgColor,
+              darkerBgColor: darkenColor(bgColor),
+              reactionEmoji: getReactionEmoji(stats.last_react),
+              healthIcon:
+                stats.health === 1 ? "🤕" : stats.health === 2 ? "💀" : null,
+              showThoughtBubble: get_settings("showThoughtBubble"),
+            };
+          })
+          .filter(Boolean); // Remove any null entries
+        
+        // For tabbed templates, we pass all characters in one data object
+        const templateData = {
+          characters: charactersData,
+          currentDate: currentDate,
+          currentTime: currentTime,
+        };
+        
+        cardsHtml = compiledCardTemplate(templateData);
+      } else {
+        cardsHtml = characterList
+          .map((character) => {
+            const stats = character;
+            const name = character.name;
+            if (!stats) {
+              log(`No stats found for character "${name}" in message ID ${index}. Skipping card.`);
+              return "";
+            }
+            const bgColor = stats.bg || get_settings("defaultBgColor");
+            const cardData = {
+              characterName: name,
+              currentDate: currentDate,
+              currentTime: currentTime,
+              stats: {
+                ...stats,
+                internal_thought:
+                  stats.internal_thought ||
+                  stats.thought ||
+                  "No thought recorded.",
+                relationshipStatus:
+                  stats.relationshipStatus || "Unknown Status",
+                desireStatus: stats.desireStatus || "Unknown Desire",
+                inactive: stats.inactive || false,
+                inactiveReason: stats.inactiveReason || 0,
+              },
+              bgColor: bgColor,
+              darkerBgColor: darkenColor(bgColor),
+              reactionEmoji: getReactionEmoji(stats.last_react),
+              healthIcon:
+                stats.health === 1 ? "🤕" : stats.health === 2 ? "💀" : null,
+              showThoughtBubble: get_settings("showThoughtBubble"),
+            };
+            return compiledCardTemplate(cardData);
+          })
+          .join("");
+      }
+      
+      // Get the template position from settings or template metadata
+      const templatePosition = get_settings("templatePosition") || "BOTTOM";
+      
+      // Handle different positions
+      switch (templatePosition) {
+        case "LEFT":
+          leftSidebarContent += compiledWrapperTemplate({ cardsHtml });
+          hasLeftContent = true;
+          break;
+        case "RIGHT":
+          rightSidebarContent += compiledWrapperTemplate({ cardsHtml });
+          hasRightContent = true;
+          break;
+        // For ABOVE, BOTTOM, and MACRO positions, we still need to render in the message
+        // These will be handled by the existing render functions
+        default:
+          // For these positions, we'll rely on the existing message rendering logic
+          break;
+      }
+    });
+    
+    // Update sidebars if they have content
+    if (hasLeftContent) {
+      updateLeftSidebar(leftSidebarContent);
+    }
+    
+    if (hasRightContent) {
+      updateRightSidebar(rightSidebarContent);
+    }
+    
+    // For non-sidebar positions, we still need to update the message-specific trackers
+    // Get all message divs currently in the chat DOM
+    const visibleMessages = document.querySelectorAll("div#chat .mes");
+    visibleMessages.forEach((messageElement) => {
+      const mesId = messageElement.getAttribute("mesid");
+      if (mesId) {
+        // Call the existing render function for each visible message
+        // This will handle ABOVE, BOTTOM, and MACRO positions
+        renderTrackerWithoutSim(parseInt(mesId, 10));
+      }
+    });
+    
+    log("Finished rendering trackers after generation ended");
+  } catch (error) {
+    log(`Error in renderTrackersAfterGeneration: ${error.message}`);
+  }
 };
 
 const bind_setting = (selector, key, type) => {
@@ -1711,6 +1969,20 @@ const bind_setting = (selector, key, type) => {
         break;
     }
     set_settings(key, value);
+    
+    // Special handling for isEnabled setting
+    if (key === "isEnabled") {
+      if (value) {
+        // Extension enabled - initialize sidebars
+        initializeGlobalSidebars();
+        // Refresh all cards
+        refreshAllCards();
+      } else {
+        // Extension disabled - hide sidebars
+        hideGlobalSidebars();
+      }
+    }
+    
     if (key === "templateFile") {
       loadTemplate().then(() => {
         refreshAllCards();
@@ -2017,12 +2289,7 @@ jQuery(async () => {
                   const preparingText = document.createElement("div");
                   preparingText.className = "sst-preparing-text";
                   preparingText.textContent = "Preparing new tracker cards...";
-                  preparingText.style.cssText = `
-                                        color: #4a3a9d; /* Darker blue */
-                                        font-style: italic;
-                                        margin: 10px 0;
-                                        animation: sst-pulse 1.5s infinite;
-                                    `;
+                  preparingText.style.cssText = `color: #4a3a9d; /* Darker blue */ font-style: italic; margin: 10px 0; animation: sst-pulse 1.5s infinite;`;
                   // Insert after mesText instead of appending to it
                   mesText.parentNode.insertBefore(preparingText, mesText.nextSibling);
 
@@ -2030,13 +2297,7 @@ jQuery(async () => {
                   if (!document.getElementById("sst-pulse-animation")) {
                     const style = document.createElement("style");
                     style.id = "sst-pulse-animation";
-                    style.textContent = `
-                                            @keyframes sst-pulse {
-                                                0% { opacity: 0.5; }
-                                                50% { opacity: 1; }
-                                                100% { opacity: 0.5; }
-                                            }
-                                        `;
+                    style.textContent = `@keyframes sst-pulse { 0% { opacity: 0.5; } 50% { opacity: 1; } 100% { opacity: 0.5; } }`;
                     document.head.appendChild(style);
                   }
                 }
@@ -2067,6 +2328,9 @@ jQuery(async () => {
       log("Processed {{last_sim_stats}} macro.");
       return lastSimJsonString || "{}";
     });
+
+    // Initialize global sidebar elements
+    initializeGlobalSidebars();
 
     // Register the slash command for converting sim data formats
     SlashCommandParser.addCommandObject(
@@ -2241,11 +2505,150 @@ ${exampleJson}
       })
     );
 
+    // Function to initialize global sidebar elements
+    function initializeGlobalSidebars() {
+      // Create global sidebar elements if they don't exist
+      if (!globalLeftSidebar) {
+        // Find the sheld container
+        const sheld = document.getElementById("sheld");
+        if (sheld) {
+          // Create a container that stretches vertically for left sidebar
+          const verticalContainer = document.createElement("div");
+          verticalContainer.id = "sst-global-sidebar-left";
+          verticalContainer.className = "vertical-container";
+          verticalContainer.style.cssText = `
+                position: absolute !important;
+                left: 0 !important;
+                top: 0 !important;
+                bottom: 0 !important;
+                width: auto !important;
+                height: 100% !important;
+                z-index: 999 !important;
+                box-sizing: border-box !important;
+                margin: 0 !important;
+                padding: 10px !important;
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                display: none !important; /* Start hidden */
+                flex-direction: column !important;
+                justify-content: center !important;
+                align-items: flex-start !important;
+                visibility: visible !important;
+                overflow: visible !important;
+            `;
+
+          // Create the actual sidebar content container
+          globalLeftSidebarContent = document.createElement("div");
+          globalLeftSidebarContent.id = "sst-sidebar-left-content";
+          globalLeftSidebarContent.style.cssText = `
+                width: auto !important;
+                height: 100% !important;
+                max-width: 300px !important;
+                box-sizing: border-box !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                display: block !important;
+                visibility: visible !important;
+                overflow: visible !important;
+                position: relative !important;
+            `;
+
+          // Add the sidebar content to the vertical container
+          verticalContainer.appendChild(globalLeftSidebarContent);
+
+          // Store reference to global sidebar
+          globalLeftSidebar = verticalContainer;
+
+          // Insert the sidebar container directly before the sheld div in the body
+          if (sheld.parentNode) {
+            sheld.parentNode.insertBefore(verticalContainer, sheld);
+          } else {
+            // Fallback: append to body
+            document.body.appendChild(verticalContainer);
+          }
+        }
+      }
+
+      if (!globalRightSidebar) {
+        // Find the sheld container
+        const sheld = document.getElementById("sheld");
+        if (sheld) {
+          // Create a container that stretches vertically for right sidebar
+          const verticalContainer = document.createElement("div");
+          verticalContainer.id = "sst-global-sidebar-right";
+          verticalContainer.className = "vertical-container";
+          verticalContainer.style.cssText = `
+                position: absolute !important;
+                right: 0 !important;
+                top: 0 !important;
+                bottom: 0 !important;
+                width: auto !important;
+                height: 100% !important;
+                z-index: 999 !important;
+                box-sizing: border-box !important;
+                margin: 0 !important;
+                padding: 10px !important;
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                display: none !important; /* Start hidden */
+                flex-direction: column !important;
+                justify-content: center !important;
+                align-items: flex-end !important;
+                visibility: visible !important;
+                overflow: visible !important;
+            `;
+
+          // Create the actual sidebar content container
+          globalRightSidebarContent = document.createElement("div");
+          globalRightSidebarContent.id = "sst-sidebar-right-content";
+          globalRightSidebarContent.style.cssText = `
+                width: auto !important;
+                height: 100% !important;
+                max-width: 300px !important;
+                box-sizing: border-box !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                display: block !important;
+                visibility: visible !important;
+                overflow: visible !important;
+                position: relative !important;
+            `;
+
+          // Add the sidebar content to the vertical container
+          verticalContainer.appendChild(globalRightSidebarContent);
+
+          // Store reference to global sidebar
+          globalRightSidebar = verticalContainer;
+
+          // Insert the sidebar container directly before the sheld div in the body
+          if (sheld.parentNode) {
+            sheld.parentNode.insertBefore(verticalContainer, sheld);
+          } else {
+            // Fallback: append to body
+            document.body.appendChild(verticalContainer);
+          }
+        }
+      }
+    }
+
     const context = getContext();
     const { eventSource, event_types } = context;
 
-    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, renderTracker);
+    // New approach: Render on GENERATION_ENDED for better performance
+    eventSource.on(event_types.GENERATION_ENDED, renderTrackersAfterGeneration);
+    
+    // Still need to handle CHAT_CHANGED for initial load and swipes
     eventSource.on(event_types.CHAT_CHANGED, refreshAllCards);
+    
+    // Other events that might need to trigger a refresh
     eventSource.on(event_types.MORE_MESSAGES_LOADED, refreshAllCards);
     eventSource.on(event_types.MESSAGE_UPDATED, refreshAllCards);
     eventSource.on(event_types.MESSAGE_EDITED, (mesId) => {
@@ -2257,8 +2660,9 @@ ${exampleJson}
         `Message swipe detected for message ID ${mesId}. Updating last_sim_stats macro.`
       );
       updateLastSimStatsOnRegenerateOrSwipe(mesId);
+      // Also refresh cards after swipe
+      refreshAllCards();
     });
-    refreshAllCards();
     log(`${MODULE_NAME} has been successfully loaded.`);
   } catch (error) {
     console.error(
