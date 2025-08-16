@@ -1229,16 +1229,19 @@ const initialize_settings_listeners = () => {
         const modalHtml = `
             <dialog id="sst-custom-fields-modal" class="popup wide_dialogue_popup large_dialogue_popup vertical_scrolling_dialogue_popup popup--animation-fast">
                 <div class="popup-header">
-                    <h3>Manage Custom Fields</h3>
-                    <div class="popup-close-button close_popups" id="sst-modal-close">&times;</div>
+                    <h3 style="margin: 0; padding: 10px 0;">Manage Custom Fields</h3>
                 </div>
-                <div class="popup-content">
-                    <div id="customFieldsList" class="sst-fields-container">
-                        <!-- Fields will be populated here by JavaScript -->
-                    </div>
-                    <div class="popup-footer">
+                <div class="popup-content" style="padding: 15px; flex: 1; display: flex; flex-direction: column;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <div style="flex: 1;"></div>
                         <button id="addCustomFieldBtn" class="menu_button">Add New Field</button>
                     </div>
+                    <div id="customFieldsList" class="sst-fields-container" style="flex: 1; overflow-y: auto;">
+                        <!-- Fields will be populated here by JavaScript -->
+                    </div>
+                </div>
+                <div class="popup-footer" style="display: flex; justify-content: center; padding: 15px;">
+                    <button id="sst-modal-close" class="menu_button">Close</button>
                 </div>
             </dialog>
         `;
@@ -1330,23 +1333,24 @@ const initialize_settings_listeners = () => {
             renderFields(); // Re-render the list
             
             // Scroll to the bottom where the new field was added
-            const $modalContent = $modal.find('.popup-content');
-            $modalContent.scrollTop($modalContent[0].scrollHeight);
+            $fieldsContainer.scrollTop($fieldsContainer[0].scrollHeight);
         });
         
-        // Close modal when clicking the X
+        // Close modal when clicking the Close button
         $modalClose.on('click', () => {
-            $modal.remove();
-        });
-        
-        // Close modal when clicking outside the content (using SillyTavern's built-in class)
-        $modal.find('.popup-header .close_popups').on('click', function() {
             $modal.remove();
         });
         
         // Close modal with Escape key
         $modal.on('keydown', function(e) {
             if (e.key === 'Escape') {
+                $modal.remove();
+            }
+        });
+        
+        // Also close when clicking on the backdrop (dialog native behavior)
+        $modal.on('click', function(e) {
+            if (e.target === this) {
                 $modal.remove();
             }
         });

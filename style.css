@@ -220,9 +220,57 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 /* Custom Fields Dialog Styles */
 #sst-custom-fields-modal {
     max-height: 80vh;
+    padding: 0;
+    border: 1px solid #444;
+    border-radius: 8px;
+    background-color: #202020;
+    margin: auto;
+}
+
+#sst-custom-fields-modal .popup-header {
+    padding: 15px 20px;
+    border-bottom: 1px solid #444;
 }
 
 #sst-custom-fields-modal .popup-content {
-    max-height: calc(80vh - 100px);
+    max-height: calc(80vh - 120px);
+    overflow-y: hidden;
+    padding: 15px;
+    display: flex;
+    flex-direction: column;
+}
+
+#sst-custom-fields-modal .sst-fields-container {
+    flex: 1;
     overflow-y: auto;
+    margin-top: 10px;
+}
+
+#sst-custom-fields-modal .popup-footer {
+    padding: 15px;
+    border-top: 1px solid #444;
+}
+
+/* Collapsible Field Styles */
+.sst-field-item {
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 5px;
+    margin-bottom: 10px;
+    padding: 10px;
+}
+
+.sst-field-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.sst-field-details {
+    margin-top: 10px;
+}
+
+.sst-toggle-field {
+    padding: 5px 10px;
+    min-width: auto;
 }
