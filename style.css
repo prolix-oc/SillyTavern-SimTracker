@@ -162,6 +162,29 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     align-items: flex-end !important;
 }
 
+/* Ensure proper positioning for tabbed templates */
+#sst-global-sidebar-left .sim-tracker-tabs,
+#sst-global-sidebar-right .sim-tracker-tabs {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    z-index: 20;
+}
+
+#sst-global-sidebar-left .sim-tracker-tabs {
+    left: 0;
+    right: auto;
+}
+
+#sst-global-sidebar-right .sim-tracker-tabs {
+    right: 0;
+    left: auto;
+}
+
 #sst-global-sidebar-left #silly-sim-tracker-container,
 #sst-global-sidebar-right #silly-sim-tracker-container {
     width: 100% !important;
@@ -262,15 +285,21 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 
 /* Tabbed interface styles */
 .sim-tracker-tabs {
-    position: relative;
-    width: 100%;
+    position: absolute;
+    width: auto;
     height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    z-index: 20;
 }
 
 .sim-tracker-tab {
     transition: filter 0.3s ease-in-out;
     cursor: pointer;
-    position: absolute;
+    position: relative;
+    flex-shrink: 0;
+    margin: 0 8px;
 }
 
 .sim-tracker-tab:hover {
@@ -287,13 +316,16 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     position: absolute !important;
     opacity: 0;
     visibility: hidden;
-    transform: translateY(-50%) translateX(-100%) !important;
 }
 
 .sim-tracker-card.active {
     opacity: 1;
     visibility: visible;
-    transform: translateY(-50%) translateX(0) !important;
+}
+
+#sst-global-sidebar-left .sim-tracker-tabs {
+    left: 0;
+    right: auto;
 }
 
 #sst-global-sidebar-left .sim-tracker-card {
@@ -303,6 +335,11 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 
 #sst-global-sidebar-left .sim-tracker-card.active {
     transform: translateY(-50%) translateX(0) !important;
+}
+
+#sst-global-sidebar-right .sim-tracker-tabs {
+    right: 0;
+    left: auto;
 }
 
 #sst-global-sidebar-right .sim-tracker-card {

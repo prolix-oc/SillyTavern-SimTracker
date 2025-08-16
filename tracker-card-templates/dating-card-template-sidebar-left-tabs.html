@@ -19,9 +19,12 @@
   flex-direction: column;
   gap: 12px;
   position: absolute;
-  right: -68px; /* 60px tab width + 8px gap */
-  top: 20%;
-  z-index: 10;
+  left: 0; /* Position tabs to the left of the card */
+  top: 0;
+  bottom: 0;
+  justify-content: center;
+  height: 100%;
+  z-index: 20;
 }
 
 .sim-tracker-tab {
@@ -38,6 +41,8 @@
   align-items: center;
   background: linear-gradient(145deg, #2c2c2c, #1a1a1a);
   border: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
+  margin: 0 8px; /* Add some horizontal spacing */
 }
 
 .sim-tracker-tab:hover {
@@ -70,9 +75,9 @@
   position: absolute;
   backdrop-filter: blur(10px);
   transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-  right: 0;
+  left: 0;
   top: 50%;
-  transform: translateY(-50%) translateX(100%);
+  transform: translateY(-50%) translateX(-100%);
   opacity: 0;
   visibility: hidden;
   z-index: 15;
@@ -92,7 +97,7 @@
 }
 
 .sim-tracker-card.sliding-out {
-  transform: translateY(-50%) translateX(300px);
+  transform: translateY(-50%) translateX(-300px);
   opacity: 0;
   visibility: hidden;
 }

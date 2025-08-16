@@ -344,7 +344,7 @@ function updateRightSidebar(content) {
                 box-sizing: border-box !important;
                 display: block !important;
                 visibility: visible !important;
-                                height: 100%;
+                height: 100%;
             `;
       console.log("[SST] Applied additional styles to container");
     }
