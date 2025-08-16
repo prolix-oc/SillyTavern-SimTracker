@@ -558,46 +558,8 @@ const get_extension_directory = () => {
 };
 
 // Function to update lastSimJsonString when a message is swiped
-const updateLastSimStatsOnSwipe = (currentMesId) => {
-  try {
-    const context = getContext();
-    if (!context || !context.chat) {
-      log("Context or chat not available for swipe update");
-      return;
-    }
-
-    // Look for the previous message with sim data
-    for (let i = currentMesId - 1; i >= 0; i--) {
-      const message = context.chat[i];
-      if (!message || !message.mes) continue;
-
-      // Check if this message contains sim data
-      const identifier = get_settings("codeBlockIdentifier");
-      const simRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "m");
-      const match = message.mes.match(simRegex);
-
-      if (match) {
-        // Extract JSON content from the match
-        const jsonContent = match[0]
-          .replace(/```/g, "")
-          .replace(new RegExp(`^${identifier}\\s*`), "")
-          .trim();
-
-        // Update the lastSimJsonString with the previous message's sim data
-        lastSimJsonString = jsonContent;
-        log(`Updated last_sim_stats macro with data from message ID ${i}`);
-        return;
-      }
-    }
-
-    log("No previous message with sim data found for swipe update");
-  } catch (error) {
-    log(`Error updating last sim stats on swipe: ${error.message}`);
-  }
-};
-
-// Function to update lastSimJsonString when regenerating or swiping
-const updateLastSimStatsOnRegenerateOrSwipe = () => {
+// Function to filter sim blocks in prompt (keep only last 3)
+const updateLastSimStatsOnRegenerateOrSwipe = (currentMesId = null) => {
   try {
     const context = getContext();
     if (!context || !context.chat) {
@@ -605,30 +567,36 @@ const updateLastSimStatsOnRegenerateOrSwipe = () => {
       return;
     }
 
-    // Look for the most recent message with sim data
-    for (let i = context.chat.length - 1; i >= 0; i--) {
+    // Determine starting point for search
+    let startIndex = context.chat.length - 1;
+    if (currentMesId !== null && typeof currentMesId === 'number') {
+      // If we have a current message ID, start searching from the message before it
+      startIndex = currentMesId - 1;
+    }
+
+    // Look for the most recent message with sim data, starting from startIndex and going backwards
+    for (let i = startIndex; i >= 0; i--) {
       const message = context.chat[i];
       if (!message || !message.mes) continue;
 
       // Check if this message contains sim data
       const identifier = get_settings("codeBlockIdentifier");
-      const simRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "m");
+      const simRegex = new RegExp("```" + identifier + "[\\\\s\\\\S]*?```", "m");
       const match = message.mes.match(simRegex);
 
       if (match) {
         // Extract JSON content from the match
         const jsonContent = match[0]
           .replace(/```/g, "")
-          .replace(new RegExp(`^${identifier}\\s*`), "")
+          .replace(new RegExp(`^${identifier}\\\\s*`), "")
           .trim();
 
-        // Update the lastSimJsonString with the most recent message's sim data
+        // Update the lastSimJsonString with the found message's sim data
         lastSimJsonString = jsonContent;
         log(`Updated last_sim_stats macro with data from message ID ${i} during regenerate/swipe`);
         return;
       }
     }
-
     log("No message with sim data found for regenerate/swipe update");
   } catch (error) {
     log(`Error updating last sim stats on regenerate/swipe: ${error.message}`);
@@ -762,8 +730,7 @@ const migrateAllSimData = async () => {
             const migratedJsonString = JSON.stringify(migratedData, null, 2);
 
             // Reconstruct the code block
-            const migratedCodeBlock =
-              "```" + identifier + "\n" + migratedJsonString + "\n```";
+            const migratedCodeBlock = "```" + identifier + "" + migratedJsonString + "```";
 
             // Replace in message
             updatedMessage = updatedMessage.replace(match, migratedCodeBlock);
@@ -2003,7 +1970,10 @@ globalThis.simTrackerGenInterceptor = async function (
   // Handle regenerate and swipe conditions to reset last_sim_stats macro
   if (type === "regenerate" || type === "swipe") {
     log(`Handling ${type} condition - updating last_sim_stats macro`);
-    updateLastSimStatsOnRegenerateOrSwipe();
+    // For regenerate/swipe operations, pass the ID of the last message in chat
+    // This helps find sim data from the message before the one being regenerated/swiped
+    const lastMesId = chat && Array.isArray(chat) && chat.length > 0 ? chat.length - 1 : null;
+    updateLastSimStatsOnRegenerateOrSwipe(lastMesId);
   }
   
   // Filter out sim blocks from messages beyond the last 3
@@ -2162,7 +2132,9 @@ jQuery(async () => {
 
       // Wrap in the code block with the identifier
       const identifier = get_settings("codeBlockIdentifier") || "sim";
-      return `\`\`\`${identifier}\n${exampleJson}\n\`\`\``;
+      return `\`\`\`${identifier}
+${exampleJson}
+\`\`\``;
     });
 
     // Register a new macro for positionable tracker replacement
@@ -2225,7 +2197,9 @@ jQuery(async () => {
             }
 
             // Append the sim block to the message
-            const simBlock = `\n\`\`\`${identifier}\n`;
+            const simBlock = `
+\`\`\`${identifier}
+`;
             lastCharMessage.mes += simBlock;
 
             // Update the message in the UI
@@ -2285,7 +2259,7 @@ jQuery(async () => {
       log(
         `Message swipe detected for message ID ${mesId}. Updating last_sim_stats macro.`
       );
-      updateLastSimStatsOnRegenerateOrSwipe();
+      updateLastSimStatsOnRegenerateOrSwipe(mesId);
     });
     refreshAllCards();
     log(`${MODULE_NAME} has been successfully loaded.`);
