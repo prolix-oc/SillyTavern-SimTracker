@@ -422,49 +422,6 @@ const loadTemplate = async (get_settings, set_settings) => {
   compiledCardTemplate = Handlebars.compile(fallbackTemplate);
   set_settings("templatePosition", "BOTTOM"); // Default position for fallback
 };
-        const templateVarRegex = /\{\{[^}]+\}\}/;
-        const divMatches = [
-          ...cleanedResponse.matchAll(/<div[^>]*>[\s\S]*?<\/div>/g),
-        ];
-        let bestMatch = null;
-        let maxLength = 0;
-        for (const match of divMatches) {
-          if (templateVarRegex.test(match[0]) && match[0].length > maxLength) {
-            bestMatch = match[0];
-            maxLength = match[0].length;
-          }
-        }
-        if (bestMatch) {
-          cardTemplate = bestMatch;
-        } else {
-          throw new Error(
-            "Could not find template content with either markers or Handlebars variables."
-          );
-        }
-      }
-      compiledCardTemplate = Handlebars.compile(cardTemplate);
-      // Store the template position in settings for use during rendering
-      set_settings("templatePosition", templatePosition);
-      console.log(`[SST] [${MODULE_NAME}]`,
-        `Default template '${templateFile}' compiled successfully. Position: ${templatePosition}`
-      );
-      return; // Exit successfully
-    } catch (error) {
-      console.log(`[SST] [${MODULE_NAME}]`,
-        `Could not load or parse default template file '${templateFile}'. Using hardcoded fallback.`
-      );
-    }
-  }
-
-  console.log(`[SST] [${MODULE_NAME}]`, "Using hardcoded fallback template as a last resort.");
-  const fallbackTemplate = `
-    <div style="flex:1 1 100%;min-width:380px;max-width:500px;background:red;border-radius:16px;padding:16px;color:#fff;">
-        <b>Template Error</b><br>
-        No custom template is loaded and the selected default template could not be found or parsed.
-    </div>`;
-  compiledCardTemplate = Handlebars.compile(fallbackTemplate);
-  set_settings("templatePosition", "BOTTOM"); // Default position for fallback
-};
 
 // Export functions and variables
 export {
