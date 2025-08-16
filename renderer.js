@@ -931,3 +931,13 @@ export {
   getGenerationInProgress,
   CONTAINER_ID
 };
+  renderTrackerWithoutSim,
+  refreshAllCards,
+  mesTextsWithPreparingText,
+  isGenerationInProgress,
+  pendingLeftSidebarContent,
+  pendingRightSidebarContent,
+  setGenerationInProgress,
+  getGenerationInProgress,
+  CONTAINER_ID
+};
