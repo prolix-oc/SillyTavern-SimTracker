@@ -1,6 +1,69 @@
-import { loadTemplate, populateTemplateDropdown, handleCustomTemplateUpload } from "./templater.js";
-import { extension_settings, saveSettingsDebounced } from '../../../script.js'
+// settingsHandler.js - SillyTavern settings reading and management
+import { extension_settings, saveSettingsDebounced } from "../../../extensions.js";
+
 const MODULE_NAME = "silly-sim-tracker";
+
+// Default fields for sim data, used for both initial settings and the {{sim_format}} macro
+const defaultSimFields = [
+  { key: "ap", description: "Affection Points (0-200)" },
+  { key: "dp", description: "Desire Points (0-150)" },
+  { key: "tp", description: "Trust Points (0-150)" },
+  { key: "cp", description: "Contempt Points (0-150)" },
+  {
+    key: "apChange",
+    description:
+      "Change in Affection from last action (positive/negative/zero)",
+  },
+  {
+    key: "dpChange",
+    description: "Change in Desire from last action (positive/negative/zero)",
+  },
+  {
+    key: "tpChange",
+    description: "Change in Trust from last action (positive/negative/zero)",
+  },
+  {
+    key: "cpChange",
+    description: "Change in Contempt from last action (positive/negative/zero)",
+  },
+  {
+    key: "relationshipStatus",
+    description: "Relationship status text (e.g., 'Romantic Interest')",
+  },
+  {
+    key: "desireStatus",
+    description: "Desire status text (e.g., 'A smoldering flame builds.')",
+  },
+  { key: "preg", description: "Boolean for pregnancy status (true/false)" },
+  { key: "days_preg", description: "Days pregnant (if applicable)" },
+  { key: "conception_date", description: "Date of conception (YYYY-MM-DD)" },
+  {
+    key: "health",
+    description: "Health Status (0=Unharmed, 1=Injured, 2=Critical)",
+  },
+  { key: "bg", description: "Hex color for card background (e.g., #6a5acd)" },
+  {
+    key: "last_react",
+    description: "Reaction to User (0=Neutral, 1=Like, 2=Dislike)",
+  },
+  {
+    key: "internal_thought",
+    description: "Character's current internal thoughts/feelings",
+  },
+  {
+    key: "days_since_first_meeting",
+    description: "Total days since first meeting",
+  },
+  {
+    key: "inactive",
+    description: "Boolean for character inactivity (true/false)",
+  },
+  {
+    key: "inactiveReason",
+    description:
+      "Reason for inactivity (0=Not inactive, 1=Asleep, 2=Comatose, 3=Contempt/anger, 4=Incapacitated, 5=Death)",
+  },
+];
 
 const default_settings = {
   isEnabled: true,
@@ -11,45 +74,41 @@ const default_settings = {
   templateFile: "dating-card-template.html",
   datingSimPrompt:
     "Default prompt could not be loaded. Please check file path.",
+  customFields: [...defaultSimFields], // Clone the default fields
   hideSimBlocks: true, // New setting to hide sim blocks in message text
   templatePosition: "BOTTOM", // New setting for template position
 };
 
-// Get SillyTavern context for extension settings
+let settings = {};
+const settings_ui_map = {};
 
-let settings_ui_map = {};
-
-/**
- * Function to get or initialize the settings for your extension.
- * This ensures that your extension always has a valid set of settings,
- * even if they haven't been saved before or if new settings are added in updates.
- */
-function getSSTExtensionSettings() {
-  // If settings for our extension don't exist yet, initialize them
-  if (!extension_settings[MODULE_NAME]) {
-    extension_settings[MODULE_NAME] = structuredClone(default_settings);
-  }
-
-  // Ensure all default keys exist (useful after updates)
-  for (const key of Object.keys(default_settings)) {
-    if (!Object.hasOwn(extension_settings[MODULE_NAME], key)) {
-      extension_settings[MODULE_NAME][key] = default_settings[key];
-    }
-  }
-
-  return extension_settings[MODULE_NAME];
-}
-
-const get_settings = (key) => {
-  const settings = getSSTExtensionSettings();
-  return settings[key];
-};
-
+const get_settings = (key) => settings[key] ?? default_settings[key];
 const set_settings = (key, value) => {
-  const settings = getSSTExtensionSettings();
   settings[key] = value;
   saveSettingsDebounced();
 };
+
+const get_extension_directory = () => {
+  const index_path = new URL(import.meta.url).pathname;
+  return index_path.substring(0, index_path.lastIndexOf("/"));
+};
+
+const loadDefaultPromptFromFile = async () => {
+  const promptPath = `${get_extension_directory()}/prompts/default-prompt.md`;
+  try {
+    const response = await $.get(promptPath);
+    console.log(`[SST] [${MODULE_NAME}]`, `Successfully loaded default prompt from ${promptPath}`);
+    return response;
+  } catch (error) {
+    console.log(`[SST] [${MODULE_NAME}]`,
+      `Error loading default prompt from ${promptPath}. The file might be missing. Error: ${error.statusText}`
+    );
+    console.error(error);
+    return null; // Return null on failure
+  }
+};
+
+// --- SETTINGS MANAGEMENT ---
 
 const refresh_settings_ui = () => {
   for (const [key, [element, type]] of Object.entries(settings_ui_map)) {
@@ -70,7 +129,7 @@ const refresh_settings_ui = () => {
 const bind_setting = (selector, key, type) => {
   const element = $(selector);
   if (element.length === 0) {
-    console.log(`[SST] Could not find settings element: ${selector}`);
+    console.log(`[SST] [${MODULE_NAME}]`, `Could not find settings element: ${selector}`);
     return;
   }
   settings_ui_map[key] = [element, type];
@@ -87,11 +146,16 @@ const bind_setting = (selector, key, type) => {
         break;
     }
     set_settings(key, value);
+    if (key === "templateFile") {
+      loadTemplate().then(() => {
+        refreshAllCards();
+      });
+    }
   });
 };
 
-const initialize_settings_listeners = (loadTemplateCallback, refreshAllCardsCallback) => {
-  console.log("[SST] Binding settings UI elements...");
+const initialize_settings_listeners = (loadTemplate, refreshAllCards, migrateAllSimData) => {
+  console.log(`[SST] [${MODULE_NAME}]`, "Binding settings UI elements...");
 
   bind_setting("#isEnabled", "isEnabled", "boolean");
   bind_setting("#codeBlockIdentifier", "codeBlockIdentifier", "text");
@@ -107,12 +171,8 @@ const initialize_settings_listeners = (loadTemplateCallback, refreshAllCardsCall
     settings_ui_map["templateFile"] = [$templateSelect, "text"];
     $templateSelect.on("change", async () => {
       set_settings("templateFile", $templateSelect.val());
-      if (loadTemplateCallback) {
-        await loadTemplateCallback();
-      }
-      if (refreshAllCardsCallback) {
-        refreshAllCardsCallback();
-      }
+      await loadTemplate();
+      refreshAllCards();
     });
   }
 
@@ -123,15 +183,21 @@ const initialize_settings_listeners = (loadTemplateCallback, refreshAllCardsCall
   $("#customTemplateUpload").on("change", handleCustomTemplateUpload);
 
   $("#clearCustomTemplateBtn").on("click", async () => {
-    console.log("[SST] Clearing custom template.");
+    console.log(`[SST] [${MODULE_NAME}]`, "Clearing custom template.");
     set_settings("customTemplateHtml", "");
-    // We would show a toastr info in the main module
-    console.log("[SST] Custom template cleared. Reverted to default.");
-    if (loadTemplateCallback) {
-      await loadTemplateCallback(); // Reload to apply the selected default
-    }
-    if (refreshAllCardsCallback) {
-      refreshAllCardsCallback();
+    toastr.info("Custom template cleared. Reverted to default.");
+    await loadTemplate(); // Reload to apply the selected default
+    refreshAllCards();
+  });
+
+  // Listener for the JSON format migration button
+  $("#migrateJsonFormatBtn").on("click", () => {
+    if (
+      confirm(
+        "This will migrate all existing sim data to the new format with worldData and characters array. This operation cannot be undone. Are you sure?"
+      )
+    ) {
+      migrateAllSimData();
     }
   });
 
@@ -211,8 +277,7 @@ const initialize_settings_listeners = (loadTemplateCallback, refreshAllCardsCall
           .on("input", function () {
             const newValue = $(this).val();
             const updatedFields = [...fields];
-            // We would sanitize the field key in the main module
-            updatedFields[index].key = newValue; // Sanitize on input
+            updatedFields[index].key = sanitizeFieldKey(newValue); // Sanitize on input
             set_settings("customFields", updatedFields);
           });
 
@@ -294,10 +359,10 @@ const initialize_settings_listeners = (loadTemplateCallback, refreshAllCardsCall
   });
 
   refresh_settings_ui();
-  console.log("[SST] Settings UI successfully bound.");
+  console.log(`[SST] [${MODULE_NAME}]`, "Settings UI successfully bound.");
 };
 
-const initialize_settings = async (loadDefaultPromptFromFile) => {
+const initialize_settings = async () => {
   // Load the prompt from the file first.
   const loadedPrompt = await loadDefaultPromptFromFile();
   // If the prompt was loaded successfully, update the default_settings object.
@@ -305,30 +370,40 @@ const initialize_settings = async (loadDefaultPromptFromFile) => {
     default_settings.datingSimPrompt = loadedPrompt;
   }
 
-  // Initialize settings using our helper function
-  getSSTExtensionSettings();
+  // Now, merge the defaults with any user-saved settings.
+  extension_settings[MODULE_NAME] = Object.assign(
+    {},
+    default_settings,
+    extension_settings[MODULE_NAME]
+  );
+  settings = extension_settings[MODULE_NAME];
 };
 
-const load_settings_html_manually = async (get_extension_directory) => {
+const load_settings_html_manually = async () => {
   const settingsHtmlPath = `${get_extension_directory()}/settings.html`;
   try {
     const response = await $.get(settingsHtmlPath);
     $("#extensions_settings2").append(response);
-    console.log("[SST] Settings HTML manually injected into right-side panel.");
+    console.log(`[SST] [${MODULE_NAME}]`, "Settings HTML manually injected into right-side panel.");
   } catch (error) {
-    console.log(`[SST] Error loading settings.html: ${error.statusText}`);
+    console.log(`[SST] [${MODULE_NAME}]`, `Error loading settings.html: ${error.statusText}`);
     console.error(error);
   }
 };
 
+// Export functions and variables
 export {
+  defaultSimFields,
   default_settings,
+  settings,
+  settings_ui_map,
   get_settings,
   set_settings,
+  get_extension_directory,
+  loadDefaultPromptFromFile,
   refresh_settings_ui,
   bind_setting,
   initialize_settings_listeners,
   initialize_settings,
-  load_settings_html_manually,
-  populateTemplateDropdown
+  load_settings_html_manually
 };

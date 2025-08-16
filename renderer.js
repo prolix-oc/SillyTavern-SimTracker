@@ -1,5 +1,8 @@
+// renderer.js - HTML card rendering code
+import { getContext } from "../../../extensions.js";
 import { messageFormatting } from "../../../../script.js";
 
+const MODULE_NAME = "silly-sim-tracker";
 const CONTAINER_ID = "silly-sim-tracker-container";
 
 // Global sidebar tracker elements
@@ -7,60 +10,15 @@ let globalLeftSidebar = null;
 let globalRightSidebar = null;
 let pendingLeftSidebarContent = null;
 let pendingRightSidebarContent = null;
+let isGenerationInProgress = false;
 
-// Wrapper template for cards
-const wrapperTemplate = `<div id="${CONTAINER_ID}" style="width:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:block !important;visibility:visible !important;">{{{cardsHtml}}}</div>`;
-
-// Utility to darken a color
-const darkenColor = (hex) => {
-  if (!hex || hex.length < 7) return "#6a5acd";
-  let r = parseInt(hex.slice(1, 3), 16),
-    g = parseInt(hex.slice(3, 5), 16),
-    b = parseInt(hex.slice(5, 7), 16);
-  r = Math.floor(r * 0.7)
-    .toString(16)
-    .padStart(2, "0");
-  g = Math.floor(g * 0.7)
-    .toString(16)
-    .padStart(2, "0");
-  b = Math.floor(b * 0.7)
-    .toString(16)
-    .padStart(2, "0");
-  return `#${r}${g}${b}`;
-};
-
-const getReactionEmoji = (reactValue) => {
-  switch (parseInt(reactValue, 10)) {
-    case 1:
-      return "👍";
-    case 2:
-      return "👎";
-    default:
-      return "😐";
-  }
-};
-
-const getInactiveReasonEmoji = (reason) => {
-  switch (parseInt(reason, 10)) {
-    case 1:
-      return "😴";
-    case 2:
-      return "🏥";
-    case 3:
-      return "😡";
-    case 4:
-      return "🫠";
-    case 5:
-      return "🪦";
-    default:
-      return "";
-  }
-};
+// Keep track of mesTexts that have preparing text
+const mesTextsWithPreparingText = new Set();
 
 // Helper function to create or update a global left sidebar
 function updateLeftSidebar(content) {
   // If generation is in progress, store the content for later
-  if (window.sstIsGenerationInProgress) {
+  if (isGenerationInProgress) {
     pendingLeftSidebarContent = content;
     return;
   }
@@ -69,6 +27,7 @@ function updateLeftSidebar(content) {
   if (!globalLeftSidebar) {
     // Find the sheld container
     const sheld = document.getElementById("sheld");
+    console.log(`[SST] [${MODULE_NAME}]`, "Found sheld element:", sheld);
     if (!sheld) {
       console.warn("[SST] Could not find sheld container for sidebar");
       return;
@@ -99,6 +58,7 @@ function updateLeftSidebar(content) {
           visibility: visible !important;
           overflow: visible !important;
       `;
+    console.log(`[SST] [${MODULE_NAME}]`, "Created verticalContainer");
 
     // Create the actual sidebar content container
     const leftSidebar = document.createElement("div");
@@ -119,16 +79,20 @@ function updateLeftSidebar(content) {
           overflow: visible !important;
           position: relative !important;
       `;
+    console.log(`[SST] [${MODULE_NAME}]`, "Applied styles to leftSidebar");
 
     // Add the sidebar to the vertical container
     verticalContainer.appendChild(leftSidebar);
+    console.log(`[SST] [${MODULE_NAME}]`, "Appended leftSidebar to verticalContainer");
 
     // Store reference to global sidebar
     globalLeftSidebar = verticalContainer;
+    console.log(`[SST] [${MODULE_NAME}]`, "Stored reference to globalLeftSidebar");
 
     // Insert the sidebar container directly before the sheld div in the body
     if (sheld.parentNode) {
       sheld.parentNode.insertBefore(verticalContainer, sheld);
+      console.log(`[SST] [${MODULE_NAME}]`, "Successfully inserted left sidebar before sheld");
     } else {
       console.error("[SST] sheld has no parent node!");
       // Fallback: append to body
@@ -137,6 +101,9 @@ function updateLeftSidebar(content) {
 
     // Add event listeners for tabs (only once when creating)
     attachTabEventListeners(leftSidebar);
+
+    // Debug: Log the final container
+    console.log(`[SST] [${MODULE_NAME}]`, "Created left sidebar container:", verticalContainer);
 
     return verticalContainer;
   } else {
@@ -153,7 +120,7 @@ function updateLeftSidebar(content) {
 // Helper function to create or update a global right sidebar
 function updateRightSidebar(content) {
   // If generation is in progress, store the content for later
-  if (window.sstIsGenerationInProgress) {
+  if (isGenerationInProgress) {
     pendingRightSidebarContent = content;
     return;
   }
@@ -192,6 +159,7 @@ function updateRightSidebar(content) {
           visibility: visible !important;
           overflow: visible !important;
       `;
+    console.log(`[SST] [${MODULE_NAME}]`, "Created verticalContainer");
 
     // Create the actual sidebar content container
     const rightSidebar = document.createElement("div");
@@ -215,13 +183,16 @@ function updateRightSidebar(content) {
 
     // Add the sidebar to the vertical container
     verticalContainer.appendChild(rightSidebar);
+    console.log(`[SST] [${MODULE_NAME}]`, "Appended rightSidebar to verticalContainer");
 
     // Store reference to global sidebar
     globalRightSidebar = verticalContainer;
+    console.log(`[SST] [${MODULE_NAME}]`, "Stored reference to globalRightSidebar");
 
     // Insert the sidebar container directly before the sheld div in the body
     if (sheld.parentNode) {
       sheld.parentNode.insertBefore(verticalContainer, sheld);
+      console.log(`[SST] [${MODULE_NAME}]`, "Successfully inserted right sidebar before sheld");
     } else {
       console.error("[SST] sheld has no parent node!");
       // Fallback: append to body
@@ -376,139 +347,586 @@ function attachTabEventListeners(sidebarElement) {
   }, 0);
 }
 
-// Function to render tracker cards with position handling
-const renderTrackerCards = (messageElement, cardsHtml, templatePosition) => {
-  // Compile the wrapper template if not already compiled
-  if (!window.compiledWrapperTemplate) {
-    window.compiledWrapperTemplate = Handlebars.compile(wrapperTemplate);
-  }
+// --- RENDER LOGIC ---
+const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString) => {
+  try {
+    if (!get_settings("isEnabled")) return;
+    const context = getContext();
+    const message = context.chat[mesId];
+    if (!message) {
+      console.log(`[SST] [${MODULE_NAME}]`, `Error: Could not find message with ID ${mesId}. Aborting render.`);
+      return;
+    }
+    const messageElement = document.querySelector(
+      `div[mesid="${mesId}"] .mes_text`
+    );
+    if (!messageElement) return;
 
-  switch (templatePosition) {
-    case "ABOVE":
-      // Insert above the message content (inside the message block)
-      const reasoningElement = messageElement.querySelector(
-        ".mes_reasoning_details"
+    // Log message element dimensions for debugging layout issues
+    const messageRect = messageElement.getBoundingClientRect();
+    console.log(`[SST] [${MODULE_NAME}]`,
+      `Message ID ${mesId} dimensions - Width: ${messageRect.width.toFixed(
+        2
+      )}px, Height: ${messageRect.height.toFixed(2)}px`
+    );
+
+    // Parse the sim data from the original message content
+    const identifier = get_settings("codeBlockIdentifier");
+    const jsonRegex = new RegExp("```" + identifier + "[\\s\\S]*?```");
+    const match = message.mes.match(jsonRegex);
+
+    // Handle message formatting and sim block hiding
+    if (get_settings("hideSimBlocks")) {
+      let displayMessage = message.mes;
+
+      // Hide sim blocks with spans (for pre-processing)
+      const hideRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
+      displayMessage = displayMessage.replace(
+        hideRegex,
+        (match) => `<span style="display: none !important;">${match}</span>`
       );
-      if (reasoningElement) {
-        // Insert above reasoning details if they exist
-        const finalHtml =
-          window.compiledWrapperTemplate({ cardsHtml }) +
-          `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
-        reasoningElement.insertAdjacentHTML("beforebegin", finalHtml);
+
+      // Format and display the message content (without the tracker UI)
+      messageElement.innerHTML = messageFormatting(
+        displayMessage,
+        message.name,
+        message.is_system,
+        message.is_user,
+        mesId
+      );
+    } else {
+      // Just format the message if not hiding blocks
+      messageElement.innerHTML = messageFormatting(
+        message.mes,
+        message.name,
+        message.is_system,
+        message.is_user,
+        mesId
+      );
+    }
+
+    if (match) {
+      // Set flag to indicate we're processing a message with sim data
+      isGenerationInProgress = true;
+
+      // Extract JSON content from the match
+      const jsonContent = match[0]
+        .replace(/```/g, "")
+        .replace(new RegExp(`^${identifier}\s*`), "")
+        .trim();
+
+      // Update lastSimJsonString
+      lastSimJsonString = jsonContent;
+
+      // Remove any preparing text
+      const preparingText = messageElement.parentNode.querySelector(".sst-preparing-text");
+      if (preparingText) {
+        preparingText.remove();
+        // Remove this mesText from the set since it no longer has preparing text
+        mesTextsWithPreparingText.delete(messageElement);
+      }
+
+      let jsonData;
+      try {
+        jsonData = JSON.parse(jsonContent);
+      } catch (jsonError) {
+        console.log(`[SST] [${MODULE_NAME}]`,
+          `Failed to parse JSON in message ID ${mesId}. Error: ${jsonError.message}`
+        );
+        messageElement.insertAdjacentHTML(
+          "beforeend",
+          `<div style="color: red; font-family: monospace;">[SillySimTracker] Error: Invalid JSON in code block.</div>`
+        );
+        return;
+      }
+
+      if (typeof jsonData !== "object" || jsonData === null) {
+        console.log(`[SST] [${MODULE_NAME}]`, `Parsed data in message ID ${mesId} is not a valid object.`);
+        return;
+      }
+
+      // Handle both old and new JSON formats
+      let worldData, characterList;
+
+      // Check if it's the new format (with worldData and characters array)
+      if (jsonData.worldData && Array.isArray(jsonData.characters)) {
+        worldData = jsonData.worldData;
+        characterList = jsonData.characters;
       } else {
-        // If no reasoning details, insert at the beginning of the message
-        const finalHtml =
-          window.compiledWrapperTemplate({ cardsHtml }) +
-          `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
-        messageElement.insertAdjacentHTML("afterbegin", finalHtml);
+        // Handle old format - convert object structure to array format
+        const worldDataFields = ["current_date", "current_time"];
+        worldData = {};
+        characterList = [];
+
+        Object.keys(jsonData).forEach((key) => {
+          if (worldDataFields.includes(key)) {
+            worldData[key] = jsonData[key];
+          } else {
+            // Convert character object to array item
+            characterList.push({
+              name: key,
+              ...jsonData[key],
+            });
+          }
+        });
       }
-      break;
-    case "LEFT":
-      // Update the global left sidebar with the latest data
-      updateLeftSidebar(window.compiledWrapperTemplate({ cardsHtml }));
-      break;
-    case "RIGHT":
-      // Update the global right sidebar with the latest data
-      updateRightSidebar(window.compiledWrapperTemplate({ cardsHtml }));
-      break;
-    case "MACRO":
-      // For MACRO position, replace the placeholder in the message
-      const placeholder = messageElement.querySelector(
-        "#sst-macro-placeholder"
+
+      const currentDate = worldData.current_date || "Unknown Date";
+      const currentTime = worldData.current_time || "Unknown Time";
+
+      if (!characterList.length) return;
+
+      // For tabbed templates, we need to pass all characters to the template
+      const isTabbedTemplate = get_settings("templateFile").includes("tabs");
+
+      let cardsHtml = "";
+      if (isTabbedTemplate) {
+        // Prepare data for all characters
+        const charactersData = characterList
+          .map((character, index) => {
+            const stats = character;
+            const name = character.name;
+            if (!stats) {
+              console.log(`[SST] [${MODULE_NAME}]`,
+                `No stats found for character "${name}" in message ID ${mesId}. Skipping card.`
+              );
+              return null;
+            }
+            const bgColor = stats.bg || get_settings("defaultBgColor");
+            return {
+              characterName: name,
+              currentDate: currentDate,
+              currentTime: currentTime,
+              stats: {
+                ...stats,
+                internal_thought:
+                  stats.internal_thought ||
+                  stats.thought ||
+                  "No thought recorded.",
+                relationshipStatus:
+                  stats.relationshipStatus || "Unknown Status",
+                desireStatus: stats.desireStatus || "Unknown Desire",
+                inactive: stats.inactive || false,
+                inactiveReason: stats.inactiveReason || 0,
+              },
+              bgColor: bgColor,
+              darkerBgColor: darkenColor(bgColor),
+              reactionEmoji: getReactionEmoji(stats.last_react),
+              healthIcon:
+                stats.health === 1 ? "🤕" : stats.health === 2 ? "💀" : null,
+              showThoughtBubble: get_settings("showThoughtBubble"),
+            };
+          })
+          .filter(Boolean); // Remove any null entries
+
+        // For tabbed templates, we pass all characters in one data object
+        const templateData = {
+          characters: charactersData,
+          currentDate: currentDate,
+          currentTime: currentTime,
+        };
+
+        cardsHtml = compiledCardTemplate(templateData);
+      } else {
+        cardsHtml = characterList
+          .map((character) => {
+            const stats = character;
+            const name = character.name;
+            if (!stats) {
+              console.log(`[SST] [${MODULE_NAME}]`,
+                `No stats found for character "${name}" in message ID ${mesId}. Skipping card.`
+              );
+              return "";
+            }
+            const bgColor = stats.bg || get_settings("defaultBgColor");
+            const cardData = {
+              characterName: name,
+              currentDate: currentDate,
+              currentTime: currentTime,
+              stats: {
+                ...stats,
+                internal_thought:
+                  stats.internal_thought ||
+                  stats.thought ||
+                  "No thought recorded.",
+                relationshipStatus:
+                  stats.relationshipStatus || "Unknown Status",
+                desireStatus: stats.desireStatus || "Unknown Desire",
+                inactive: stats.inactive || false,
+                inactiveReason: stats.inactiveReason || 0,
+              },
+              bgColor: bgColor,
+              darkerBgColor: darkenColor(bgColor),
+              reactionEmoji: getReactionEmoji(stats.last_react),
+              healthIcon:
+                stats.health === 1 ? "🤕" : stats.health === 2 ? "💀" : null,
+              showThoughtBubble: get_settings("showThoughtBubble"),
+            };
+            return compiledCardTemplate(cardData);
+          })
+          .join("");
+      }
+
+      // Get the template position from settings
+      const templatePosition = get_settings("templatePosition") || "BOTTOM";
+
+      // Handle different positions
+      switch (templatePosition) {
+        case "ABOVE":
+          // Insert above the message content (inside the message block)
+          const reasoningElement = messageElement.querySelector(
+            ".mes_reasoning_details"
+          );
+          if (reasoningElement) {
+            // Insert above reasoning details if they exist
+            const finalHtml =
+              compiledWrapperTemplate({ cardsHtml }) +
+              `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
+            reasoningElement.insertAdjacentHTML("beforebegin", finalHtml);
+          } else {
+            // If no reasoning details, insert at the beginning of the message
+            const finalHtml =
+              compiledWrapperTemplate({ cardsHtml }) +
+              `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
+            messageElement.insertAdjacentHTML("afterbegin", finalHtml);
+          }
+          break;
+        case "LEFT":
+          // Update the global left sidebar with the latest data
+          updateLeftSidebar(compiledWrapperTemplate({ cardsHtml }));
+          break;
+        case "RIGHT":
+          // Update the global right sidebar with the latest data
+          updateRightSidebar(compiledWrapperTemplate({ cardsHtml }));
+          break;
+        case "MACRO":
+          // For MACRO position, replace the placeholder in the message
+          const placeholder = messageElement.querySelector(
+            "#sst-macro-placeholder"
+          );
+          if (placeholder) {
+            const finalHtml = compiledWrapperTemplate({ cardsHtml });
+            placeholder.insertAdjacentHTML("beforebegin", finalHtml);
+            placeholder.remove();
+          }
+          break;
+        case "BOTTOM":
+        default:
+          // Add a horizontal divider before the cards
+          const finalHtml =
+            `<hr style="margin-top: 15px; margin-bottom: 20px;">` +
+            compiledWrapperTemplate({ cardsHtml });
+          messageElement.insertAdjacentHTML("beforeend", finalHtml);
+          break;
+      }
+    }
+  } catch (error) {
+    // Clear the flag on error
+    isGenerationInProgress = false;
+    console.log(`[SST] [${MODULE_NAME}]`,
+      `A critical error occurred in renderTracker for message ID ${mesId}. Please check the console. Error: ${error.stack}`
+    );
+  }
+};
+
+const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString) => {
+  try {
+    if (!get_settings("isEnabled")) return;
+
+    const context = getContext();
+    const message = context.chat[mesId];
+
+    if (!message) {
+      console.log(`[SST] [${MODULE_NAME}]`, `Error: Could not find message with ID ${mesId}. Aborting render.`);
+      return;
+    }
+
+    const messageElement = document.querySelector(
+      `div[mesid="${mesId}"] .mes_text`
+    );
+    if (!messageElement) return;
+
+    const identifier = get_settings("codeBlockIdentifier");
+    let displayMessage = message.mes;
+
+    // Hide sim blocks if the setting is enabled
+    if (get_settings("hideSimBlocks")) {
+      const hideRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
+      displayMessage = displayMessage.replace(
+        hideRegex,
+        (match) => `<span style="display: none !important;">${match}</span>`
       );
-      if (placeholder) {
-        const finalHtml = window.compiledWrapperTemplate({ cardsHtml });
-        placeholder.insertAdjacentHTML("beforebegin", finalHtml);
-        placeholder.remove();
+    }
+
+    // Format and display the message content (without the tracker UI)
+    messageElement.innerHTML = messageFormatting(
+      displayMessage,
+      message.name,
+      message.is_system,
+      message.is_user,
+      mesId
+    );
+
+    // Parse the sim data from the original message content (not the hidden version)
+    const dataMatch = message.mes.match(
+      new RegExp("```" + identifier + "[\\s\\S]*?```", "m")
+    );
+
+    if (dataMatch && dataMatch[0]) {
+      // Remove the container if it already exists to prevent duplication on re-renders
+      const existingContainer = messageElement.querySelector(
+        `#${CONTAINER_ID}`
+      );
+      if (existingContainer) {
+        existingContainer.remove();
       }
-      break;
-    case "BOTTOM":
-    default:
-      // Add a horizontal divider before the cards
-      const finalHtml =
-        `<hr style="margin-top: 15px; margin-bottom: 20px;">` +
-        window.compiledWrapperTemplate({ cardsHtml });
-      messageElement.insertAdjacentHTML("beforeend", finalHtml);
-      break;
+
+      const jsonContent = dataMatch[0]
+        .replace(/```/g, "")
+        .replace(new RegExp(`^${identifier}\s*`), "")
+        .trim();
+
+      // Update lastSimJsonString
+      lastSimJsonString = jsonContent;
+
+      // Remove any preparing text
+      const preparingText = messageElement.parentNode.querySelector(".sst-preparing-text");
+      if (preparingText) {
+        preparingText.remove();
+        // Remove this mesText from the set since it no longer has preparing text
+        mesTextsWithPreparingText.delete(messageElement);
+      }
+
+      let jsonData;
+
+      try {
+        jsonData = JSON.parse(jsonContent);
+      } catch (jsonError) {
+        console.log(`[SST] [${MODULE_NAME}]`,
+          `Failed to parse JSON in message ID ${mesId}. Error: ${jsonError.message}`
+        );
+        const errorHtml = `<div style="color: red; font-family: monospace;">[SillySimTracker] Error: Invalid JSON in code block.</div>`;
+        messageElement.insertAdjacentHTML("beforeend", errorHtml);
+        return;
+      }
+
+      if (typeof jsonData !== "object" || jsonData === null) {
+        console.log(`[SST] [${MODULE_NAME}]`, `Parsed data in message ID ${mesId} is not a valid object.`);
+        return;
+      }
+      // Handle both old and new JSON formats
+      let worldData, characterList;
+
+      // Check if it's the new format (with worldData and characters array)
+      if (jsonData.worldData && Array.isArray(jsonData.characters)) {
+        worldData = jsonData.worldData;
+        characterList = jsonData.characters;
+      } else {
+        // Handle old format - convert object structure to array format
+        const worldDataFields = ["current_date", "current_time"];
+        worldData = {};
+        characterList = [];
+
+        Object.keys(jsonData).forEach((key) => {
+          if (worldDataFields.includes(key)) {
+            worldData[key] = jsonData[key];
+          } else {
+            // Convert character object to array item
+            characterList.push({
+              name: key,
+              ...jsonData[key],
+            });
+          }
+        });
+      }
+
+      const currentDate = worldData.current_date || "Unknown Date";
+      const currentTime = worldData.current_time || "Unknown Date";
+
+      if (!characterList.length) return;
+
+      // For tabbed templates, we need to pass all characters to the template
+      const isTabbedTemplate = get_settings("templateFile").includes("tabs");
+
+      let cardsHtml = "";
+      if (isTabbedTemplate) {
+        // Prepare data for all characters
+        const charactersData = characterList
+          .map((character, index) => {
+            const stats = character;
+            const name = character.name;
+            if (!stats) {
+              console.log(`[SST] [${MODULE_NAME}]`,
+                `No stats found for character "${name}" in message ID ${mesId}. Skipping card.`
+              );
+              return null;
+            }
+            const bgColor = stats.bg || get_settings("defaultBgColor");
+            return {
+              characterName: name,
+              currentDate: currentDate,
+              currentTime: currentTime,
+              stats: {
+                ...stats,
+                internal_thought:
+                  stats.internal_thought ||
+                  stats.thought ||
+                  "No thought recorded.",
+                relationshipStatus:
+                  stats.relationshipStatus || "Unknown Status",
+                desireStatus: stats.desireStatus || "Unknown Desire",
+                inactive: stats.inactive || false,
+                inactiveReason: stats.inactiveReason || 0,
+              },
+              bgColor: bgColor,
+              darkerBgColor: darkenColor(bgColor),
+              reactionEmoji: getReactionEmoji(stats.last_react),
+              healthIcon:
+                stats.health === 1 ? "🤕" : stats.health === 2 ? "💀" : null,
+              showThoughtBubble: get_settings("showThoughtBubble"),
+            };
+          })
+          .filter(Boolean); // Remove any null entries
+
+        // For tabbed templates, we pass all characters in one data object
+        const templateData = {
+          characters: charactersData,
+          currentDate: currentDate,
+          currentTime: currentTime,
+        };
+
+        cardsHtml = compiledCardTemplate(templateData);
+      } else {
+        cardsHtml = characterList
+          .map((character) => {
+            const stats = character;
+            const name = character.name;
+            if (!stats) {
+              console.log(`[SST] [${MODULE_NAME}]`,
+                `No stats found for character "${name}" in message ID ${mesId}. Skipping card.`
+              );
+              return "";
+            }
+            const bgColor = stats.bg || get_settings("defaultBgColor");
+            const cardData = {
+              characterName: name,
+              currentDate: currentDate,
+              currentTime: currentTime,
+              stats: {
+                ...stats,
+                internal_thought:
+                  stats.internal_thought ||
+                  stats.thought ||
+                  "No thought recorded.",
+                relationshipStatus:
+                  stats.relationshipStatus || "Unknown Status",
+                desireStatus: stats.desireStatus || "Unknown Desire",
+                inactive: stats.inactive || false,
+                inactiveReason: stats.inactiveReason || 0,
+              },
+              bgColor: bgColor,
+              darkerBgColor: darkenColor(bgColor),
+              reactionEmoji: getReactionEmoji(stats.last_react),
+              healthIcon:
+                stats.health === 1 ? "🤕" : stats.health === 2 ? "💀" : null,
+              showThoughtBubble: get_settings("showThoughtBubble"),
+            };
+            return compiledCardTemplate(cardData);
+          })
+          .join("");
+      }
+
+      // Get the template position from settings
+      const templatePosition = get_settings("templatePosition") || "BOTTOM";
+
+      // Handle different positions
+      switch (templatePosition) {
+        case "ABOVE":
+          // Insert above the message content (inside the message block)
+          const reasoningElement = messageElement.querySelector(
+            ".mes_reasoning_details"
+          );
+          if (reasoningElement) {
+            // Insert above reasoning details if they exist
+            const finalHtml =
+              compiledWrapperTemplate({ cardsHtml }) +
+              `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
+            reasoningElement.insertAdjacentHTML("beforebegin", finalHtml);
+          } else {
+            // If no reasoning details, insert at the beginning of the message
+            const finalHtml =
+              compiledWrapperTemplate({ cardsHtml }) +
+              `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
+            messageElement.insertAdjacentHTML("afterbegin", finalHtml);
+          }
+          break;
+        case "LEFT":
+          // Update the global left sidebar with the latest data
+          updateLeftSidebar(compiledWrapperTemplate({ cardsHtml }));
+          break;
+        case "RIGHT":
+          // Update the global right sidebar with the latest data
+          updateRightSidebar(compiledWrapperTemplate({ cardsHtml }));
+          break;
+        case "MACRO":
+          // For MACRO position, replace the placeholder in the message
+          const placeholder = messageElement.querySelector(
+            "#sst-macro-placeholder"
+          );
+          if (placeholder) {
+            const finalHtml = compiledWrapperTemplate({ cardsHtml });
+            placeholder.insertAdjacentHTML("beforebegin", finalHtml);
+            placeholder.remove();
+          }
+          break;
+        case "BOTTOM":
+        default:
+          // Add a horizontal divider before the cards
+          const finalHtml =
+            `<hr style="margin-top: 15px; margin-bottom: 20px;">` +
+            compiledWrapperTemplate({ cardsHtml });
+          messageElement.insertAdjacentHTML("beforeend", finalHtml);
+          break;
+      }
+    }
+  } catch (error) {
+    console.log(`[SST] [${MODULE_NAME}]`,
+      `A critical error occurred in renderTrackerWithoutSim for message ID ${mesId}. Please check the console. Error: ${error.stack}`
+    );
   }
 };
 
-// Function to prepare character data for templating
-const prepareCharacterData = (character, currentDate, currentTime, settings) => {
-  const stats = character;
-  const name = character.name;
-  if (!stats) {
-    console.log(`[SST] No stats found for character "${name}". Skipping card.`);
-    return null;
-  }
-  const bgColor = stats.bg || settings.defaultBgColor;
-  return {
-    characterName: name,
-    currentDate: currentDate,
-    currentTime: currentTime,
-    stats: {
-      ...stats,
-      internal_thought:
-        stats.internal_thought ||
-        stats.thought ||
-        "No thought recorded.",
-      relationshipStatus:
-        stats.relationshipStatus || "Unknown Status",
-      desireStatus: stats.desireStatus || "Unknown Desire",
-      inactive: stats.inactive || false,
-      inactiveReason: stats.inactiveReason || 0,
-    },
-    bgColor: bgColor,
-    darkerBgColor: darkenColor(bgColor),
-    reactionEmoji: getReactionEmoji(stats.last_react),
-    healthIcon:
-      stats.health === 1 ? "🤕" : stats.health === 2 ? "💀" : null,
-    showThoughtBubble: settings.showThoughtBubble,
-  };
+const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) => {
+  console.log(`[SST] [${MODULE_NAME}]`, "Refreshing all tracker cards on screen.");
+
+  // First, remove all existing tracker containers to prevent duplicates
+  document.querySelectorAll(`#${CONTAINER_ID}`).forEach((container) => {
+    container.remove();
+  });
+
+  // Get all message divs currently in the chat DOM
+  const visibleMessages = document.querySelectorAll("div#chat .mes");
+  visibleMessages.forEach((messageElement) => {
+    const mesId = messageElement.getAttribute("mesid");
+    if (mesId) {
+      // Call the existing render function for each visible message
+      renderTrackerWithoutSim(parseInt(mesId, 10));
+    }
+  });
 };
 
-// Function to prepare tabbed character data for templating
-const prepareTabbedCharacterData = (character, currentDate, currentTime, settings) => {
-  const stats = character;
-  const name = character.name;
-  if (!stats) {
-    console.log(`[SST] No stats found for character "${name}". Skipping card.`);
-    return null;
-  }
-  const bgColor = stats.bg || settings.defaultBgColor;
-  return {
-    characterName: name,
-    currentDate: currentDate,
-    currentTime: currentTime,
-    stats: {
-      ...stats,
-      internal_thought:
-        stats.internal_thought ||
-        stats.thought ||
-        "No thought recorded.",
-      relationshipStatus:
-        stats.relationshipStatus || "Unknown Status",
-      desireStatus: stats.desireStatus || "Unknown Desire",
-      inactive: stats.inactive || false,
-      inactiveReason: stats.inactiveReason || 0,
-    },
-    bgColor: bgColor,
-    darkerBgColor: darkenColor(bgColor),
-    reactionEmoji: getReactionEmoji(stats.last_react),
-    healthIcon:
-      stats.health === 1 ? "🤕" : stats.health === 2 ? "💀" : null,
-    showThoughtBubble: settings.showThoughtBubble,
-  };
-};
-
+// Export functions
 export {
-  renderTrackerCards,
   updateLeftSidebar,
   updateRightSidebar,
   removeGlobalSidebars,
-  prepareCharacterData,
-  prepareTabbedCharacterData,
-  getInactiveReasonEmoji,
-  getReactionEmoji,
-  darkenColor
+  attachTabEventListeners,
+  renderTracker,
+  renderTrackerWithoutSim,
+  refreshAllCards,
+  mesTextsWithPreparingText,
+  isGenerationInProgress,
+  pendingLeftSidebarContent,
+  pendingRightSidebarContent,
+  CONTAINER_ID
 };

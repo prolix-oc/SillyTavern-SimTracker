@@ -1,76 +1,10 @@
-import { extension_settings } from "../../../extensions.js";
-import { get_extension_directory } from "./utils.js";
-
+// templating.js - Handlebar replacements and template parsing
 const MODULE_NAME = "silly-sim-tracker";
 
-// Default fields for sim data, used for both initial settings and the {{sim_format}} macro
-const defaultSimFields = [
-  { key: "ap", description: "Affection Points (0-200)" },
-  { key: "dp", description: "Desire Points (0-150)" },
-  { key: "tp", description: "Trust Points (0-150)" },
-  { key: "cp", description: "Contempt Points (0-150)" },
-  {
-    key: "apChange",
-    description:
-      "Change in Affection from last action (positive/negative/zero)",
-  },
-  {
-    key: "dpChange",
-    description: "Change in Desire from last action (positive/negative/zero)",
-  },
-  {
-    key: "tpChange",
-    description: "Change in Trust from last action (positive/negative/zero)",
-  },
-  {
-    key: "cpChange",
-    description: "Change in Contempt from last action (positive/negative/zero)",
-  },
-  {
-    key: "relationshipStatus",
-    description: "Relationship status text (e.g., 'Romantic Interest')",
-  },
-  {
-    key: "desireStatus",
-    description: "Desire status text (e.g., 'A smoldering flame builds.')",
-  },
-  { key: "preg", description: "Boolean for pregnancy status (true/false)" },
-  { key: "days_preg", description: "Days pregnant (if applicable)" },
-  { key: "conception_date", description: "Date of conception (YYYY-MM-DD)" },
-  {
-    key: "health",
-    description: "Health Status (0=Unharmed, 1=Injured, 2=Critical)",
-  },
-  { key: "bg", description: "Hex color for card background (e.g., #6a5acd)" },
-  {
-    key: "last_react",
-    description: "Reaction to User (0=Neutral, 1=Like, 2=Dislike)",
-  },
-  {
-    key: "internal_thought",
-    description: "Character's current internal thoughts/feelings",
-  },
-  {
-    key: "days_since_first_meeting",
-    description: "Total days since first meeting",
-  },
-  {
-    key: "inactive",
-    description: "Boolean for character inactivity (true/false)",
-  },
-  {
-    key: "inactiveReason",
-    description:
-      "Reason for inactivity (0=Not inactive, 1=Asleep, 2=Comatose, 3=Contempt/anger, 4=Incapacitated, 5=Death)",
-  },
-];
-
-const default_settings = {
-  customFields: [...defaultSimFields], // Clone the default fields
-};
-
+// --- TEMPLATES ---
+const wrapperTemplate = `<div id="silly-sim-tracker-container" style="width:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:block !important;visibility:visible !important;">{{{cardsHtml}}}</div>`;
+let compiledWrapperTemplate = Handlebars.compile(wrapperTemplate);
 let compiledCardTemplate = null;
-let compiledWrapperTemplate = null;
 
 // Register Handlebars helpers for template logic
 Handlebars.registerHelper("eq", function (a, b) {
@@ -147,28 +81,12 @@ Handlebars.registerHelper("unless", function (conditional, options) {
   }
 });
 
-const get_settings = (key) => {
-  const settings = extension_settings[MODULE_NAME] || {};
-  return settings[key] ?? default_settings[key];
+const get_extension_directory = () => {
+  const index_path = new URL(import.meta.url).pathname;
+  return index_path.substring(0, index_path.lastIndexOf("/"));
 };
 
-const loadDefaultPromptFromFile = async () => {
-  const promptPath = `${get_extension_directory()}/prompts/default-prompt.md`;
-  try {
-    const response = await $.get(promptPath);
-    console.log(`[SST] [${MODULE_NAME}]`, `Successfully loaded default prompt from ${promptPath}`);
-    return response;
-  } catch (error) {
-    console.log(
-      `[SST] [${MODULE_NAME}]`,
-      `Error loading default prompt from ${promptPath}. The file might be missing. Error: ${error.statusText}`
-    );
-    console.error(error);
-    return null; // Return null on failure
-  }
-};
-
-const populateTemplateDropdown = async () => {
+async function populateTemplateDropdown() {
   console.log(`[SST] [${MODULE_NAME}]`, "Populating template dropdown with parsed friendly names...");
 
   const defaultFiles = [
@@ -207,7 +125,6 @@ const populateTemplateDropdown = async () => {
         templateOptions.push({ filename, friendlyName });
       } catch (error) {
         console.error(
-          `[SST] [${MODULE_NAME}]`,
           `Could not fetch or parse template info for ${filename}:`,
           error
         );
@@ -236,7 +153,7 @@ const populateTemplateDropdown = async () => {
   // Restore the user's selection
   $select.val(currentSelection);
   console.log(`[SST] [${MODULE_NAME}]`, "Template dropdown populated with friendly names.");
-};
+}
 
 function handleCustomTemplateUpload(event) {
   const file = event.target.files[0];
@@ -248,10 +165,12 @@ function handleCustomTemplateUpload(event) {
   reader.onload = async (e) => {
     const content = e.target.result;
     console.log(`[SST] [${MODULE_NAME}]`, `Read custom template ${file.name}, size: ${content.length}`);
-    
-    // This would need to be handled by the main module
-    // For now, we'll just log that we need to set the setting
-    console.log(`[SST] [${MODULE_NAME}]`, "Custom template loaded. Would set settings in main module.");
+    set_settings("customTemplateHtml", content);
+    toastr.success(`Custom template "${file.name}" loaded and applied!`);
+
+    // Immediately reload the template logic and refresh all cards
+    await loadTemplate();
+    refreshAllCards();
   };
   reader.readAsText(file);
 
@@ -259,8 +178,8 @@ function handleCustomTemplateUpload(event) {
 }
 
 // Load template from file
-const loadTemplate = async (settings) => {
-  const customTemplateHtml = settings.customTemplateHtml;
+const loadTemplate = async (get_settings, set_settings) => {
+  const customTemplateHtml = get_settings("customTemplateHtml");
 
   if (customTemplateHtml && customTemplateHtml.trim() !== "") {
     console.log(`[SST] [${MODULE_NAME}]`, "Loading template from custom HTML stored in settings.");
@@ -274,7 +193,7 @@ const loadTemplate = async (settings) => {
       const positionMatch = customTemplateHtml.match(positionRegex);
       const templatePosition = positionMatch
         ? positionMatch[1].trim().toUpperCase()
-        : settings.templatePosition || "BOTTOM"; // Use setting as fallback
+        : get_settings("templatePosition") || "BOTTOM"; // Use setting as fallback
 
       const startIndex = customTemplateHtml.indexOf(cardStartMarker);
       const endIndex = customTemplateHtml.indexOf(cardEndMarker);
@@ -309,22 +228,24 @@ const loadTemplate = async (settings) => {
       }
 
       compiledCardTemplate = Handlebars.compile(cardTemplate);
-      console.log(
-        `[SST] [${MODULE_NAME}]`,
+      // Store the template position in settings for use during rendering
+      set_settings("templatePosition", templatePosition);
+      console.log(`[SST] [${MODULE_NAME}]`,
         `Custom HTML template compiled successfully. Position: ${templatePosition}`
       );
-      return { compiledCardTemplate, templatePosition }; // Return template and position
+      return; // Exit successfully
     } catch (error) {
-      console.log(
-        `[SST] [${MODULE_NAME}]`,
+      console.log(`[SST] [${MODULE_NAME}]`,
         `Error parsing custom HTML template: ${error.message}. Reverting to default file-based template.`
       );
-      // We would show a toastr error in the main module
-      console.log(`[SST] [${MODULE_NAME}]`, "Template Error: The custom HTML template could not be parsed. Check its format.");
+      toastr.error(
+        "The custom HTML template could not be parsed. Check its format.",
+        "Template Error"
+      );
     }
   }
 
-  const templateFile = settings.templateFile;
+  const templateFile = get_settings("templateFile");
   if (templateFile) {
     const defaultPath = `${get_extension_directory()}/tracker-card-templates/${templateFile}`;
     try {
@@ -336,7 +257,7 @@ const loadTemplate = async (settings) => {
       const positionMatch = templateContent.match(positionRegex);
       const templatePosition = positionMatch
         ? positionMatch[1].trim().toUpperCase()
-        : settings.templatePosition || "BOTTOM"; // Use setting as fallback
+        : get_settings("templatePosition") || "BOTTOM"; // Use setting as fallback
 
       // Re-run the same parsing logic for the file content
       const cardStartMarker = "<!-- CARD_TEMPLATE_START -->";
@@ -373,14 +294,14 @@ const loadTemplate = async (settings) => {
         }
       }
       compiledCardTemplate = Handlebars.compile(cardTemplate);
-      console.log(
-        `[SST] [${MODULE_NAME}]`,
+      // Store the template position in settings for use during rendering
+      set_settings("templatePosition", templatePosition);
+      console.log(`[SST] [${MODULE_NAME}]`,
         `Default template '${templateFile}' compiled successfully. Position: ${templatePosition}`
       );
-      return { compiledCardTemplate, templatePosition }; // Return template and position
+      return; // Exit successfully
     } catch (error) {
-      console.log(
-        `[SST] [${MODULE_NAME}]`,
+      console.log(`[SST] [${MODULE_NAME}]`,
         `Could not load or parse default template file '${templateFile}'. Using hardcoded fallback.`
       );
     }
@@ -393,46 +314,16 @@ const loadTemplate = async (settings) => {
         No custom template is loaded and the selected default template could not be found or parsed.
     </div>`;
   compiledCardTemplate = Handlebars.compile(fallbackTemplate);
-  return { compiledCardTemplate, templatePosition: "BOTTOM" }; // Default position for fallback
+  set_settings("templatePosition", "BOTTOM"); // Default position for fallback
 };
 
-const sanitizeFieldKey = (key) => key.replace(/\s+/g, "_"); // Corrected escaping for regex
-
-const generateSimFormat = (settings) => {
-  const fields = settings.customFields || [];
-  console.log(`[SST] [${MODULE_NAME}]`, "Processed {{sim_format}} macro.");
-
-  // Start building the JSON example structure
-  let exampleJson = "{\n"; // Corrected escaping for newline
-  exampleJson += '  "characterName": {\n'; // Corrected escaping for newline
-
-  // Add each custom field as a commented key-value pair
-  fields.forEach((field) => {
-    const sanitizedKey = sanitizeFieldKey(field.key);
-    // Corrected escaping for newline and quotes
-    exampleJson += `    "${sanitizedKey}": [${sanitizedKey.toUpperCase()}_VALUE], // ${
-      field.description
-    }\n`;
-  });
-
-  exampleJson += "  },\n"; // Corrected escaping for newline
-  exampleJson +=
-    '  "characterTwo": { ... }, // Repeat structure for each character\n'; // Corrected escaping for newline
-  exampleJson += '  "current_date": [CURRENT_STORY_DATE] // YYYY-MM-DD\n'; // Corrected escaping for newline
-  exampleJson +=
-    '  "current_time": [CURRENT_STORY_TIME] // 21:34, 10:21, etc (24-hour time)\n'; // Corrected escaping for newline
-  exampleJson += "}"; // Corrected escaping for closing brace
-
-  // Wrap in the code block with the identifier
-  const identifier = settings.codeBlockIdentifier || "sim";
-  return `\`\`\`${identifier}\n${exampleJson}\n\`\`\``; // Corrected escaping for backticks and newlines
-};
-
+// Export functions and variables
 export {
-  loadTemplate,
+  wrapperTemplate,
+  compiledWrapperTemplate,
+  compiledCardTemplate,
+  get_extension_directory,
   populateTemplateDropdown,
   handleCustomTemplateUpload,
-  loadDefaultPromptFromFile,
-  generateSimFormat,
-  defaultSimFields
+  loadTemplate
 };
