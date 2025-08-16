@@ -352,7 +352,7 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 }
 
 #sst-global-sidebar-right .sim-tracker-tab {
-    transform: translateX(120px); /* Start hidden at the edge of the screen */
+    transform: translateX(20px); /* Start hidden at the edge of the screen */
 }
 
 #sst-global-sidebar-right .sim-tracker-tab.active {
