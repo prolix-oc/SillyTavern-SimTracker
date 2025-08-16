@@ -12,6 +12,7 @@
   width: 100%;
   position: relative;
   height: 100%;
+  min-height: 100%;
 }
 
 .sim-tracker-tabs {
@@ -20,8 +21,11 @@
   gap: 12px;
   position: absolute;
   left: -68px; /* 60px tab width + 8px gap */
-  top: 20%;
+  top: 0;
+  bottom: 0;
   z-index: 10;
+  justify-content: center;
+  height: 100%;
 }
 
 .sim-tracker-tab {
@@ -38,6 +42,7 @@
   align-items: center;
   background: linear-gradient(145deg, #2c2c2c, #1a1a1a);
   border: 1px solid rgba(255, 255, 255, 0.05);
+  flex-shrink: 0;
 }
 
 .sim-tracker-tab:hover {
@@ -59,6 +64,7 @@
   align-items: center;
   font-weight: bold;
   font-size: 18px;
+  flex-shrink: 0;
 }
 
 .sim-tracker-card {

@@ -65,7 +65,7 @@ function updateLeftSidebar(content) {
     console.log('[SST] Set innerHTML on leftSidebar. New innerHTML:', leftSidebar.innerHTML);
     leftSidebar.style.cssText = `
         width: auto !important;
-        height: auto !important;
+        height: 100% !important;
         max-width: 300px !important;
         box-sizing: border-box !important;
         margin: 0 !important;
@@ -222,7 +222,7 @@ function updateRightSidebar(content) {
     console.log('[SST] Set innerHTML on rightSidebar. New innerHTML:', rightSidebar.innerHTML);
     rightSidebar.style.cssText = `
         width: auto !important;
-        height: auto !important;
+        height: 100% !important;
         max-width: 300px !important;
         box-sizing: border-box !important;
         margin: 0 !important;
