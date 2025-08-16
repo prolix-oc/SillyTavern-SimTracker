@@ -748,7 +748,7 @@ Handlebars.registerHelper(
 Handlebars.registerHelper("tabZIndex", function (index) {
   // Calculate z-index for tabs (higher for first tabs)
   // This creates a stacking effect where the first tab is on top
-  return 20 - index;
+  return 5 - index;
 });
 
 Handlebars.registerHelper("tabOffset", function (index) {
