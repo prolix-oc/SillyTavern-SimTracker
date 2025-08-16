@@ -22,393 +22,210 @@ const set_settings = (key, value) => {
 // Global sidebar tracker elements
 let globalLeftSidebar = null;
 let globalRightSidebar = null;
+let pendingLeftSidebarContent = null;
+let pendingRightSidebarContent = null;
+let isGenerationInProgress = false;
 
 // Set to track mesText elements that already have preparing text to avoid duplicates
 const mesTextsWithPreparingText = new Set();
 
 // Helper function to create or update a global left sidebar
 function updateLeftSidebar(content) {
-  // Remove existing global sidebar if it exists
-  if (globalLeftSidebar) {
-    log("Removing existing left sidebar");
-    globalLeftSidebar.remove();
-  }
-
-  // Find the sheld container
-  const sheld = document.getElementById("sheld");
-  log("Found sheld element:", sheld);
-  if (!sheld) {
-    console.warn("[SST] Could not find sheld container for sidebar");
+  // If generation is in progress, store the content for later
+  if (isGenerationInProgress) {
+    pendingLeftSidebarContent = content;
     return;
   }
-
-  // Create a container that stretches vertically and position it before sheld
-  const verticalContainer = document.createElement("div");
-  verticalContainer.id = "sst-global-sidebar-left";
-  verticalContainer.className = "vertical-container";
-  verticalContainer.style.cssText = `
-        position: absolute !important;
-        left: 0 !important;
-        top: 0 !important;
-        bottom: 0 !important;
-        width: auto !important;
-        height: 100% !important;
-        z-index: 999 !important;
-        box-sizing: border-box !important;
-        margin: 0 !important;
-        padding: 10px !important;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: center !important;
-        align-items: flex-start !important;
-        visibility: visible !important;
-        overflow: visible !important;
-    `;
-  log("Created verticalContainer");
-
-  // Create the actual sidebar content container
-  const leftSidebar = document.createElement("div");
-  leftSidebar.id = "sst-sidebar-left-content";
-  leftSidebar.innerHTML = content;
-  leftSidebar.style.cssText = `
-        width: auto !important;
-        height: 100% !important;
-        max-width: 300px !important;
-        box-sizing: border-box !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        display: block !important;
-        visibility: visible !important;
-        overflow: visible !important;
-        position: relative !important;
-    `;
-  log("Applied styles to leftSidebar");
-
-  // Debug: Check what we actually have
-  const trackerContainer = leftSidebar.querySelector(
-    "#silly-sim-tracker-container"
-  );
-
-  // Add event listeners for tabs if this is a tabbed template
-  setTimeout(() => {
-    const tabs = leftSidebar.querySelectorAll(".sim-tracker-tab");
-    const cards = leftSidebar.querySelectorAll(".sim-tracker-card");
-
-    if (tabs.length > 0 && cards.length > 0) {
-      // Initially activate the first non-inactive tab and card
-      let firstActiveIndex = 0;
-      // Find the first non-inactive card
-      for (let i = 0; i < cards.length; i++) {
-        if (!cards[i].classList.contains("inactive")) {
-          firstActiveIndex = i;
-          break;
-        }
-      }
-      
-      if (tabs[firstActiveIndex]) tabs[firstActiveIndex].classList.add("active");
-      if (cards[firstActiveIndex]) cards[firstActiveIndex].classList.add("active");
-
-      // Add click listeners to tabs
-      tabs.forEach((tab, index) => {
-        tab.addEventListener("click", () => {
-          // Check if this tab is already active
-          const isActive = tab.classList.contains("active");
-
-          // Remove active class from all tabs
-          tabs.forEach((t) => t.classList.remove("active"));
-
-          // Handle card and tab animations
-          cards.forEach((card, cardIndex) => {
-            const correspondingTab = tabs[cardIndex];
-            if (cardIndex === index && !isActive) {
-              // Slide in the selected card and tab
-              card.classList.remove("sliding-out", "tab-hidden");
-              card.classList.add("sliding-in");
-              if (correspondingTab) {
-                correspondingTab.classList.remove("sliding-out", "tab-hidden");
-                correspondingTab.classList.add("sliding-in");
-              }
-              // Add active class after a short delay to ensure the animation works
-              setTimeout(() => {
-                card.classList.remove("sliding-in");
-                card.classList.add("active");
-                if (correspondingTab) {
-                  correspondingTab.classList.remove("sliding-in");
-                  correspondingTab.classList.add("active");
-                }
-              }, 10);
-            } else {
-              // Slide out all other cards and tabs
-              if (card.classList.contains("active")) {
-                card.classList.remove("active");
-                card.classList.remove("sliding-in");
-                card.classList.add("sliding-out");
-                if (correspondingTab) {
-                  correspondingTab.classList.remove("active");
-                  correspondingTab.classList.remove("sliding-in");
-                  correspondingTab.classList.add("sliding-out");
-                }
-                // Add tab-hidden class after animation completes
-                setTimeout(() => {
-                  card.classList.add("tab-hidden");
-                  card.classList.remove("sliding-out");
-                  if (correspondingTab) {
-                    correspondingTab.classList.add("tab-hidden");
-                    correspondingTab.classList.remove("sliding-out");
-                  }
-                }, 300);
-              }
-            }
-          });
-
-          // If the clicked tab wasn't already active, activate it
-          if (!isActive) {
-            tab.classList.add("active");
-          }
-        });
-      });
+  
+  // If we don't have a global sidebar yet, create it
+  if (!globalLeftSidebar) {
+    // Find the sheld container
+    const sheld = document.getElementById("sheld");
+    log("Found sheld element:", sheld);
+    if (!sheld) {
+      console.warn("[SST] Could not find sheld container for sidebar");
+      return;
     }
 
-    const container = leftSidebar.querySelector("#silly-sim-tracker-container");
-    if (container) {
-      container.style.cssText += `
-                width: 100% !important;
-                max-width: 100% !important;
-                box-sizing: border-box !important;
-                display: block !important;
-                visibility: visible !important;
-                height: 100%;
-            `;
+    // Create a container that stretches vertically and position it before sheld
+    const verticalContainer = document.createElement("div");
+    verticalContainer.id = "sst-global-sidebar-left";
+    verticalContainer.className = "vertical-container";
+    verticalContainer.style.cssText = `
+          position: absolute !important;
+          left: 0 !important;
+          top: 0 !important;
+          bottom: 0 !important;
+          width: auto !important;
+          height: 100% !important;
+          z-index: 999 !important;
+          box-sizing: border-box !important;
+          margin: 0 !important;
+          padding: 10px !important;
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+          display: flex !important;
+          flex-direction: column !important;
+          justify-content: center !important;
+          align-items: flex-start !important;
+          visibility: visible !important;
+          overflow: visible !important;
+      `;
+    log("Created verticalContainer");
+
+    // Create the actual sidebar content container
+    const leftSidebar = document.createElement("div");
+    leftSidebar.id = "sst-sidebar-left-content";
+    leftSidebar.innerHTML = content;
+    leftSidebar.style.cssText = `
+          width: auto !important;
+          height: 100% !important;
+          max-width: 300px !important;
+          box-sizing: border-box !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+          display: block !important;
+          visibility: visible !important;
+          overflow: visible !important;
+          position: relative !important;
+      `;
+    log("Applied styles to leftSidebar");
+
+    // Add the sidebar to the vertical container
+    verticalContainer.appendChild(leftSidebar);
+    log("Appended leftSidebar to verticalContainer");
+
+    // Store reference to global sidebar
+    globalLeftSidebar = verticalContainer;
+    log("Stored reference to globalLeftSidebar");
+
+    // Insert the sidebar container directly before the sheld div in the body
+    if (sheld.parentNode) {
+      sheld.parentNode.insertBefore(verticalContainer, sheld);
+      log("Successfully inserted left sidebar before sheld");
+    } else {
+      console.error("[SST] sheld has no parent node!");
+      // Fallback: append to body
+      document.body.appendChild(verticalContainer);
     }
 
-    // Log dimensions for debugging
-    log("Left sidebar dimensions:", {
-      offsetWidth: leftSidebar.offsetWidth,
-      offsetHeight: leftSidebar.offsetHeight,
-      clientWidth: leftSidebar.clientWidth,
-      clientHeight: leftSidebar.clientHeight,
-    });
+    // Add event listeners for tabs
+    attachTabEventListeners(leftSidebar);
+    
+    // Debug: Log the final container
+    log("Created left sidebar container:", verticalContainer);
 
-    // Force reflow to ensure proper rendering
-    verticalContainer.offsetHeight;
-  }, 0);
-
-  // Add the sidebar to the vertical container
-  verticalContainer.appendChild(leftSidebar);
-  log("Appended leftSidebar to verticalContainer");
-
-  // Store reference to global sidebar
-  globalLeftSidebar = verticalContainer;
-  log("Stored reference to globalLeftSidebar");
-
-  // Insert the sidebar container directly before the sheld div in the body
-  if (sheld.parentNode) {
-    sheld.parentNode.insertBefore(verticalContainer, sheld);
-    log("Successfully inserted left sidebar before sheld");
+    return verticalContainer;
   } else {
-    console.error("[SST] sheld has no parent node!");
-    // Fallback: append to body
-    document.body.appendChild(verticalContainer);
+    // Update existing sidebar content
+    const leftSidebar = globalLeftSidebar.querySelector("#sst-sidebar-left-content");
+    if (leftSidebar) {
+      leftSidebar.innerHTML = content;
+      // Re-attach event listeners for tabs
+      attachTabEventListeners(leftSidebar);
+    }
   }
-
-  // Debug: Log the final container
-  log("Created left sidebar container:", verticalContainer);
-
-  return verticalContainer;
 }
 
 // Helper function to create or update a global right sidebar
 function updateRightSidebar(content) {
-
-  // Remove existing global sidebar if it exists
-  if (globalRightSidebar) {
-    log("Removing existing right sidebar");
-    globalRightSidebar.remove();
-  }
-
-  // Find the sheld container
-  const sheld = document.getElementById("sheld");
-  if (!sheld) {
-    console.warn("[SST] Could not find sheld container for sidebar");
+  // If generation is in progress, store the content for later
+  if (isGenerationInProgress) {
+    pendingRightSidebarContent = content;
     return;
   }
-
-  // Create a container that stretches vertically and position it before sheld
-  const verticalContainer = document.createElement("div");
-  verticalContainer.id = "sst-global-sidebar-right";
-  verticalContainer.className = "vertical-container";
-  verticalContainer.style.cssText = `
-        position: absolute !important;
-        right: 0 !important;
-        top: 0 !important;
-        bottom: 0 !important;
-        width: auto !important;
-        height: 100% !important;
-        z-index: 999 !important;
-        box-sizing: border-box !important;
-        margin: 0 !important;
-        padding: 10px !important;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: center !important;
-        align-items: flex-end !important;
-        visibility: visible !important;
-        overflow: visible !important;
-    `;
-  log("Created verticalContainer");
-
-  // Create the actual sidebar content container
-  const rightSidebar = document.createElement("div");
-  rightSidebar.id = "sst-sidebar-right-content";
-  rightSidebar.innerHTML = content;
-  rightSidebar.style.cssText = `
-        width: auto !important;
-        height: 100% !important;
-        max-width: 300px !important;
-        box-sizing: border-box !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        display: block !important;
-        visibility: visible !important;
-        overflow: visible !important;
-        position: relative !important;
-    `;
-
-  // Debug: Check what we actually have
-  const trackerContainer = rightSidebar.querySelector(
-    "#silly-sim-tracker-container"
-  );
-
-  // Add event listeners for tabs if this is a tabbed template
-  setTimeout(() => {
-    const tabs = rightSidebar.querySelectorAll(".sim-tracker-tab");
-    const cards = rightSidebar.querySelectorAll(".sim-tracker-card");
-
-    if (tabs.length > 0 && cards.length > 0) {
-      // Initially activate the first non-inactive tab and card
-      let firstActiveIndex = 0;
-      // Find the first non-inactive card
-      for (let i = 0; i < cards.length; i++) {
-        if (!cards[i].classList.contains("inactive")) {
-          firstActiveIndex = i;
-          break;
-        }
-      }
-      
-      if (tabs[firstActiveIndex]) tabs[firstActiveIndex].classList.add("active");
-      if (cards[firstActiveIndex]) cards[firstActiveIndex].classList.add("active");
-
-      // Add click listeners to tabs
-      tabs.forEach((tab, index) => {
-        tab.addEventListener("click", () => {
-          // Check if this tab is already active
-          const isActive = tab.classList.contains("active");
-
-          // Remove active class from all tabs
-          tabs.forEach((t) => t.classList.remove("active"));
-
-          // Handle card and tab animations
-          cards.forEach((card, cardIndex) => {
-            const correspondingTab = tabs[cardIndex];
-            if (cardIndex === index && !isActive) {
-              // Slide in the selected card and tab
-              card.classList.remove("sliding-out", "tab-hidden");
-              card.classList.add("sliding-in");
-              if (correspondingTab) {
-                correspondingTab.classList.remove("sliding-out", "tab-hidden");
-                correspondingTab.classList.add("sliding-in");
-              }
-              // Add active class after a short delay to ensure the animation works
-              setTimeout(() => {
-                card.classList.remove("sliding-in");
-                card.classList.add("active");
-                if (correspondingTab) {
-                  correspondingTab.classList.remove("sliding-in");
-                  correspondingTab.classList.add("active");
-                }
-              }, 10);
-            } else {
-              // Slide out all other cards and tabs
-              if (card.classList.contains("active")) {
-                card.classList.remove("active");
-                card.classList.remove("sliding-in");
-                card.classList.add("sliding-out");
-                if (correspondingTab) {
-                  correspondingTab.classList.remove("active");
-                  correspondingTab.classList.remove("sliding-in");
-                  correspondingTab.classList.add("sliding-out");
-                }
-                // Add tab-hidden class after animation completes
-                setTimeout(() => {
-                  card.classList.add("tab-hidden");
-                  card.classList.remove("sliding-out");
-                  if (correspondingTab) {
-                    correspondingTab.classList.add("tab-hidden");
-                    correspondingTab.classList.remove("sliding-out");
-                  }
-                }, 300);
-              }
-            }
-          });
-
-          // If the clicked tab wasn't already active, activate it
-          if (!isActive) {
-            tab.classList.add("active");
-          }
-        });
-      });
+  
+  // If we don't have a global sidebar yet, create it
+  if (!globalRightSidebar) {
+    // Find the sheld container
+    const sheld = document.getElementById("sheld");
+    if (!sheld) {
+      console.warn("[SST] Could not find sheld container for sidebar");
+      return;
     }
 
-    const container = rightSidebar.querySelector(
-      "#silly-sim-tracker-container"
-    );
-    if (container) {
-      container.style.cssText += `
-                width: 100% !important;
-                max-width: 100% !important;
-                box-sizing: border-box !important;
-                display: block !important;
-                visibility: visible !important;
-                height: 100%;
-            `;
-      log("Applied additional styles to container");
+    // Create a container that stretches vertically and position it before sheld
+    const verticalContainer = document.createElement("div");
+    verticalContainer.id = "sst-global-sidebar-right";
+    verticalContainer.className = "vertical-container";
+    verticalContainer.style.cssText = `
+          position: absolute !important;
+          right: 0 !important;
+          top: 0 !important;
+          bottom: 0 !important;
+          width: auto !important;
+          height: 100% !important;
+          z-index: 999 !important;
+          box-sizing: border-box !important;
+          margin: 0 !important;
+          padding: 10px !important;
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+          display: flex !important;
+          flex-direction: column !important;
+          justify-content: center !important;
+          align-items: flex-end !important;
+          visibility: visible !important;
+          overflow: visible !important;
+      `;
+    log("Created verticalContainer");
+
+    // Create the actual sidebar content container
+    const rightSidebar = document.createElement("div");
+    rightSidebar.id = "sst-sidebar-right-content";
+    rightSidebar.innerHTML = content;
+    rightSidebar.style.cssText = `
+          width: auto !important;
+          height: 100% !important;
+          max-width: 300px !important;
+          box-sizing: border-box !important;
+          margin: 0 !important;
+          padding: 0 !important;
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+          display: block !important;
+          visibility: visible !important;
+          overflow: visible !important;
+          position: relative !important;
+      `;
+
+    // Add the sidebar to the vertical container
+    verticalContainer.appendChild(rightSidebar);
+    log("Appended rightSidebar to verticalContainer");
+
+    // Store reference to global sidebar
+    globalRightSidebar = verticalContainer;
+    log("Stored reference to globalRightSidebar");
+
+    // Insert the sidebar container directly before the sheld div in the body
+    if (sheld.parentNode) {
+      sheld.parentNode.insertBefore(verticalContainer, sheld);
+      log("Successfully inserted right sidebar before sheld");
+    } else {
+      console.error("[SST] sheld has no parent node!");
+      // Fallback: append to body
+      document.body.appendChild(verticalContainer);
     }
+    
+    // Add event listeners for tabs
+    attachTabEventListeners(rightSidebar);
 
-    // Force reflow to ensure proper rendering
-    verticalContainer.offsetHeight;
-  }, 0);
-
-  // Add the sidebar to the vertical container
-  verticalContainer.appendChild(rightSidebar);
-  log("Appended rightSidebar to verticalContainer");
-
-  // Store reference to global sidebar
-  globalRightSidebar = verticalContainer;
-  log("Stored reference to globalRightSidebar");
-
-  // Insert the sidebar container directly before the sheld div in the body
-  if (sheld.parentNode) {
-    sheld.parentNode.insertBefore(verticalContainer, sheld);
-    log("Successfully inserted right sidebar before sheld");
+    return verticalContainer;
   } else {
-    console.error("[SST] sheld has no parent node!");
-    // Fallback: append to body
-    document.body.appendChild(verticalContainer);
+    // Update existing sidebar content
+    const rightSidebar = globalRightSidebar.querySelector("#sst-sidebar-right-content");
+    if (rightSidebar) {
+      rightSidebar.innerHTML = content;
+      // Re-attach event listeners for tabs
+      attachTabEventListeners(rightSidebar);
+    }
   }
-
-  return verticalContainer;
 }
 
 // Helper function to remove global sidebars
@@ -421,6 +238,105 @@ function removeGlobalSidebars() {
     globalRightSidebar.remove();
     globalRightSidebar = null;
   }
+}
+
+// Helper function to attach tab event listeners
+function attachTabEventListeners(sidebarElement) {
+  // Use setTimeout to ensure DOM is ready
+  setTimeout(() => {
+    const tabs = sidebarElement.querySelectorAll(".sim-tracker-tab");
+    const cards = sidebarElement.querySelectorAll(".sim-tracker-card");
+
+    if (tabs.length > 0 && cards.length > 0) {
+      // Initially activate the first non-inactive tab and card
+      let firstActiveIndex = 0;
+      // Find the first non-inactive card
+      for (let i = 0; i < cards.length; i++) {
+        if (!cards[i].classList.contains("inactive")) {
+          firstActiveIndex = i;
+          break;
+        }
+      }
+      
+      if (tabs[firstActiveIndex]) tabs[firstActiveIndex].classList.add("active");
+      if (cards[firstActiveIndex]) cards[firstActiveIndex].classList.add("active");
+
+      // Add click listeners to tabs
+      tabs.forEach((tab, index) => {
+        tab.addEventListener("click", () => {
+          // Check if this tab is already active
+          const isActive = tab.classList.contains("active");
+
+          // Remove active class from all tabs
+          tabs.forEach((t) => t.classList.remove("active"));
+
+          // Handle card and tab animations
+          cards.forEach((card, cardIndex) => {
+            const correspondingTab = tabs[cardIndex];
+            if (cardIndex === index && !isActive) {
+              // Slide in the selected card and tab
+              card.classList.remove("sliding-out", "tab-hidden");
+              card.classList.add("sliding-in");
+              if (correspondingTab) {
+                correspondingTab.classList.remove("sliding-out", "tab-hidden");
+                correspondingTab.classList.add("sliding-in");
+              }
+              // Add active class after a short delay to ensure the animation works
+              setTimeout(() => {
+                card.classList.remove("sliding-in");
+                card.classList.add("active");
+                if (correspondingTab) {
+                  correspondingTab.classList.remove("sliding-in");
+                  correspondingTab.classList.add("active");
+                }
+              }, 10);
+            } else {
+              // Slide out all other cards and tabs
+              if (card.classList.contains("active")) {
+                card.classList.remove("active");
+                card.classList.remove("sliding-in");
+                card.classList.add("sliding-out");
+                if (correspondingTab) {
+                  correspondingTab.classList.remove("active");
+                  correspondingTab.classList.remove("sliding-in");
+                  correspondingTab.classList.add("sliding-out");
+                }
+                // Add tab-hidden class after animation completes
+                setTimeout(() => {
+                  card.classList.add("tab-hidden");
+                  card.classList.remove("sliding-out");
+                  if (correspondingTab) {
+                    correspondingTab.classList.add("tab-hidden");
+                    correspondingTab.classList.remove("sliding-out");
+                  }
+                }, 300);
+              }
+            }
+          });
+
+          // If the clicked tab wasn't already active, activate it
+          if (!isActive) {
+            tab.classList.add("active");
+          }
+        });
+      });
+    }
+
+    const container = sidebarElement.querySelector("#silly-sim-tracker-container");
+    if (container) {
+      container.style.cssText += `
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+                display: block !important;
+                visibility: visible !important;
+                height: 100%;
+            `;
+    }
+
+    // Force reflow to ensure proper rendering
+    sidebarElement.offsetHeight;
+  }, 0);
 }
 
 // Default fields for sim data, used for both initial settings and the {{sim_format}} macro
@@ -1677,9 +1593,6 @@ const refreshAllCards = () => {
     container.remove();
   });
 
-  // Remove global sidebars
-  removeGlobalSidebars();
-
   // Get all message divs currently in the chat DOM
   const visibleMessages = document.querySelectorAll("div#chat .mes");
   visibleMessages.forEach((messageElement) => {
@@ -1963,6 +1876,9 @@ globalThis.simTrackerGenInterceptor = async function (
   type
 ) {
   log(`simTrackerGenInterceptor called with type: ${type}`);
+  
+  // Set generation in progress flag
+  isGenerationInProgress = true;
   
   // Handle regenerate and swipe conditions to reset last_sim_stats macro
   if (type === "regenerate" || type === "swipe") {
@@ -2258,6 +2174,25 @@ ${exampleJson}
       );
       updateLastSimStatsOnRegenerateOrSwipe(mesId);
     });
+    
+    // Listen for generation ended event to update sidebars
+    eventSource.on(event_types.GENERATION_ENDED, () => {
+      log("Generation ended, updating sidebars if needed");
+      isGenerationInProgress = false;
+      
+      // Update left sidebar if there's pending content
+      if (pendingLeftSidebarContent) {
+        updateLeftSidebar(pendingLeftSidebarContent);
+        pendingLeftSidebarContent = null;
+      }
+      
+      // Update right sidebar if there's pending content
+      if (pendingRightSidebarContent) {
+        updateRightSidebar(pendingRightSidebarContent);
+        pendingRightSidebarContent = null;
+      }
+    });
+    
     refreshAllCards();
     log(`${MODULE_NAME} has been successfully loaded.`);
   } catch (error) {
