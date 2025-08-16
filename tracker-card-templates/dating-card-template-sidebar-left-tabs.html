@@ -12,7 +12,6 @@
   width: 100%;
   position: relative;
   height: 100%;
-  min-height: 100%;
 }
 
 .sim-tracker-tabs {
@@ -21,11 +20,8 @@
   gap: 12px;
   position: absolute;
   right: -68px; /* 60px tab width + 8px gap */
-  top: 0;
-  bottom: 0;
+  top: 20%;
   z-index: 10;
-  justify-content: center;
-  height: 100%;
 }
 
 .sim-tracker-tab {
@@ -42,7 +38,6 @@
   align-items: center;
   background: linear-gradient(145deg, #2c2c2c, #1a1a1a);
   border: 1px solid rgba(255, 255, 255, 0.05);
-  flex-shrink: 0;
 }
 
 .sim-tracker-tab:hover {
@@ -64,7 +59,6 @@
   align-items: center;
   font-weight: bold;
   font-size: 18px;
-  flex-shrink: 0;
 }
 
 .sim-tracker-card {
@@ -75,7 +69,6 @@
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
   position: absolute;
   backdrop-filter: blur(10px);
-  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   right: 0;
   top: 50%;
   transform: translateY(-50%) translateX(100%);
@@ -86,9 +79,7 @@
 }
 
 .sim-tracker-card.active {
-  transform: translateY(-50%) translateX(0);
-  opacity: 1;
-  visibility: visible;
+  /* Active state will be handled by JavaScript */
 }
 
 .sim-tracker-card.inactive {
