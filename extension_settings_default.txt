@@ -1,0 +1,48 @@
+// Get the SillyTavern context, which includes extensionSettings and saveSettingsDebounced
+const { extensionSettings, saveSettingsDebounced } = SillyTavern.getContext();
+
+// Define a unique identifier for your extension
+const MY_EXTENSION_ID = 'my_cool_extension';
+
+// Define default settings for your extension
+const defaultMyExtensionSettings = Object.freeze({
+    enabled: true,
+    customValue: 'Hello, World!',
+    someNumber: 10,
+});
+
+/**
+ * Function to get or initialize the settings for your extension.
+ * This ensures that your extension always has a valid set of settings,
+ * even if they haven't been saved before or if new settings are added in updates.
+ */
+function getMyExtensionSettings() {
+    // If settings for our extension don't exist yet, initialize them
+    if (!extensionSettings[MY_EXTENSION_ID]) {
+        extensionSettings[MY_EXTENSION_ID] = structuredClone(defaultMyExtensionSettings);
+    }
+
+    // Ensure all default keys exist (useful after updates)
+    for (const key of Object.keys(defaultMyExtensionSettings)) {
+        if (!Object.hasOwn(extensionSettings[MY_EXTENSION_ID], key)) {
+            extensionSettings[MY_EXTENSION_ID][key] = defaultMyExtensionSettings[key];
+        }
+    }
+
+    return extensionSettings[MY_EXTENSION_ID];
+}
+
+// Get the settings for your extension
+const mySettings = getMyExtensionSettings();
+
+// Example of modifying a setting
+mySettings.customValue = 'New value from my extension';
+mySettings.someNumber = 25;
+
+// Save the settings changes to the server (debounced for performance)
+saveSettingsDebounced();
+
+// You can also access settings directly after initialization:
+if (mySettings.enabled) {
+    console.log(`My cool extension is enabled! Custom value: ${mySettings.customValue}`);
+}

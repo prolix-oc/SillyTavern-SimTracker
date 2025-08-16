@@ -72,7 +72,6 @@ const default_settings = defaultSettings;
 
 // Template variables
 let compiledCardTemplate = null;
-let compiledWrapperTemplate = null;
 
 // --- RENDER LOGIC ---
 const renderTracker = (mesId) => {
@@ -306,58 +305,13 @@ const renderTracker = (mesId) => {
       // Clear the flag since we're done processing
       isGeneratingCodeBlocks = false;
 
-      // Get the template position from settings
-      const templatePosition = get_settings("templatePosition") || "BOTTOM";
+      // Get the template position from settings or from template metadata
+      const templatePosition = result && result.templatePosition ? 
+        result.templatePosition : 
+        (get_settings("templatePosition") || "BOTTOM");
 
-      // Handle different positions
-      switch (templatePosition) {
-        case "ABOVE":
-          // Insert above the message content (inside the message block)
-          const reasoningElement = messageElement.querySelector(
-            ".mes_reasoning_details"
-          );
-          if (reasoningElement) {
-            // Insert above reasoning details if they exist
-            const finalHtml =
-              compiledWrapperTemplate({ cardsHtml }) +
-              `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
-            reasoningElement.insertAdjacentHTML("beforebegin", finalHtml);
-          } else {
-            // If no reasoning details, insert at the beginning of the message
-            const finalHtml =
-              compiledWrapperTemplate({ cardsHtml }) +
-              `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
-            messageElement.insertAdjacentHTML("afterbegin", finalHtml);
-          }
-          break;
-        case "LEFT":
-          // Update the global left sidebar with the latest data
-          updateLeftSidebar(compiledWrapperTemplate({ cardsHtml }));
-          break;
-        case "RIGHT":
-          // Update the global right sidebar with the latest data
-          updateRightSidebar(compiledWrapperTemplate({ cardsHtml }));
-          break;
-        case "MACRO":
-          // For MACRO position, replace the placeholder in the message
-          const placeholder = messageElement.querySelector(
-            "#sst-macro-placeholder"
-          );
-          if (placeholder) {
-            const finalHtml = compiledWrapperTemplate({ cardsHtml });
-            placeholder.insertAdjacentHTML("beforebegin", finalHtml);
-            placeholder.remove();
-          }
-          break;
-        case "BOTTOM":
-        default:
-          // Add a horizontal divider before the cards
-          const finalHtml =
-            `<hr style="margin-top: 15px; margin-bottom: 20px;">` +
-            compiledWrapperTemplate({ cardsHtml });
-          messageElement.insertAdjacentHTML("beforeend", finalHtml);
-          break;
-      }
+      // Use the renderer to display the cards
+      renderTrackerCards(messageElement, cardsHtml, templatePosition);
     }
   } catch (error) {
     // Clear the flag on error
@@ -584,58 +538,13 @@ const renderTrackerWithoutSim = (mesId) => {
         mesTextsWithPreparingText.delete(messageElement);
       }
 
-      // Get the template position from settings
-      const templatePosition = get_settings("templatePosition") || "BOTTOM";
+      // Get the template position from settings or from template metadata
+      const templatePosition = result && result.templatePosition ? 
+        result.templatePosition : 
+        (get_settings("templatePosition") || "BOTTOM");
 
-      // Handle different positions
-      switch (templatePosition) {
-        case "ABOVE":
-          // Insert above the message content (inside the message block)
-          const reasoningElement = messageElement.querySelector(
-            ".mes_reasoning_details"
-          );
-          if (reasoningElement) {
-            // Insert above reasoning details if they exist
-            const finalHtml =
-              compiledWrapperTemplate({ cardsHtml }) +
-              `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
-            reasoningElement.insertAdjacentHTML("beforebegin", finalHtml);
-          } else {
-            // If no reasoning details, insert at the beginning of the message
-            const finalHtml =
-              compiledWrapperTemplate({ cardsHtml }) +
-              `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
-            messageElement.insertAdjacentHTML("afterbegin", finalHtml);
-          }
-          break;
-        case "LEFT":
-          // Update the global left sidebar with the latest data
-          updateLeftSidebar(compiledWrapperTemplate({ cardsHtml }));
-          break;
-        case "RIGHT":
-          // Update the global right sidebar with the latest data
-          updateRightSidebar(compiledWrapperTemplate({ cardsHtml }));
-          break;
-        case "MACRO":
-          // For MACRO position, replace the placeholder in the message
-          const placeholder = messageElement.querySelector(
-            "#sst-macro-placeholder"
-          );
-          if (placeholder) {
-            const finalHtml = compiledWrapperTemplate({ cardsHtml });
-            placeholder.insertAdjacentHTML("beforebegin", finalHtml);
-            placeholder.remove();
-          }
-          break;
-        case "BOTTOM":
-        default:
-          // Add a horizontal divider before the cards
-          const finalHtml =
-            `<hr style="margin-top: 15px; margin-bottom: 20px;">` +
-            compiledWrapperTemplate({ cardsHtml });
-          messageElement.insertAdjacentHTML("beforeend", finalHtml);
-          break;
-      }
+      // Use the renderer to display the cards
+      renderTrackerCards(messageElement, cardsHtml, templatePosition);
     }
   } catch (error) {
     // Clear the flag on error
@@ -705,8 +614,8 @@ globalThis.simTrackerGenInterceptor = async function (
 jQuery(async () => {
   try {
     log(`Initializing extension: ${MODULE_NAME}`);
-    await initialize_settings();
-    await load_settings_html_manually();
+    await initialize_settings(loadDefaultPromptFromFile);
+    await load_settings_html_manually(get_extension_directory);
     await populateTemplateDropdownSettings();
     initialize_settings_listeners(loadTemplate, refreshAllCards);
     log("Settings panel listeners initialized.");

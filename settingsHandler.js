@@ -1,9 +1,8 @@
-const { extensionSettings, saveSettingsDebounced } = SillyTavern.getContext();
 import { loadTemplate, populateTemplateDropdown, handleCustomTemplateUpload } from "./templater.js";
 
 const MODULE_NAME = "silly-sim-tracker";
 
-const default_settings = {
+const default_settings = Object.freeze({
   isEnabled: true,
   codeBlockIdentifier: "sim",
   defaultBgColor: "#6a5acd",
@@ -14,20 +13,42 @@ const default_settings = {
     "Default prompt could not be loaded. Please check file path.",
   hideSimBlocks: true, // New setting to hide sim blocks in message text
   templatePosition: "BOTTOM", // New setting for template position
-};
+});
+
+// Get SillyTavern context for extension settings
+const { extensionSettings, saveSettingsDebounced } = SillyTavern.getContext();
 
 let settings_ui_map = {};
 
+/**
+ * Function to get or initialize the settings for your extension.
+ * This ensures that your extension always has a valid set of settings,
+ * even if they haven't been saved before or if new settings are added in updates.
+ */
+function getSSTExtensionSettings() {
+  // If settings for our extension don't exist yet, initialize them
+  if (!extensionSettings[MODULE_NAME]) {
+    extensionSettings[MODULE_NAME] = structuredClone(default_settings);
+  }
+
+  // Ensure all default keys exist (useful after updates)
+  for (const key of Object.keys(default_settings)) {
+    if (!Object.hasOwn(extensionSettings[MODULE_NAME], key)) {
+      extensionSettings[MODULE_NAME][key] = default_settings[key];
+    }
+  }
+
+  return extensionSettings[MODULE_NAME];
+}
+
 const get_settings = (key) => {
-  const settings = extensionSettings[MODULE_NAME] || {};
-  return settings[key] ?? default_settings[key];
+  const settings = getSSTExtensionSettings();
+  return settings[key];
 };
 
 const set_settings = (key, value) => {
-  if (!extensionSettings[MODULE_NAME]) {
-    extensionSettings[MODULE_NAME] = {};
-  }
-  extensionSettings[MODULE_NAME][key] = value;
+  const settings = getSSTExtensionSettings();
+  settings[key] = value;
   saveSettingsDebounced();
 };
 
@@ -285,12 +306,8 @@ const initialize_settings = async (loadDefaultPromptFromFile) => {
     default_settings.datingSimPrompt = loadedPrompt;
   }
 
-  // Now, merge the defaults with any user-saved settings.
-  extensionSettings[MODULE_NAME] = Object.assign(
-    {},
-    default_settings,
-    extensionSettings[MODULE_NAME]
-  );
+  // Initialize settings using our helper function
+  getSSTExtensionSettings();
 };
 
 const load_settings_html_manually = async (get_extension_directory) => {
