@@ -3,240 +3,444 @@
 <!-- POSITION: RIGHT -->
 
 <!-- CARD_TEMPLATE_START -->
- <style>
-    .container {
-      max-width: 800px;
-      margin: 0 auto;
-      padding: 20px;
-    }
-    
-    .message {
-      background: rgba(30, 30, 40, 0.7);
-      border-radius: 15px;
-      padding: 25px;
-      margin-bottom: 30px;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(10px);
-    }
-    
-    .message h1 {
-      margin-top: 0;
-      font-weight: 600;
-      color: #e0e0ff;
-    }
-    
-    .message p {
-      line-height: 1.6;
-      color: #cccccc;
-    }
-    
-    /* Sidebar styling for demo purposes */
-    .sidebar-demo {
-      position: fixed;
-      right: 20px;
-      top: 50%;
-      transform: translateY(-50%);
-      width: 320px;
-      max-height: 90vh;
-      overflow-y: auto;
-      z-index: 1000;
-      padding: 10px;
-      background: rgba(30, 30, 30, 0.7);
-      border-radius: 20px;
-      backdrop-filter: blur(15px);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
-    }
-    
-    /* The actual template styling (copied from the template file) */
-    .sim-tracker-container {
-      display: flex;
-      flex-direction: column;
-      gap: 20px;
-      width: 100%;
-    }
-    
-    .sim-tracker-card {
-      background: linear-gradient(145deg, #2c2c2c, #1a1a1a);
-      border-radius: 18px;
-      padding: 20px;
-      width: 100%;
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-      position: relative;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      backdrop-filter: blur(10px);
-      transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    }
-    
-    .character-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 18px;
-    }
-    
-    .character-name {
-      font-size: 1.3em;
-      font-weight: 600;
-      color: #ffffff;
-    }
-    
-    .status-indicator {
-      font-size: 1.4em;
-    }
-    
-    .stats-container {
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-    
-    .stat-item {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-    
-    .stat-header {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.9em;
-      color: rgba(255, 255, 255, 0.7);
-    }
-    
-    .stat-bar-bg {
-      height: 8px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 4px;
-      overflow: hidden;
-    }
-    
-    .stat-bar-fill {
-      height: 100%;
-      border-radius: 4px;
-    }
-    
-    .status-container {
-      margin-top: 20px;
-      padding-top: 16px;
-      border-top: 1px solid rgba(255, 255, 255, 0.05);
-    }
-    
-    .relationship-status, .desire-status {
-      margin-bottom: 10px;
-      font-size: 0.95em;
-      color: rgba(255, 255, 255, 0.9);
-    }
-    
-    .days-counter {
-      text-align: center;
-      font-style: italic;
-      color: rgba(255, 255, 255, 0.6);
-      font-size: 0.9em;
-    }
-    
-    .thought-bubble {
-      margin-top: 20px;
-      padding: 15px;
-      background: rgba(255, 255, 255, 0.05);
-      border-radius: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-    }
-  </style>
-<div class="sim-tracker-container" style="display: flex; flex-direction: column; gap: 20px; width: 100%; min-width: 250px; visibility: visible !important;">
+<style>
+/* Base styles for the card */
+.tracker-card {
+  min-width: 320px;
+  border-radius: 16px;
+  padding: 0;
+  box-sizing: border-box;
+  position: relative;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 500;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  backdrop-filter: blur(12px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2), 0 1px 4px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+/* Apply opacity if inactive */
+.tracker-card.inactive {
+  opacity: 0.6;
+}
+
+/* Gradient overlay at the top */
+.gradient-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent) !important;
+}
+
+/* Header section */
+.tracker-card-header {
+  padding: 16px 20px 0 20px;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header row for date and counters */
+.header-row-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+/* Header badge style */
+.header-badge {
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-weight: 500;
+  letter-spacing: 0.25px;
+  background: rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(8px) !important;
+}
+
+/* Header row for character name and icons */
+.header-row-middle {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  width: 100%;
+  margin-bottom: 4px;
+}
+
+.character-name {
+  font-size: 26px;
+  font-weight: 600;
+  letter-spacing: -0.25px;
+  text-align: left;
+}
+
+.icon-container {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+/* Header row for character status */
+.header-row-bottom {
+  display: flex;
+  justify-content: flex-start;
+  width: 100%;
+  margin-bottom: 12px;
+}
+
+.character-status {
+  display: flex;
+  align-items: center;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+  color: rgba(255, 255, 255, 0.7) !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3) !important;
+  letter-spacing: 0.25px !important;
+}
+
+.status-divider {
+  margin: 0 8px !important;
+  opacity: 0.5 !important;
+}
+
+/* Stats container */
+.stats-container {
+  position: absolute;
+  top: 115px;
+  bottom: 110px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 12px;
+  gap: 8px;
+  flex-wrap: nowrap;
+}
+
+/* Individual stat item */
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+  min-width: 60px;
+  max-width: 120px;
+  position: relative;
+}
+
+.stat-title {
+  font-size: 8px;
+  font-weight: 500;
+  opacity: 0.8;
+  margin-bottom: 3px;
+  color: rgba(255, 255, 255, 0.9);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.stat-container {
+  padding: 6px 3px;
+  border-radius: 10px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  min-height: 70px;
+  justify-content: center;
+  box-sizing: border-box;
+  transition: all 0.25s cubic-bezier(0.25, 0.8, 0.25, 1) !important;
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  background: rgba(255, 255, 255, 0.05) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+.stat-container:hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  transform: translateY(-2px) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.1) !important;
+}
+
+.stat-icon {
+  font-size: 20px;
+  line-height: 1;
+  margin-bottom: 3px;
+}
+
+.stat-value {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1;
+}
+
+/* Change indicator */
+.change-indicator {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  min-width: 24px;
+  text-align: center;
+  line-height: 1.2;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  animation: pulse 0.5s ease-in-out;
+}
+
+.change-indicator.positive {
+  background: rgba(46, 204, 113, 0.9) !important;
+}
+
+.change-indicator.negative {
+  background: rgba(231, 76, 60, 0.9) !important;
+}
+
+.change-indicator.negative-alt {
+  background: rgba(46, 204, 113, 0.9) !important;
+}
+
+@keyframes pulse {
+  0% { transform: scale(0.8); opacity: 0.7; }
+  50% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* Thought label divider */
+.thought-label-divider {
+  position: absolute;
+  bottom: 52px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.6), transparent);
+  opacity: 0.6;
+}
+
+/* Thought bubble */
+.thought-bubble {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  min-height: 60px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: rgba(0, 0, 0, 0.2) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  backdrop-filter: blur(8px) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05) !important;
+}
+
+.thought-label {
+  position: absolute;
+  top: -24px;
+  left: 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+  letter-spacing: 0.25px;
+}
+
+/* Container for multiple cards */
+.sst-card-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  justify-content: center;
+  align-items: start;
+  width: 100%;
+}
+
+/* --- Media Queries --- */
+
+/* Mobile Styles */
+@media (max-width: 768px) {
+  .tracker-card {
+    width: 100%;
+    max-width: 100%;
+    min-height: 400px;
+  }
+  
+  .stat-icon { font-size: 20px !important; margin-bottom: 3px !important; }
+  .stat-value { font-size: 16px !important; }
+  .stat-container { min-height: 70px !important; padding: 6px 3px !important; }
+  .stat-title { font-size: 9px !important; }
+  
+  /* Adjust stats container position for mobile */
+  .stats-container {
+    top: 100px !important;
+    bottom: 110px !important;
+  }
+}
+
+/* Desktop Styles (2-column layout) */
+@media (min-width: 769px) {
+  .tracker-card {
+    flex: 1 1 calc(50% - 10px);
+    max-width: calc(50% - 10px);
+    min-width: 300px; /* Ensure cards don't get too small */
+    height: 400px;
+  }
+  
+  .stat-icon { font-size: 28px !important; margin-bottom: 6px !important; }
+  .stat-value { font-size: 20px !important; }
+  .stat-container { min-height: 90px !important; padding: 10px 6px !important; }
+  .stat-title { font-size: 10px !important; }
+  
+  /* Adjust stats container position for desktop */
+  .stats-container {
+    top: 110px !important;
+    bottom: 110px !important;
+  }
+}
+
+/* Large Screen Styles */
+@media (min-width: 1400px) {
+  .tracker-card {
+    flex: 1 1 600px;
+    max-width: 600px;
+    height: 400px;
+  }
+  
+  .stat-icon { font-size: 32px !important; margin-bottom: 8px !important; }
+  .stat-value { font-size: 24px !important; }
+  .stat-container { min-height: 100px !important; padding: 12px 8px !important; }
+  .stat-title { font-size: 11px !important; }
+  
+  /* Adjust stats container position for large screens */
+  .stats-container {
+    top: 110px !important;
+    bottom: 110px !important;
+  }
+}
+</style>
+
+<div class="sst-card-container">
   {{#each characters}}
-  <div class="sim-tracker-card {{#if inactive}}inactive{{/if}}">
+  <div class="tracker-card {{#if inactive}}inactive{{/if}}" style="background: linear-gradient(145deg, {{bgColor}} 0%, {{darkerBgColor}} 50%, {{darkerBgColor}} 100%);">
+    <div class="gradient-overlay"></div>
     
-    <!-- Character header with name and status -->
-    <div class="character-header" style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 18px;">
-      <div class="character-name" style="font-size: 1.3em; font-weight: 600; color: #ffffff;">
-        {{name}}
+    <!-- Combined Header Section -->
+    <div class="tracker-card-header">
+      <!-- Date and Counters Row -->
+      <div class="header-row-top">
+        <div class="header-badge">{{currentDate}}</div>
+        <div style="display: flex; gap: 8px;">
+          <div class="header-badge">Day {{days_since_first_meeting}}</div>
+          {{#if preg}}<div class="header-badge">🤰{{days_preg}}d</div>{{/if}}
+        </div>
       </div>
-      <div class="status-indicator" style="font-size: 1.4em;">
-        {{#if inactive}}
-          💤
-        {{else}}
-          {{#if (gt ap 70)}}
-            😊
-          {{else if (gt ap 40)}}
-            😐
-          {{else}}
-            😞
+      
+      <!-- Character Name and Icons Row -->
+      <div class="header-row-middle">
+        <div class="character-name">{{name}}</div>
+        <div class="icon-container">
+          {{#if healthIcon}}<span>{{healthIcon}}</span>{{/if}}
+          {{#if inactive}}
+            {{#if (eq inactiveReason 1)}}<span>😴</span>{{/if}}
+            {{#if (eq inactiveReason 2)}}<span>🏥</span>{{/if}}
+            {{#if (eq inactiveReason 3)}}<span>😡</span>{{/if}}
+            {{#if (eq inactiveReason 4)}}<span>🫠</span>{{/if}}
+            {{#if (eq inactiveReason 5)}}<span>🪦</span>{{/if}}
           {{/if}}
-        {{/if}}
-      </div>
-    </div>
-    
-    <!-- Stats grid with progress bars -->
-    <div class="stats-container" style="display: flex; flex-direction: column; gap: 16px;">
-      <!-- Affection -->
-      <div class="stat-item" style="display: flex; flex-direction: column; gap: 6px;">
-        <div class="stat-header" style="display: flex; justify-content: space-between; font-size: 0.9em; color: rgba(255, 255, 255, 0.7);">
-          <span>Affection</span>
-          <span>{{ap}}</span>
-        </div>
-        <div class="stat-bar-bg" style="height: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 4px; overflow: hidden;">
-          <div class="stat-bar-fill" style="width: {{ap}}%; height: 100%; background: linear-gradient(90deg, #ff9a9e, #fad0c4); border-radius: 4px;"></div>
+          <span>{{reactionEmoji}}</span>
         </div>
       </div>
       
-      <!-- Displeasure -->
-      <div class="stat-item" style="display: flex; flex-direction: column; gap: 6px;">
-        <div class="stat-header" style="display: flex; justify-content: space-between; font-size: 0.9em; color: rgba(255, 255, 255, 0.7);">
-          <span>Displeasure</span>
-          <span>{{dp}}</span>
-        </div>
-        <div class="stat-bar-bg" style="height: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 4px; overflow: hidden;">
-          <div class="stat-bar-fill" style="width: {{dp}}%; height: 100%; background: linear-gradient(90deg, #a1c4fd, #c2e9fb); border-radius: 4px;"></div>
-        </div>
-      </div>
-      
-      <!-- Trust -->
-      <div class="stat-item" style="display: flex; flex-direction: column; gap: 6px;">
-        <div class="stat-header" style="display: flex; justify-content: space-between; font-size: 0.9em; color: rgba(255, 255, 255, 0.7);">
-          <span>Trust</span>
-          <span>{{tp}}</span>
-        </div>
-        <div class="stat-bar-bg" style="height: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 4px; overflow: hidden;">
-          <div class="stat-bar-fill" style="width: {{tp}}%; height: 100%; background: linear-gradient(90deg, #84fab0, #8fd3f4); border-radius: 4px;"></div>
-        </div>
-      </div>
-      
-      <!-- Contempt -->
-      <div class="stat-item" style="display: flex; flex-direction: column; gap: 6px;">
-        <div class="stat-header" style="display: flex; justify-content: space-between; font-size: 0.9em; color: rgba(255, 255, 255, 0.7);">
-          <span>Contempt</span>
-          <span>{{cp}}</span>
-        </div>
-        <div class="stat-bar-bg" style="height: 8px; background: rgba(255, 255, 255, 0.1); border-radius: 4px; overflow: hidden;">
-          <div class="stat-bar-fill" style="width: {{cp}}%; height: 100%; background: linear-gradient(90deg, #d4fc79, #96e6a1); border-radius: 4px;"></div>
+      <!-- Character Status Row -->
+      <div class="header-row-bottom">
+        <div class="character-status">
+          {{#if relationshipStatus}}<span>{{relationshipStatus}}</span>{{/if}}
+          {{#if desireStatus}}<span class="status-divider">|</span><span>{{desireStatus}}</span>{{/if}}
         </div>
       </div>
     </div>
     
-    <!-- Status and days counter -->
-    <div class="status-container" style="margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(255, 255, 255, 0.05);">
-      <div class="relationship-status" style="margin-bottom: 10px; font-size: 0.95em; color: rgba(255, 255, 255, 0.9);">
-        <strong>Relationship:</strong> {{relationshipStatus}}
+    <!-- Stats Section -->
+    <div class="stats-container">
+      <div class="stat-item">
+        <div class="stat-title">AFFECTION</div>
+        <div class="stat-container">
+          <div class="stat-icon">❤️</div>
+          <div class="stat-value">{{ap}}</div>
+          {{#if apChange}}{{#unless (eq apChange 0)}}
+          <div class="change-indicator positive">
+            {{#if (gt apChange 0)}}+{{/if}}{{apChange}}
+          </div>
+          {{/unless}}{{/if}}
+        </div>
       </div>
-      <div class="desire-status" style="margin-bottom: 10px; font-size: 0.95em; color: rgba(255, 255, 255, 0.9);">
-        <strong>Desire:</strong> {{desireStatus}}
+      
+      <div class="stat-item">
+        <div class="stat-title">DESIRE</div>
+        <div class="stat-container">
+          <div class="stat-icon">🔥</div>
+          <div class="stat-value">{{dp}}</div>
+          {{#if dpChange}}{{#unless (eq dpChange 0)}}
+          <div class="change-indicator negative">
+            {{#if (gt dpChange 0)}}+{{/if}}{{dpChange}}
+          </div>
+          {{/unless}}{{/if}}
+        </div>
       </div>
-      <div class="days-counter" style="text-align: center; font-style: italic; color: rgba(255, 255, 255, 0.6); font-size: 0.9em;">
-        Day {{days_since_first_meeting}}
+      
+      <div class="stat-item">
+        <div class="stat-title">TRUST</div>
+        <div class="stat-container">
+          <div class="stat-icon">🤝</div>
+          <div class="stat-value">{{tp}}</div>
+          {{#if tpChange}}{{#unless (eq tpChange 0)}}
+          <div class="change-indicator positive">
+            {{#if (gt tpChange 0)}}+{{/if}}{{tpChange}}
+          </div>
+          {{/unless}}{{/if}}
+        </div>
+      </div>
+      
+      <div class="stat-item">
+        <div class="stat-title">CONTEMPT</div>
+        <div class="stat-container">
+          <div class="stat-icon">💔</div>
+          <div class="stat-value">{{cp}}</div>
+          {{#if cpChange}}{{#unless (eq cpChange 0)}}
+          <div class="change-indicator negative-alt">
+            {{#if (gt cpChange 0)}}+{{/if}}{{cpChange}}
+          </div>
+          {{/unless}}{{/if}}
+        </div>
       </div>
     </div>
     
-    <!-- Internal thought bubble (conditionally shown) -->
-    {{#if internal_thought}}
-    <div class="thought-bubble" style="margin-top: 20px; padding: 15px; background: rgba(255, 255, 255, 0.05); border-radius: 12px; border: 1px solid rgba(255, 255, 255, 0.08);">
-      <div style="display: flex; align-items: flex-start; gap: 10px;">
-        <div style="font-size: 1.2em; flex-shrink: 0;">💭</div>
-        <div style="font-size: 0.95em; line-height: 1.4; color: rgba(255, 255, 255, 0.85);">
-          <strong>Thinks:</strong> {{internal_thought}}
-        </div>
-      </div>
+    <!-- Thought Bubble Section -->
+    {{#if showThoughtBubble}}
+    <div class="thought-label-divider"></div>
+    <div class="thought-bubble">
+      <div class="thought-label">{{name}} thinks:</div>
+      <div style="font-size: 22px; flex-shrink: 0;">💭</div>
+      <div style="flex: 1; font-size: 13px; font-weight: 400; line-height: 1.4; overflow: hidden;">{{internal_thought}}</div>
     </div>
     {{/if}}
   </div>
@@ -246,29 +450,28 @@
 
 <!-- 
 TEMPLATE VARIABLES:
-- {{characterName}}: Character's name
+- {{name}}: Character's name
 - {{currentDate}}: Current date in YYYY-MM-DD format
 - {{bgColor}}: Primary background color
 - {{darkerBgColor}}: Darker variant of background color
 - {{contrastColor}}: Contrast color for text against background
-- {{stats.ap}}: Affection points
-- {{stats.dp}}: Desire points
-- {{stats.tp}}: Trust points
-- {{stats.cp}}: Contempt points
-- {{stats.apChange}}: Change in affection points (positive/negative/zero)
-- {{stats.dpChange}}: Change in desire points (positive/negative/zero)
-- {{stats.tpChange}}: Change in trust points (positive/negative/zero)
-- {{stats.cpChange}}: Change in contempt points (positive/negative/zero)
-- {{stats.days_since_first_meeting}}: Days since first meeting
-- {{stats.preg}}: Boolean for pregnancy status
-- {{stats.days_preg}}: Days pregnant (if applicable)
-- {{stats.internal_thought}}: Character's internal thoughts
-- {{stats.relationshipStatus}}: Relationship status text
-- {{stats.desireStatus}}: Desire status text
-- {{stats.inactive}}: Boolean for inactive status
-- {{stats.inactiveReason}}: Number indicating reason for inactivity (0-5)
+- {{ap}}: Affection points
+- {{dp}}: Desire points
+- {{tp}}: Trust points
+- {{cp}}: Contempt points
+- {{apChange}}: Change in affection points (positive/negative/zero)
+- {{dpChange}}: Change in desire points (positive/negative/zero)
+- {{tpChange}}: Change in trust points (positive/negative/zero)
+- {{cpChange}}: Change in contempt points (positive/negative/zero)
+- {{days_since_first_meeting}}: Days since first meeting
+- {{preg}}: Boolean for pregnancy status
+- {{days_preg}}: Days pregnant (if applicable)
+- {{internal_thought}}: Character's internal thoughts
+- {{relationshipStatus}}: Relationship status text
+- {{desireStatus}}: Desire status text
+- {{inactive}}: Boolean for inactive status
+- {{inactiveReason}}: Number indicating reason for inactivity (0-5)
 - {{healthIcon}}: Health status icon (🤕 or 💀)
 - {{reactionEmoji}}: Reaction emoji (👍, 👎, or 😐)
-- {{showThoughtBubble}}: Boolean to show/hide thought bubble (always shown in this template)
-- {{isActive}}: Boolean for card active state (affects opacity)
+- {{showThoughtBubble}}: Boolean to show/hide thought bubble
 -->
