@@ -37,29 +37,57 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     box-sizing: border-box !important;
 }
 
-/* Sidebar-specific styles */
-#sst-sidebar-right-*,
-#sst-sidebar-left-* {
-    position: fixed !important;
-    z-index: 10000 !important;
+/* Global sidebar styles */
+#sst-global-sidebar-left,
+#sst-global-sidebar-right {
+    position: absolute !important;
+    z-index: 1000 !important;
     box-sizing: border-box !important;
     margin: 0 !important;
     padding: 10px !important;
     background: transparent !important;
     border: none !important;
     box-shadow: none !important;
-    display: block !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: center !important;
     visibility: visible !important;
     overflow: visible !important;
 }
 
-#sst-sidebar-right-* #silly-sim-tracker-container,
-#sst-sidebar-left-* #silly-sim-tracker-container {
+#sst-global-sidebar-left {
+    left: 0 !important;
+    align-items: flex-start !important;
+}
+
+#sst-global-sidebar-right {
+    right: 0 !important;
+    align-items: flex-end !important;
+}
+
+#sst-global-sidebar-left #silly-sim-tracker-container,
+#sst-global-sidebar-right #silly-sim-tracker-container {
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
     display: block !important;
     visibility: visible !important;
+}
+
+#sst-sidebar-left-content,
+#sst-sidebar-right-content {
+    width: auto !important;
+    height: auto !important;
+    max-width: 300px !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    display: block !important;
+    visibility: visible !important;
+    overflow: visible !important;
 }
 
 /* Ensure sidebar content is visible */

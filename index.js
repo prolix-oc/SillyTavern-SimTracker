@@ -8,107 +8,36 @@ const MODULE_NAME = 'silly-sim-tracker';
 const CONTAINER_ID = 'silly-sim-tracker-container';
 const SETTINGS_ID = 'silly-sim-tracker-settings';
 
-// Helper function to create a right sidebar
-// Updated to use a vertical container that stretches from top to bottom
-// and aligns the content to the right side of the screen
-function createRightSidebar(mesId, content) {
-    const rightSidebarId = `sst-sidebar-right-${mesId}`;
-    // Remove existing sidebar for this message if any
-    const existingRightSidebar = document.getElementById(rightSidebarId);
-    if (existingRightSidebar) existingRightSidebar.remove();
-    
-    // Create a container that stretches vertically
-    const verticalContainer = document.createElement('div');
-    verticalContainer.className = 'vertical-container';
-    verticalContainer.style.cssText = `
-        position: fixed !important;
-        right: 10px !important;
-        top: 0 !important;
-        bottom: 0 !important;
-        width: auto !important;
-        height: 100vh !important;
-        z-index: 10000 !important;
-        box-sizing: border-box !important;
-        margin: 0 !important;
-        padding: 10px !important;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: center !important;
-        align-items: flex-end !important;
-        visibility: visible !important;
-        overflow: visible !important;
-    `;
-    
-    // Create the actual sidebar content container
-    const rightSidebar = document.createElement('div');
-    rightSidebar.id = rightSidebarId;
-    rightSidebar.innerHTML = content;
-    rightSidebar.style.cssText = `
-        max-width: 300px !important;
-        width: auto !important;
-        height: auto !important;
-        box-sizing: border-box !important;
-        margin: 0 !important;
-        padding: 0 !important;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        display: block !important;
-        visibility: visible !important;
-        overflow: visible !important;
-    `;
-    
-    // Ensure the content is visible by adding specific styles to the inner elements
-    setTimeout(() => {
-        const container = rightSidebar.querySelector('#silly-sim-tracker-container');
-        if (container) {
-            container.style.cssText += `
-                width: 100% !important;
-                max-width: 100% !important;
-                box-sizing: border-box !important;
-                display: block !important;
-                visibility: visible !important;
-            `;
-        }
-        
-        // Force reflow to ensure proper rendering
-        verticalContainer.offsetHeight;
-    }, 0);
-    
-    // Add the sidebar to the vertical container
-    verticalContainer.appendChild(rightSidebar);
-    
-    // Add a small delay before appending to the DOM to ensure proper rendering
-    setTimeout(() => {
-        document.body.appendChild(verticalContainer);
-    }, 0);
-    
-    return verticalContainer;
-}
+// Global sidebar tracker elements
+let globalLeftSidebar = null;
+let globalRightSidebar = null;
 
-// Helper function to create a left sidebar
-// Updated to use a vertical container that stretches from top to bottom
-// and aligns the content to the left side of the screen
-function createLeftSidebar(mesId, content) {
-    const leftSidebarId = `sst-sidebar-left-${mesId}`;
-    // Remove existing sidebar for this message if any
-    const existingLeftSidebar = document.getElementById(leftSidebarId);
-    if (existingLeftSidebar) existingLeftSidebar.remove();
+// Helper function to create or update a global left sidebar
+function updateLeftSidebar(content) {
+    // Remove existing global sidebar if it exists
+    if (globalLeftSidebar) {
+        globalLeftSidebar.remove();
+    }
     
-    // Create a container that stretches vertically
+    // Find the sheld container
+    const sheld = document.getElementById('sheld');
+    if (!sheld) {
+        console.warn('[SST] Could not find sheld container for sidebar');
+        return;
+    }
+    
+    // Create a container that stretches vertically within sheld
     const verticalContainer = document.createElement('div');
+    verticalContainer.id = 'sst-global-sidebar-left';
     verticalContainer.className = 'vertical-container';
     verticalContainer.style.cssText = `
-        position: fixed !important;
-        left: 10px !important;
+        position: absolute !important;
+        left: 0 !important;
         top: 0 !important;
         bottom: 0 !important;
         width: auto !important;
-        height: 100vh !important;
-        z-index: 10000 !important;
+        height: 100% !important;
+        z-index: 1000 !important;
         box-sizing: border-box !important;
         margin: 0 !important;
         padding: 10px !important;
@@ -125,12 +54,12 @@ function createLeftSidebar(mesId, content) {
     
     // Create the actual sidebar content container
     const leftSidebar = document.createElement('div');
-    leftSidebar.id = leftSidebarId;
+    leftSidebar.id = 'sst-sidebar-left-content';
     leftSidebar.innerHTML = content;
     leftSidebar.style.cssText = `
-        max-width: 300px !important;
         width: auto !important;
         height: auto !important;
+        max-width: 300px !important;
         box-sizing: border-box !important;
         margin: 0 !important;
         padding: 0 !important;
@@ -162,12 +91,113 @@ function createLeftSidebar(mesId, content) {
     // Add the sidebar to the vertical container
     verticalContainer.appendChild(leftSidebar);
     
-    // Add a small delay before appending to the DOM to ensure proper rendering
-    setTimeout(() => {
-        document.body.appendChild(verticalContainer);
-    }, 0);
+    // Store reference to global sidebar
+    globalLeftSidebar = verticalContainer;
+    
+    // Add to the sheld container as a child
+    sheld.appendChild(verticalContainer);
     
     return verticalContainer;
+}
+
+// Helper function to create or update a global right sidebar
+function updateRightSidebar(content) {
+    // Remove existing global sidebar if it exists
+    if (globalRightSidebar) {
+        globalRightSidebar.remove();
+    }
+    
+    // Find the sheld container
+    const sheld = document.getElementById('sheld');
+    if (!sheld) {
+        console.warn('[SST] Could not find sheld container for sidebar');
+        return;
+    }
+    
+    // Create a container that stretches vertically within sheld
+    const verticalContainer = document.createElement('div');
+    verticalContainer.id = 'sst-global-sidebar-right';
+    verticalContainer.className = 'vertical-container';
+    verticalContainer.style.cssText = `
+        position: absolute !important;
+        right: 0 !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        width: auto !important;
+        height: 100% !important;
+        z-index: 1000 !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
+        padding: 10px !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: flex-end !important;
+        visibility: visible !important;
+        overflow: visible !important;
+    `;
+    
+    // Create the actual sidebar content container
+    const rightSidebar = document.createElement('div');
+    rightSidebar.id = 'sst-sidebar-right-content';
+    rightSidebar.innerHTML = content;
+    rightSidebar.style.cssText = `
+        width: auto !important;
+        height: auto !important;
+        max-width: 300px !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        display: block !important;
+        visibility: visible !important;
+        overflow: visible !important;
+    `;
+    
+    // Ensure the content is visible by adding specific styles to the inner elements
+    setTimeout(() => {
+        const container = rightSidebar.querySelector('#silly-sim-tracker-container');
+        if (container) {
+            container.style.cssText += `
+                width: 100% !important;
+                max-width: 100% !important;
+                box-sizing: border-box !important;
+                display: block !important;
+                visibility: visible !important;
+            `;
+        }
+        
+        // Force reflow to ensure proper rendering
+        verticalContainer.offsetHeight;
+    }, 0);
+    
+    // Add the sidebar to the vertical container
+    verticalContainer.appendChild(rightSidebar);
+    
+    // Store reference to global sidebar
+    globalRightSidebar = verticalContainer;
+    
+    // Add to the sheld container as a child
+    sheld.appendChild(verticalContainer);
+    
+    return verticalContainer;
+}
+
+// Helper function to remove global sidebars
+function removeGlobalSidebars() {
+    if (globalLeftSidebar) {
+        globalLeftSidebar.remove();
+        globalLeftSidebar = null;
+    }
+    if (globalRightSidebar) {
+        globalRightSidebar.remove();
+        globalRightSidebar = null;
+    }
 }
 
 // Default fields for sim data, used for both initial settings and the {{sim_format}} macro
@@ -778,12 +808,12 @@ const renderTracker = (mesId) => {
                     }
                     break;
                 case 'LEFT':
-                    // Insert as a fixed sidebar on the left using helper function
-                    createLeftSidebar(mesId, compiledWrapperTemplate({ cardsHtml }));
+                    // Update the global left sidebar with the latest data
+                    updateLeftSidebar(compiledWrapperTemplate({ cardsHtml }));
                     break;
                 case 'RIGHT':
-                    // Insert as a fixed sidebar on the right using helper function
-                    createRightSidebar(mesId, compiledWrapperTemplate({ cardsHtml }));
+                    // Update the global right sidebar with the latest data
+                    updateRightSidebar(compiledWrapperTemplate({ cardsHtml }));
                     break;
                 case 'MACRO':
                     // For MACRO position, replace the placeholder in the message
@@ -951,12 +981,12 @@ const renderTrackerWithoutSim = (mesId) => {
                     }
                     break;
                 case 'LEFT':
-                    // Insert as a fixed sidebar on the left using helper function
-                    createLeftSidebar(mesId, compiledWrapperTemplate({ cardsHtml }));
+                    // Update the global left sidebar with the latest data
+                    updateLeftSidebar(compiledWrapperTemplate({ cardsHtml }));
                     break;
                 case 'RIGHT':
-                    // Insert as a fixed sidebar on the right using helper function
-                    createRightSidebar(mesId, compiledWrapperTemplate({ cardsHtml }));
+                    // Update the global right sidebar with the latest data
+                    updateRightSidebar(compiledWrapperTemplate({ cardsHtml }));
                     break;
                 case 'MACRO':
                     // For MACRO position, replace the placeholder in the message
@@ -1000,10 +1030,8 @@ const refreshAllCards = () => {
         container.remove();
     });
     
-    // Also remove any sidebars
-    document.querySelectorAll('[id^="sst-sidebar-"]').forEach(sidebar => {
-        sidebar.remove();
-    });
+    // Remove global sidebars
+    removeGlobalSidebars();
 
     // Get all message divs currently in the chat DOM
     const visibleMessages = document.querySelectorAll('div#chat .mes');
