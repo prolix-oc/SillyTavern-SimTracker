@@ -509,5 +509,6 @@ export {
   prepareCharacterData,
   prepareTabbedCharacterData,
   getInactiveReasonEmoji,
-  getReactionEmoji
+  getReactionEmoji,
+  darkenColor
 };
