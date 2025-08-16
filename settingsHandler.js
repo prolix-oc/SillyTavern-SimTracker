@@ -247,6 +247,35 @@ const initialize_settings_listeners = (loadTemplate, refreshAllCards, migrateAll
     showManagePresetsModal(loadTemplate, refreshAllCards);
   });
 
+  // Listener for reset defaults button
+  $("#resetDefaultsBtn").on("click", () => {
+    if (confirm("Are you sure you want to reset all settings to their default values? This action cannot be undone.")) {
+      // Reset all settings to defaults
+      Object.keys(default_settings).forEach(key => {
+        set_settings(key, default_settings[key]);
+      });
+      
+      // Special handling for customFields to ensure we clone the array
+      set_settings("customFields", [...defaultSimFields]);
+      
+      // Special handling for userPresets to ensure we have an empty array
+      set_settings("userPresets", []);
+      
+      // Refresh the UI to reflect the changes
+      refresh_settings_ui();
+      
+      // Reload template and refresh all cards
+      loadTemplate().then(() => {
+        refreshAllCards();
+      });
+      
+      // Repopulate template dropdown to remove any user presets
+      populateTemplateDropdown(get_settings);
+      
+      toastr.success("All settings have been reset to their default values.");
+    }
+  });
+
   // --- Custom Fields UI Logic ---
   const $manageFieldsButton = $("#manageCustomFieldsBtn");
 
