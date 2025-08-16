@@ -1,4 +1,4 @@
-import { extension_settings, saveSettingsDebounced } from "../../../extensions.js";
+const { extensionSettings, saveSettingsDebounced } = SillyTavern.getContext();
 import { loadTemplate, populateTemplateDropdown, handleCustomTemplateUpload } from "./templater.js";
 
 const MODULE_NAME = "silly-sim-tracker";
@@ -19,15 +19,15 @@ const default_settings = {
 let settings_ui_map = {};
 
 const get_settings = (key) => {
-  const settings = extension_settings[MODULE_NAME] || {};
+  const settings = extensionSettings[MODULE_NAME] || {};
   return settings[key] ?? default_settings[key];
 };
 
 const set_settings = (key, value) => {
-  if (!extension_settings[MODULE_NAME]) {
-    extension_settings[MODULE_NAME] = {};
+  if (!extensionSettings[MODULE_NAME]) {
+    extensionSettings[MODULE_NAME] = {};
   }
-  extension_settings[MODULE_NAME][key] = value;
+  extensionSettings[MODULE_NAME][key] = value;
   saveSettingsDebounced();
 };
 
@@ -286,10 +286,10 @@ const initialize_settings = async (loadDefaultPromptFromFile) => {
   }
 
   // Now, merge the defaults with any user-saved settings.
-  extension_settings[MODULE_NAME] = Object.assign(
+  extensionSettings[MODULE_NAME] = Object.assign(
     {},
     default_settings,
-    extension_settings[MODULE_NAME]
+    extensionSettings[MODULE_NAME]
   );
 };
 
