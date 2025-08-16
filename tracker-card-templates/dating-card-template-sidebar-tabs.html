@@ -219,9 +219,9 @@
 
   {{#each characters}}
   <div
-    class="sim-tracker-card {{#if stats.inactive}}inactive{{/if}}"
+    class="sim-tracker-card {{#if stats.inactive}}narrative-inactive{{/if}}"
     data-character="{{@index}}"
-    style="background: linear-gradient(145deg, {{adjustColorBrightness bgColor 70}} 0%, {{adjustColorBrightness darkerBgColor 60}} 50%, {{adjustColorBrightness darkerBgColor 50}} 100%); {{#if stats.inactive}}display: none;{{/if}}"
+    style="background: linear-gradient(145deg, {{adjustColorBrightness bgColor 70}} 0%, {{adjustColorBrightness darkerBgColor 60}} 50%, {{adjustColorBrightness darkerBgColor 50}} 100%);"
   >
     <!-- Days counter at the top -->
     <div class="days-counter">Day {{stats.days_since_first_meeting}}</div>

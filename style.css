@@ -318,7 +318,7 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     position: absolute !important;
     opacity: 0;
     visibility: hidden;
-    z-index: 5; /* Lower z-index for inactive cards */
+    z-index: 5; /* Lower z-index for hidden cards */
 }
 
 .sim-tracker-card.active {
@@ -327,10 +327,12 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     z-index: 30; /* Much higher z-index for active card to cover all tabs */
 }
 
-.sim-tracker-card.inactive {
-    opacity: 0.6;
-    z-index: 5; /* Lower z-index for inactive cards */
-    display: none !important;
+.sim-tracker-card.narrative-inactive {
+    opacity: 0.6; /* Translucent for narrative inactive characters */
+}
+
+.sim-tracker-card.tab-hidden {
+    display: none !important; /* Completely hidden when not active tab */
 }
 
 #sst-global-sidebar-left .sim-tracker-tabs {

@@ -134,30 +134,21 @@ function updateLeftSidebar(content) {
           cards.forEach((card, cardIndex) => {
             const correspondingTab = tabs[cardIndex];
             if (cardIndex === index && !isActive) {
-              // Slide in the selected card and tab
-              card.classList.remove("sliding-out");
-              card.classList.add("sliding-in");
+              // Show the selected card and tab
+              card.classList.remove("tab-hidden");
+              card.classList.add("active");
               if (correspondingTab) {
-                correspondingTab.classList.remove("sliding-out");
-                correspondingTab.classList.add("sliding-in");
+                correspondingTab.classList.remove("tab-hidden");
+                correspondingTab.classList.add("active");
               }
-              // Add active class after a short delay to ensure the animation works
-              setTimeout(() => {
-                card.classList.add("active");
-                if (correspondingTab) {
-                  correspondingTab.classList.add("active");
-                }
-              }, 10);
             } else {
-              // Slide out all other cards and tabs
+              // Hide all other cards and tabs
               if (card.classList.contains("active")) {
                 card.classList.remove("active");
-                card.classList.remove("sliding-in");
-                card.classList.add("sliding-out");
+                card.classList.add("tab-hidden");
                 if (correspondingTab) {
                   correspondingTab.classList.remove("active");
-                  correspondingTab.classList.remove("sliding-in");
-                  correspondingTab.classList.add("sliding-out");
+                  correspondingTab.classList.add("tab-hidden");
                 }
               }
             }
@@ -340,30 +331,21 @@ function updateRightSidebar(content) {
           cards.forEach((card, cardIndex) => {
             const correspondingTab = tabs[cardIndex];
             if (cardIndex === index && !isActive) {
-              // Slide in the selected card and tab
-              card.classList.remove("sliding-out");
-              card.classList.add("sliding-in");
+              // Show the selected card and tab
+              card.classList.remove("tab-hidden");
+              card.classList.add("active");
               if (correspondingTab) {
-                correspondingTab.classList.remove("sliding-out");
-                correspondingTab.classList.add("sliding-in");
+                correspondingTab.classList.remove("tab-hidden");
+                correspondingTab.classList.add("active");
               }
-              // Add active class after a short delay to ensure the animation works
-              setTimeout(() => {
-                card.classList.add("active");
-                if (correspondingTab) {
-                  correspondingTab.classList.add("active");
-                }
-              }, 10);
             } else {
-              // Slide out all other cards and tabs
+              // Hide all other cards and tabs
               if (card.classList.contains("active")) {
                 card.classList.remove("active");
-                card.classList.remove("sliding-in");
-                card.classList.add("sliding-out");
+                card.classList.add("tab-hidden");
                 if (correspondingTab) {
                   correspondingTab.classList.remove("active");
-                  correspondingTab.classList.remove("sliding-in");
-                  correspondingTab.classList.add("sliding-out");
+                  correspondingTab.classList.add("tab-hidden");
                 }
               }
             }
