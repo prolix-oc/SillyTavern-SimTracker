@@ -105,7 +105,7 @@
   }
 
   .sim-tracker-card.inactive {
-    opacity: 0.6;
+    opacity: 1; /* Reset opacity since we're using overlay */
     z-index: 5; /* Lower z-index for inactive cards */
   }
 
@@ -197,6 +197,24 @@
     text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
     letter-spacing: 0.25px;
   }
+
+  /* Overlay for inactive characters */
+  .narrative-inactive-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: black;
+    opacity: 0.5;
+    border-radius: 18px;
+    display: none;
+    z-index: 100; /* High z-index to cover all content */
+  }
+
+  .narrative-inactive .narrative-inactive-overlay {
+    display: block;
+  }
 </style>
 
 <div class="sim-tracker-container">
@@ -223,6 +241,9 @@
     data-character="{{@index}}"
     style="background: linear-gradient(145deg, {{adjustColorBrightness bgColor 70}} 0%, {{adjustColorBrightness darkerBgColor 60}} 50%, {{adjustColorBrightness darkerBgColor 50}} 100%);"
   >
+    <!-- Overlay for inactive characters -->
+    <div class="narrative-inactive-overlay"></div>
+    
     <!-- Days counter at the top -->
     <div class="days-counter">Day {{stats.days_since_first_meeting}}</div>
 
