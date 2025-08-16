@@ -536,6 +536,27 @@ Handlebars.registerHelper('divideRoundUp', function (a, b) {
     return Math.ceil(a / b);
 });
 
+Handlebars.registerHelper('adjustColorBrightness', function (hexColor, brightnessPercent) {
+    // Remove # if present
+    hexColor = hexColor.replace('#', '');
+    
+    // Parse hex to RGB
+    let r = parseInt(hexColor.substring(0, 2), 16);
+    let g = parseInt(hexColor.substring(2, 4), 16);
+    let b = parseInt(hexColor.substring(4, 6), 16);
+    
+    // Adjust brightness (0-100% where 100% is original, 50% is half brightness, etc.)
+    brightnessPercent = Math.max(0, Math.min(100, brightnessPercent)) / 100;
+    
+    // Apply brightness adjustment
+    r = Math.min(255, Math.max(0, Math.floor(r * brightnessPercent)));
+    g = Math.min(255, Math.max(0, Math.floor(g * brightnessPercent)));
+    b = Math.min(255, Math.max(0, Math.floor(b * brightnessPercent)));
+    
+    // Convert back to hex
+    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
+});
+
 Handlebars.registerHelper('unless', function (conditional, options) {
     if (!conditional) {
         return options.fn(this);
