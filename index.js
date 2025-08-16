@@ -2,7 +2,7 @@ import { getContext, extension_settings } from "../../../extensions.js";
 import {
   saveSettingsDebounced,
   messageFormatting,
-  Generate
+  Generate,
 } from "../../../../script.js";
 import { MacrosParser } from "../../../macros.js";
 import { SlashCommand } from "../../../slash-commands/SlashCommand.js";
@@ -36,7 +36,7 @@ function updateLeftSidebar(content) {
     pendingLeftSidebarContent = content;
     return;
   }
-  
+
   // If we don't have a global sidebar yet, create it
   if (!globalLeftSidebar) {
     // Find the sheld container
@@ -115,14 +115,16 @@ function updateLeftSidebar(content) {
 
     // Add event listeners for tabs (only once when creating)
     attachTabEventListeners(leftSidebar);
-    
+
     // Debug: Log the final container
     log("Created left sidebar container:", verticalContainer);
 
     return verticalContainer;
   } else {
     // Update existing sidebar content without re-attaching event listeners
-    const leftSidebar = globalLeftSidebar.querySelector("#sst-sidebar-left-content");
+    const leftSidebar = globalLeftSidebar.querySelector(
+      "#sst-sidebar-left-content"
+    );
     if (leftSidebar) {
       leftSidebar.innerHTML = content;
     }
@@ -136,7 +138,7 @@ function updateRightSidebar(content) {
     pendingRightSidebarContent = content;
     return;
   }
-  
+
   // If we don't have a global sidebar yet, create it
   if (!globalRightSidebar) {
     // Find the sheld container
@@ -210,14 +212,16 @@ function updateRightSidebar(content) {
       // Fallback: append to body
       document.body.appendChild(verticalContainer);
     }
-    
+
     // Add event listeners for tabs (only once when creating)
     attachTabEventListeners(rightSidebar);
 
     return verticalContainer;
   } else {
     // Update existing sidebar content without re-attaching event listeners
-    const rightSidebar = globalRightSidebar.querySelector("#sst-sidebar-right-content");
+    const rightSidebar = globalRightSidebar.querySelector(
+      "#sst-sidebar-right-content"
+    );
     if (rightSidebar) {
       rightSidebar.innerHTML = content;
     }
@@ -228,7 +232,9 @@ function updateRightSidebar(content) {
 function removeGlobalSidebars() {
   if (globalLeftSidebar) {
     // Remove event listeners before removing the sidebar
-    const leftSidebar = globalLeftSidebar.querySelector("#sst-sidebar-left-content");
+    const leftSidebar = globalLeftSidebar.querySelector(
+      "#sst-sidebar-left-content"
+    );
     if (leftSidebar) {
       // Remove any existing event listeners by cloning and replacing
       const newLeftSidebar = leftSidebar.cloneNode(true);
@@ -239,7 +245,9 @@ function removeGlobalSidebars() {
   }
   if (globalRightSidebar) {
     // Remove event listeners before removing the sidebar
-    const rightSidebar = globalRightSidebar.querySelector("#sst-sidebar-right-content");
+    const rightSidebar = globalRightSidebar.querySelector(
+      "#sst-sidebar-right-content"
+    );
     if (rightSidebar) {
       // Remove any existing event listeners by cloning and replacing
       const newRightSidebar = rightSidebar.cloneNode(true);
@@ -267,9 +275,11 @@ function attachTabEventListeners(sidebarElement) {
           break;
         }
       }
-      
-      if (tabs[firstActiveIndex]) tabs[firstActiveIndex].classList.add("active");
-      if (cards[firstActiveIndex]) cards[firstActiveIndex].classList.add("active");
+
+      if (tabs[firstActiveIndex])
+        tabs[firstActiveIndex].classList.add("active");
+      if (cards[firstActiveIndex])
+        cards[firstActiveIndex].classList.add("active");
 
       // Add click listeners to tabs
       tabs.forEach((tab, index) => {
@@ -332,7 +342,9 @@ function attachTabEventListeners(sidebarElement) {
       });
     }
 
-    const container = sidebarElement.querySelector("#silly-sim-tracker-container");
+    const container = sidebarElement.querySelector(
+      "#silly-sim-tracker-container"
+    );
     if (container) {
       container.style.cssText += `
                 width: 100% !important;
@@ -498,13 +510,16 @@ const updateLastSimStatsOnRegenerateOrSwipe = (currentMesId = null) => {
     for (let i = context.chat.length - 1; i >= 0; i--) {
       const message = context.chat[i];
       if (!message || !message.mes) continue;
-      
+
       // Only consider character messages (not user or system messages)
       if (message.is_user || message.is_system) continue;
 
       // Check if this message contains sim data
       const identifier = get_settings("codeBlockIdentifier");
-      const simRegex = new RegExp("```" + identifier + "[\\\\s\\\\S]*?```", "m");
+      const simRegex = new RegExp(
+        "```" + identifier + "[\\\\s\\\\S]*?```",
+        "m"
+      );
       const match = message.mes.match(simRegex);
 
       if (match) {
@@ -516,7 +531,9 @@ const updateLastSimStatsOnRegenerateOrSwipe = (currentMesId = null) => {
 
         // Update the lastSimJsonString with the found message's sim data
         lastSimJsonString = jsonContent;
-        log(`Updated last_sim_stats macro with data from message ID ${i} during regenerate/swipe`);
+        log(
+          `Updated last_sim_stats macro with data from message ID ${i} during regenerate/swipe`
+        );
         return;
       }
     }
@@ -537,7 +554,7 @@ const filterSimBlocksInPrompt = (chat) => {
     // Find all messages with sim data
     const identifier = get_settings("codeBlockIdentifier");
     const simRegexPattern = "```" + identifier + "[\\s\\S]*?```";
-    
+
     // Collect all messages with sim data along with their positions
     const messagesWithSim = [];
     chat.forEach((message, index) => {
@@ -553,8 +570,11 @@ const filterSimBlocksInPrompt = (chat) => {
     // If we have more than 3 messages with sim data, remove the older ones from the prompt context
     if (messagesWithSim.length > 3) {
       // Get the messages to remove from prompt (all except the last 3)
-      const messagesToRemove = messagesWithSim.slice(0, messagesWithSim.length - 3);
-      
+      const messagesToRemove = messagesWithSim.slice(
+        0,
+        messagesWithSim.length - 3
+      );
+
       messagesToRemove.forEach(({ index, message }) => {
         // Remove sim blocks entirely from the prompt context
         if (message.mes) {
@@ -563,7 +583,7 @@ const filterSimBlocksInPrompt = (chat) => {
           // Remove the sim blocks completely from the prompt context
           const originalMes = message.mes;
           const filteredMes = originalMes.replace(replaceRegex, "");
-          
+
           // Only modify if we actually made changes
           if (filteredMes !== originalMes) {
             message.mes = filteredMes;
@@ -653,7 +673,8 @@ const migrateAllSimData = async () => {
             const migratedJsonString = JSON.stringify(migratedData, null, 2);
 
             // Reconstruct the code block
-            const migratedCodeBlock = "```" + identifier + "" + migratedJsonString + "```";
+            const migratedCodeBlock =
+              "```" + identifier + "" + migratedJsonString + "```";
 
             // Replace in message
             updatedMessage = updatedMessage.replace(match, migratedCodeBlock);
@@ -1082,7 +1103,7 @@ const renderTracker = (mesId) => {
       // Extract JSON content from the match
       const jsonContent = match[0]
         .replace(/```/g, "")
-        .replace(new RegExp(`^${identifier}\\s*`), "")
+        .replace(new RegExp(`^${identifier}\s*`), "")
         .trim();
 
       // --- NEW --- Capture the raw JSON string for the {{last_sim_stats}} macro
@@ -1090,6 +1111,13 @@ const renderTracker = (mesId) => {
       // This ensures it always contains the most recent data
       lastSimJsonString = jsonContent;
       log(`Captured last sim stats JSON from message ID ${mesId}.`);
+
+      // Remove any preparing text since we've found valid sim data
+      if (preparingText) {
+        preparingText.remove();
+        // Remove this mesText from the set since it no longer has preparing text
+        mesTextsWithPreparingText.delete(messageElement);
+      }
 
       let jsonData;
       try {
@@ -1233,7 +1261,9 @@ const renderTracker = (mesId) => {
       }
 
       // Remove any preparing text
-      const preparingText = messageElement.parentNode.querySelector(".sst-preparing-text");
+      const preparingText = messageElement.parentNode.querySelector(
+        ".sst-preparing-text"
+      );
       if (preparingText) {
         preparingText.remove();
         // Remove this mesText from the set since it no longer has preparing text
@@ -1359,14 +1389,22 @@ const renderTrackerWithoutSim = (mesId) => {
 
       const jsonContent = dataMatch[0]
         .replace(/```/g, "")
-        .replace(new RegExp(`^${identifier}\\s*`), "")
+        .replace(new RegExp(`^${identifier}\s*`), "")
         .trim();
-      
+
       // --- NEW --- Capture the raw JSON string for the {{last_sim_stats}} macro
       // Always update the lastSimJsonString when we find a new sim block
       // This ensures it always contains the most recent data
       lastSimJsonString = jsonContent;
       log(`Captured last sim stats JSON from message ID ${mesId}.`);
+
+      // Remove any preparing text since we've found valid sim data
+      if (preparingText) {
+        preparingText.remove();
+        // Remove this mesText from the set since it no longer has preparing text
+        mesTextsWithPreparingText.delete(messageElement);
+      }
+
       let jsonData;
 
       try {
@@ -1384,7 +1422,6 @@ const renderTrackerWithoutSim = (mesId) => {
         log(`Parsed data in message ID ${mesId} is not a valid object.`);
         return;
       }
-
       // Handle both old and new JSON formats
       let worldData, characterList;
 
@@ -1508,7 +1545,9 @@ const renderTrackerWithoutSim = (mesId) => {
       }
 
       // Remove any preparing text
-      const preparingText = messageElement.parentNode.querySelector(".sst-preparing-text");
+      const preparingText = messageElement.parentNode.querySelector(
+        ".sst-preparing-text"
+      );
       if (preparingText) {
         preparingText.remove();
         // Remove this mesText from the set since it no longer has preparing text
@@ -1886,22 +1925,23 @@ globalThis.simTrackerGenInterceptor = async function (
   type
 ) {
   log(`simTrackerGenInterceptor called with type: ${type}`);
-  
+
   // Set generation in progress flag
   isGenerationInProgress = true;
-  
+
   // Handle regenerate and swipe conditions to reset last_sim_stats macro
   if (type === "regenerate" || type === "swipe") {
     log(`Handling ${type} condition - updating last_sim_stats macro`);
     // For regenerate/swipe operations, pass the ID of the last message in chat
     // This helps find sim data from the message before the one being regenerated/swiped
-    const lastMesId = chat && Array.isArray(chat) && chat.length > 0 ? chat.length - 1 : null;
+    const lastMesId =
+      chat && Array.isArray(chat) && chat.length > 0 ? chat.length - 1 : null;
     updateLastSimStatsOnRegenerateOrSwipe(lastMesId);
   }
-  
+
   // Filter out sim blocks from messages beyond the last 3
   filterSimBlocksInPrompt(chat);
-  
+
   return { chat, contextSize, abort };
 };
 
@@ -1919,8 +1959,13 @@ jQuery(async () => {
     // Set up MutationObserver to hide sim code blocks as they stream in
     log("Setting up MutationObserver for in-flight sim block hiding...");
     const observer = new MutationObserver((mutations) => {
-      // Only process if the extension is enabled and hiding is turned on
-      if (!get_settings("isEnabled") || !get_settings("hideSimBlocks")) return;
+      // Only process if the extension is enabled, hiding is turned on, and generation is in progress
+      if (
+        !get_settings("isEnabled") ||
+        !get_settings("hideSimBlocks") ||
+        !isGenerationInProgress
+      )
+        return;
 
       mutations.forEach((mutation) => {
         mutation.addedNodes.forEach((node) => {
@@ -1929,41 +1974,59 @@ jQuery(async () => {
             const preElements =
               node.tagName === "PRE" ? [node] : node.querySelectorAll("pre");
             preElements.forEach((pre) => {
-              // Check if this pre element is within a mes_text div
+              // Check if this pre element is within a mes_text div and contains sim data
               if (pre.closest(".mes_text")) {
-                log(`Hiding in-flight code block in mes_text`);
-                pre.style.display = "none";
+                // Check if this is a sim code block
+                const codeElement = pre.querySelector("code");
+                if (codeElement) {
+                  const identifier = get_settings("codeBlockIdentifier");
+                  const classList = codeElement.classList;
+                  // Check if any class matches our identifier (like language-sim)
+                  const isSimBlock =
+                    Array.from(classList).some((cls) =>
+                      cls.includes(identifier)
+                    ) || codeElement.textContent.trim().startsWith(identifier);
 
-                // Add "Preparing new tracker cards..." text with pulsing animation
-                const mesText = pre.closest(".mes_text");
-                if (mesText && !mesTextsWithPreparingText.has(mesText)) {
-                  // Mark this mesText as having preparing text
-                  mesTextsWithPreparingText.add(mesText);
+                  if (isSimBlock) {
+                    log(`Hiding in-flight code block in mes_text`);
+                    pre.style.display = "none";
 
-                  const preparingText = document.createElement("div");
-                  preparingText.className = "sst-preparing-text";
-                  preparingText.textContent = "Preparing new tracker cards...";
-                  preparingText.style.cssText = `
-                                        color: #4a3a9d; /* Darker blue */
-                                        font-style: italic;
-                                        margin: 10px 0;
-                                        animation: sst-pulse 1.5s infinite;
-                                    `;
-                  // Insert after mesText instead of appending to it
-                  mesText.parentNode.insertBefore(preparingText, mesText.nextSibling);
+                    // Add "Preparing new tracker cards..." text with pulsing animation
+                    const mesText = pre.closest(".mes_text");
+                    if (mesText && !mesTextsWithPreparingText.has(mesText)) {
+                      // Mark this mesText as having preparing text
+                      mesTextsWithPreparingText.add(mesText);
 
-                  // Add the pulse animation to the document if not already present
-                  if (!document.getElementById("sst-pulse-animation")) {
-                    const style = document.createElement("style");
-                    style.id = "sst-pulse-animation";
-                    style.textContent = `
-                                            @keyframes sst-pulse {
-                                                0% { opacity: 0.5; }
-                                                50% { opacity: 1; }
-                                                100% { opacity: 0.5; }
-                                            }
+                      const preparingText = document.createElement("div");
+                      preparingText.className = "sst-preparing-text";
+                      preparingText.textContent =
+                        "Preparing new tracker cards...";
+                      preparingText.style.cssText = `
+                                            color: #4a3a9d; /* Darker blue */
+                                            font-style: italic;
+                                            margin: 10px 0;
+                                            animation: sst-pulse 1.5s infinite;
                                         `;
-                    document.head.appendChild(style);
+                      // Insert after mesText instead of appending to it
+                      mesText.parentNode.insertBefore(
+                        preparingText,
+                        mesText.nextSibling
+                      );
+
+                      // Add the pulse animation to the document if not already present
+                      if (!document.getElementById("sst-pulse-animation")) {
+                        const style = document.createElement("style");
+                        style.id = "sst-pulse-animation";
+                        style.textContent = `
+                                                @keyframes sst-pulse {
+                                                    0% { opacity: 0.5; }
+                                                    50% { opacity: 1; }
+                                                    100% { opacity: 0.5; }
+                                                }
+                                            `;
+                        document.head.appendChild(style);
+                      }
+                    }
                   }
                 }
               }
@@ -2170,7 +2233,21 @@ ${exampleJson}
     const context = getContext();
     const { eventSource, event_types } = context;
 
-    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, renderTracker);
+    // Set generation in progress flag when generation starts
+    eventSource.on(event_types.GENERATION_STARTED, () => {
+      isGenerationInProgress = true;
+    });
+
+    // Also set generation in progress flag for after commands event
+    eventSource.on(event_types.GENERATION_AFTER_COMMANDS, () => {
+      isGenerationInProgress = true;
+    });
+
+    eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (mesId) => {
+      // Clear generation in progress flag when message is rendered
+      isGenerationInProgress = false;
+      renderTracker(mesId);
+    });
     eventSource.on(event_types.CHAT_CHANGED, refreshAllCards);
     eventSource.on(event_types.MORE_MESSAGES_LOADED, refreshAllCards);
     eventSource.on(event_types.MESSAGE_UPDATED, refreshAllCards);
@@ -2184,25 +2261,34 @@ ${exampleJson}
       );
       updateLastSimStatsOnRegenerateOrSwipe(mesId);
     });
-    
+
     // Listen for generation ended event to update sidebars
     eventSource.on(event_types.GENERATION_ENDED, () => {
       log("Generation ended, updating sidebars if needed");
       isGenerationInProgress = false;
-      
+
       // Update left sidebar if there's pending content
       if (pendingLeftSidebarContent) {
         updateLeftSidebar(pendingLeftSidebarContent);
         pendingLeftSidebarContent = null;
       }
-      
+
       // Update right sidebar if there's pending content
       if (pendingRightSidebarContent) {
         updateRightSidebar(pendingRightSidebarContent);
         pendingRightSidebarContent = null;
       }
+
+      // Clear any remaining preparing text when generation ends
+      document.querySelectorAll(".sst-preparing-text").forEach((element) => {
+        const mesText = element.previousElementSibling;
+        if (mesText && mesText.classList.contains("mes_text")) {
+          mesTextsWithPreparingText.delete(mesText);
+        }
+        element.remove();
+      });
     });
-    
+
     refreshAllCards();
     log(`${MODULE_NAME} has been successfully loaded.`);
   } catch (error) {
