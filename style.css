@@ -292,23 +292,28 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     flex-direction: column;
     justify-content: center;
     z-index: 20;
+    transition: all 0.3s ease-in-out;
 }
 
 .sim-tracker-tab {
-    transition: filter 0.3s ease-in-out;
+    transition: all 0.3s ease-in-out;
     cursor: pointer;
     position: relative;
     flex-shrink: 0;
     margin: 0 8px;
+    opacity: 0;
+    visibility: hidden;
+}
+
+.sim-tracker-tab.active {
+    opacity: 1;
+    visibility: visible;
+    filter: brightness(1.3) !important;
+    z-index: 20 !important;
 }
 
 .sim-tracker-tab:hover {
     filter: brightness(1.2) !important;
-}
-
-.sim-tracker-tab.active {
-    filter: brightness(1.3) !important;
-    z-index: 20 !important;
 }
 
 .sim-tracker-card {
@@ -328,6 +333,14 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     right: auto;
 }
 
+#sst-global-sidebar-left .sim-tracker-tab {
+    transform: translateX(-100%);
+}
+
+#sst-global-sidebar-left .sim-tracker-tab.active {
+    transform: translateX(0);
+}
+
 #sst-global-sidebar-left .sim-tracker-card {
     left: 0 !important;
     transform: translateY(-50%) translateX(-100%) !important;
@@ -340,6 +353,14 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 #sst-global-sidebar-right .sim-tracker-tabs {
     right: 0;
     left: auto;
+}
+
+#sst-global-sidebar-right .sim-tracker-tab {
+    transform: translateX(100%);
+}
+
+#sst-global-sidebar-right .sim-tracker-tab.active {
+    transform: translateX(0);
 }
 
 #sst-global-sidebar-right .sim-tracker-card {

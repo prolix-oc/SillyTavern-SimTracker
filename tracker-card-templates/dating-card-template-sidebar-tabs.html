@@ -25,6 +25,7 @@
     justify-content: center;
     height: 100%;
     z-index: 20;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
   }
 
   .sim-tracker-tab {
@@ -43,15 +44,15 @@
     border: 1px solid rgba(255, 255, 255, 0.05);
     flex-shrink: 0;
     margin: 0 8px; /* Add some horizontal spacing */
-  }
-
-  .sim-tracker-tab:hover {
-    filter: brightness(1.2);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateX(100%);
   }
 
   .sim-tracker-tab.active {
-    filter: brightness(1.3);
-    z-index: 20;
+    opacity: 1;
+    visibility: visible;
+    transform: translateX(0);
   }
 
   .tab-initials {
