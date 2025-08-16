@@ -1225,19 +1225,19 @@ const initialize_settings_listeners = () => {
         // Remove any existing modal
         $('#sst-custom-fields-modal').remove();
         
-        // Create modal HTML
+        // Create modal HTML using SillyTavern's built-in classes
         const modalHtml = `
-            <div id="sst-custom-fields-modal" class="sst-modal">
-                <div class="sst-modal-content">
-                    <div class="sst-modal-header">
-                        <h3>Manage Custom Fields</h3>
-                        <span class="sst-close">&times;</span>
+            <div id="sst-custom-fields-modal" class="popup wide_dialogue_popup large_dialogue_popup vertical_scrolling_dialogue_popup popup--animation-fast">
+                <div class="popup-header">
+                    <h3>Manage Custom Fields</h3>
+                    <div class="popup-close-button close_popups" id="sst-modal-close">&times;</div>
+                </div>
+                <div class="popup-content">
+                    <div id="customFieldsList" class="sst-fields-container">
+                        <!-- Fields will be populated here by JavaScript -->
                     </div>
-                    <div class="sst-modal-body">
-                        <div id="customFieldsList" class="sst-fields-container">
-                            <!-- Fields will be populated here by JavaScript -->
-                        </div>
-                        <button id="addCustomFieldBtn" class="menu_button" style="margin-top: 15px;">Add New Field</button>
+                    <div class="popup-footer">
+                        <button id="addCustomFieldBtn" class="menu_button">Add New Field</button>
                     </div>
                 </div>
             </div>
@@ -1250,14 +1250,14 @@ const initialize_settings_listeners = () => {
         const $modal = $('#sst-custom-fields-modal');
         const $fieldsContainer = $modal.find('#customFieldsList');
         const $addFieldButton = $modal.find('#addCustomFieldBtn');
-        const $modalClose = $modal.find('.sst-close');
+        const $modalClose = $modal.find('#sst-modal-close');
         
         // Create field template
         const createFieldTemplate = () => {
             return $(`
                 <div class="sst-field-item">
                     <div class="sst-field-header">
-                        <input type="text" class="field-key-display field-key text_pole" placeholder="Field key" style="flex: 1; margin-right: 10px;" />
+                        <input type="text" class="field-key-display field-key text_pole" placeholder="Field key" style="margin-right: 10px;" />
                         <div>
                             <button class="sst-toggle-field menu_button">Expand</button>
                             <button class="remove-field-btn menu_button" style="margin-left: 5px;">Remove</button>
@@ -1330,8 +1330,8 @@ const initialize_settings_listeners = () => {
             renderFields(); // Re-render the list
             
             // Scroll to the bottom where the new field was added
-            const $modalBody = $modal.find('.sst-modal-body');
-            $modalBody.scrollTop($modalBody[0].scrollHeight);
+            const $modalContent = $modal.find('.popup-content');
+            $modalContent.scrollTop($modalContent[0].scrollHeight);
         });
         
         // Close modal when clicking the X
@@ -1339,11 +1339,9 @@ const initialize_settings_listeners = () => {
             $modal.remove();
         });
         
-        // Close modal when clicking outside the content
-        $(window).on('click.sstModal', (event) => {
-            if (event.target === $modal[0]) {
-                $modal.remove();
-            }
+        // Close modal when clicking outside the content (using SillyTavern's built-in class)
+        $modal.find('.popup-header .close_popups').on('click', function() {
+            $modal.remove();
         });
         
         // Render fields and show modal

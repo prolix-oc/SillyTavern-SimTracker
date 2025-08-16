@@ -7,67 +7,11 @@
     pointer-events: none;
 }
 
-/* Modal Styles */
-.sst-modal {
-    position: fixed;
-    z-index: 10000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
-    display: none;
+.sst-hidden-sim-block {
+    display: none !important;
 }
 
-.sst-modal-content {
-    background-color: #202020;
-    margin: 5% auto;
-    padding: 0;
-    border: 1px solid #444;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 600px;
-    max-height: 80vh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-}
-
-.sst-modal-header {
-    padding: 15px 20px;
-    border-bottom: 1px solid #444;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-}
-
-.sst-modal-header h3 {
-    margin: 0;
-    color: #fff;
-}
-
-.sst-close {
-    color: #aaa;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.sst-close:hover,
-.sst-close:focus {
-    color: #fff;
-}
-
-.sst-modal-body {
-    padding: 20px;
-    overflow-y: auto;
-    flex-grow: 1;
-}
-
-.sst-fields-container {
-    max-height: 50vh;
-    overflow-y: auto;
-}
+/* Custom Fields Modal Styles */
 
 /* Collapsible Field Styles */
 .sst-field-item {
@@ -84,17 +28,6 @@
     align-items: center;
 }
 
-.sst-field-header .field-key-display {
-    flex: 1;
-    margin-right: 10px;
-    background-color: #333;
-    border: 1px solid #555;
-    border-radius: 4px;
-    padding: 8px;
-    color: #fff;
-    font-weight: bold;
-}
-
 .sst-field-details {
     margin-top: 10px;
 }
@@ -103,12 +36,6 @@
     padding: 5px 10px;
     min-width: auto;
 }
-
-.sst-hidden-sim-block {
-    display: none !important;
-}
-
-/* Custom Fields Modal Styles */
 
 /* 
   General styling for settings labels to ensure consistent alignment and spacing.
