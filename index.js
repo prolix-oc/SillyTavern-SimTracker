@@ -73,10 +73,6 @@ function updateLeftSidebar(content) {
   const leftSidebar = document.createElement("div");
   leftSidebar.id = "sst-sidebar-left-content";
   leftSidebar.innerHTML = content;
-  console.log(
-    "[SST] Set innerHTML on leftSidebar. New innerHTML:",
-    leftSidebar.innerHTML
-  );
   leftSidebar.style.cssText = `
         width: auto !important;
         height: 100% !important;
@@ -274,10 +270,6 @@ function updateRightSidebar(content) {
   const rightSidebar = document.createElement("div");
   rightSidebar.id = "sst-sidebar-right-content";
   rightSidebar.innerHTML = content;
-  console.log(
-    "[SST] Set innerHTML on rightSidebar. New innerHTML:",
-    rightSidebar.innerHTML
-  );
   rightSidebar.style.cssText = `
         width: auto !important;
         height: 100% !important;
