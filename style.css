@@ -329,16 +329,16 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 }
 
 #sst-global-sidebar-left .sim-tracker-tabs {
-    left: 0;
+    left: 270px; /* Card width */
     right: auto;
 }
 
 #sst-global-sidebar-left .sim-tracker-tab {
-    transform: translateX(-100%);
+    transform: translateX(-70px); /* Start slightly to the left */
 }
 
 #sst-global-sidebar-left .sim-tracker-tab.active {
-    transform: translateX(0);
+    transform: translateX(0); /* Animate to aligned position */
 }
 
 #sst-global-sidebar-left .sim-tracker-card {
@@ -351,16 +351,16 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 }
 
 #sst-global-sidebar-right .sim-tracker-tabs {
-    right: 0;
+    right: 270px; /* Card width */
     left: auto;
 }
 
 #sst-global-sidebar-right .sim-tracker-tab {
-    transform: translateX(100%);
+    transform: translateX(70px); /* Start slightly to the right */
 }
 
 #sst-global-sidebar-right .sim-tracker-tab.active {
-    transform: translateX(0);
+    transform: translateX(0); /* Animate to aligned position */
 }
 
 #sst-global-sidebar-right .sim-tracker-card {
