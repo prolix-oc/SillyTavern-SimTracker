@@ -1,8 +1,8 @@
 import { loadTemplate, populateTemplateDropdown, handleCustomTemplateUpload } from "./templater.js";
-
+import { extension_settings, saveSettingsDebounced } from '../../../script.js'
 const MODULE_NAME = "silly-sim-tracker";
 
-const default_settings = Object.freeze({
+const default_settings = {
   isEnabled: true,
   codeBlockIdentifier: "sim",
   defaultBgColor: "#6a5acd",
@@ -13,10 +13,9 @@ const default_settings = Object.freeze({
     "Default prompt could not be loaded. Please check file path.",
   hideSimBlocks: true, // New setting to hide sim blocks in message text
   templatePosition: "BOTTOM", // New setting for template position
-});
+};
 
 // Get SillyTavern context for extension settings
-const { extensionSettings, saveSettingsDebounced } = SillyTavern.getContext();
 
 let settings_ui_map = {};
 
@@ -27,18 +26,18 @@ let settings_ui_map = {};
  */
 function getSSTExtensionSettings() {
   // If settings for our extension don't exist yet, initialize them
-  if (!extensionSettings[MODULE_NAME]) {
-    extensionSettings[MODULE_NAME] = structuredClone(default_settings);
+  if (!extension_settings[MODULE_NAME]) {
+    extension_settings[MODULE_NAME] = structuredClone(default_settings);
   }
 
   // Ensure all default keys exist (useful after updates)
   for (const key of Object.keys(default_settings)) {
-    if (!Object.hasOwn(extensionSettings[MODULE_NAME], key)) {
-      extensionSettings[MODULE_NAME][key] = default_settings[key];
+    if (!Object.hasOwn(extension_settings[MODULE_NAME], key)) {
+      extension_settings[MODULE_NAME][key] = default_settings[key];
     }
   }
 
-  return extensionSettings[MODULE_NAME];
+  return extension_settings[MODULE_NAME];
 }
 
 const get_settings = (key) => {
