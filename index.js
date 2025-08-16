@@ -1221,6 +1221,9 @@ const initialize_settings_listeners = () => {
     const $fieldsContainer = $('#customFieldsList');
     const $addFieldButton = $('#addCustomFieldBtn');
     const $fieldTemplate = $('#customFieldTemplate');
+    const $manageFieldsButton = $('#manageCustomFieldsBtn');
+    const $customFieldsModal = $('#customFieldsModal');
+    const $modalClose = $('.sst-close');
 
     // Function to render the list of fields
     const renderFields = () => {
@@ -1229,23 +1232,47 @@ const initialize_settings_listeners = () => {
         fields.forEach((field, index) => {
             const $fieldElement = $fieldTemplate.clone();
             $fieldElement.removeAttr('id').removeClass('hidden');
+            
+            // Set the display key
+            const displayKey = field.key || 'New Field';
+            $fieldElement.find('.sst-field-key-display').text(displayKey);
+            
+            // Set values in the detail inputs
             $fieldElement.find('.field-key').val(field.key).on('input', function () {
                 const newValue = $(this).val();
                 const updatedFields = [...fields];
                 updatedFields[index].key = sanitizeFieldKey(newValue); // Sanitize on input
                 set_settings('customFields', updatedFields);
+                // Update the display key
+                $fieldElement.find('.sst-field-key-display').text(sanitizeFieldKey(newValue) || 'New Field');
             });
+            
             $fieldElement.find('.field-description').val(field.description).on('input', function () {
                 const newValue = $(this).val();
                 const updatedFields = [...fields];
                 updatedFields[index].description = newValue;
                 set_settings('customFields', updatedFields);
             });
+            
             $fieldElement.find('.remove-field-btn').on('click', function () {
                 const updatedFields = fields.filter((_, i) => i !== index);
                 set_settings('customFields', updatedFields);
                 renderFields(); // Re-render the list
             });
+            
+            // Handle toggle button
+            const $toggleButton = $fieldElement.find('.sst-toggle-field');
+            const $details = $fieldElement.find('.sst-field-details');
+            $toggleButton.on('click', function () {
+                if ($details.is(':visible')) {
+                    $details.hide();
+                    $toggleButton.text('Expand');
+                } else {
+                    $details.show();
+                    $toggleButton.text('Collapse');
+                }
+            });
+            
             $fieldsContainer.append($fieldElement);
         });
     };
@@ -1256,9 +1283,31 @@ const initialize_settings_listeners = () => {
         const newField = { key: 'new_key', description: 'New field description' };
         set_settings('customFields', [...fields, newField]);
         renderFields(); // Re-render the list
+        
+        // Scroll to the bottom where the new field was added
+        const $modalBody = $('.sst-modal-body');
+        $modalBody.scrollTop($modalBody[0].scrollHeight);
     });
 
-    // Initial render of fields
+    // Manage fields button opens the modal
+    $manageFieldsButton.on('click', () => {
+        $customFieldsModal.show();
+        renderFields(); // Render fields when opening modal
+    });
+
+    // Close modal when clicking the X
+    $modalClose.on('click', () => {
+        $customFieldsModal.hide();
+    });
+
+    // Close modal when clicking outside the content
+    $(window).on('click', (event) => {
+        if (event.target === $customFieldsModal[0]) {
+            $customFieldsModal.hide();
+        }
+    });
+
+    // Initial render of fields (will be empty until modal is opened)
     renderFields();
 
     refresh_settings_ui();
