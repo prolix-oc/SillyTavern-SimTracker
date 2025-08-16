@@ -84,9 +84,15 @@
     align-items: center;
 }
 
-.sst-field-key-display {
-    font-weight: bold;
+.sst-field-header .field-key-display {
+    flex: 1;
+    margin-right: 10px;
+    background-color: #333;
+    border: 1px solid #555;
+    border-radius: 4px;
+    padding: 8px;
     color: #fff;
+    font-weight: bold;
 }
 
 .sst-field-details {

@@ -1233,20 +1233,16 @@ const initialize_settings_listeners = () => {
             const $fieldElement = $fieldTemplate.clone();
             $fieldElement.removeAttr('id').removeClass('hidden');
             
-            // Set the display key
-            const displayKey = field.key || 'New Field';
-            $fieldElement.find('.sst-field-key-display').text(displayKey);
-            
-            // Set values in the detail inputs
-            $fieldElement.find('.field-key').val(field.key).on('input', function () {
+            // Set values in the key input (which is now at the top level)
+            const fieldKey = field.key || '';
+            $fieldElement.find('.field-key-display').val(fieldKey).on('input', function () {
                 const newValue = $(this).val();
                 const updatedFields = [...fields];
                 updatedFields[index].key = sanitizeFieldKey(newValue); // Sanitize on input
                 set_settings('customFields', updatedFields);
-                // Update the display key
-                $fieldElement.find('.sst-field-key-display').text(sanitizeFieldKey(newValue) || 'New Field');
             });
             
+            // Set values in the description input
             $fieldElement.find('.field-description').val(field.description).on('input', function () {
                 const newValue = $(this).val();
                 const updatedFields = [...fields];
@@ -1280,7 +1276,7 @@ const initialize_settings_listeners = () => {
     // Add new field button listener
     $addFieldButton.on('click', () => {
         const fields = get_settings('customFields') || [];
-        const newField = { key: 'new_key', description: 'New field description' };
+        const newField = { key: 'new_field_key', description: 'Description for the LLM' };
         set_settings('customFields', [...fields, newField]);
         renderFields(); // Re-render the list
         

@@ -125,7 +125,7 @@
         <!-- Template for custom field rows (hidden) -->
         <div id="customFieldTemplate" class="sst-field-item hidden">
             <div class="sst-field-header">
-                <span class="sst-field-key-display">Field Key</span>
+                <input type="text" class="field-key-display field-key text_pole" placeholder="Field key" style="flex: 1; margin-right: 10px;" />
                 <div>
                     <button class="sst-toggle-field menu_button">Expand</button>
                     <button class="remove-field-btn menu_button" style="margin-left: 5px;">Remove</button>
@@ -134,11 +134,7 @@
             <div class="sst-field-details" style="display: none; padding: 10px; border-top: 1px solid #444; margin-top: 5px;">
                 <div style="display: flex; flex-direction: column; gap: 10px;">
                     <div>
-                        <label>Key:</label>
-                        <input type="text" class="field-key text_pole" placeholder="Field key" style="width: 100%;" />
-                    </div>
-                    <div>
-                        <label>Description:</label>
+                        <label>Description for LLM:</label>
                         <input type="text" class="field-description text_pole" placeholder="Field description" style="width: 100%;" />
                     </div>
                 </div>
