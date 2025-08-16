@@ -330,6 +330,7 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 .sim-tracker-card.inactive {
     opacity: 0.6;
     z-index: 5; /* Lower z-index for inactive cards */
+    display: none !important;
 }
 
 #sst-global-sidebar-left .sim-tracker-tabs {
@@ -338,7 +339,7 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 }
 
 #sst-global-sidebar-left .sim-tracker-tab {
-    transform: translateX(-60px); /* Start hidden at the edge of the screen */
+    transform: translateX(0px); /* Start hidden at the edge of the screen */
 }
 
 #sst-global-sidebar-left .sim-tracker-tab.active {
@@ -360,7 +361,7 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 }
 
 #sst-global-sidebar-right .sim-tracker-tab {
-    transform: translateX(60px); /* Start hidden at the edge of the screen */
+    transform: translateX(0px); /* Start hidden at the edge of the screen */
 }
 
 #sst-global-sidebar-right .sim-tracker-tab.active {
@@ -371,6 +372,7 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     right: 0 !important;
     transform: translateY(-50%) translateX(100%) !important;
 }
+
 
 #sst-global-sidebar-right .sim-tracker-card.active {
     transform: translateY(-50%) translateX(0) !important;
