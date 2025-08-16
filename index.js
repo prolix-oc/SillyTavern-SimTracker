@@ -26,7 +26,7 @@ function updateLeftSidebar(content) {
         return;
     }
     
-    // Create a container that stretches vertically within sheld
+    // Create a container that stretches vertically and position it before sheld
     const verticalContainer = document.createElement('div');
     verticalContainer.id = 'sst-global-sidebar-left';
     verticalContainer.className = 'vertical-container';
@@ -37,7 +37,7 @@ function updateLeftSidebar(content) {
         bottom: 0 !important;
         width: auto !important;
         height: 100% !important;
-        z-index: 1000 !important;
+        z-index: 999 !important;
         box-sizing: border-box !important;
         margin: 0 !important;
         padding: 10px !important;
@@ -94,8 +94,8 @@ function updateLeftSidebar(content) {
     // Store reference to global sidebar
     globalLeftSidebar = verticalContainer;
     
-    // Add to the sheld container as a child
-    sheld.appendChild(verticalContainer);
+    // Insert the sidebar container directly before the sheld div in the body
+    sheld.parentNode.insertBefore(verticalContainer, sheld);
     
     return verticalContainer;
 }
@@ -114,7 +114,7 @@ function updateRightSidebar(content) {
         return;
     }
     
-    // Create a container that stretches vertically within sheld
+    // Create a container that stretches vertically and position it before sheld
     const verticalContainer = document.createElement('div');
     verticalContainer.id = 'sst-global-sidebar-right';
     verticalContainer.className = 'vertical-container';
@@ -125,7 +125,7 @@ function updateRightSidebar(content) {
         bottom: 0 !important;
         width: auto !important;
         height: 100% !important;
-        z-index: 1000 !important;
+        z-index: 999 !important;
         box-sizing: border-box !important;
         margin: 0 !important;
         padding: 10px !important;
@@ -182,8 +182,8 @@ function updateRightSidebar(content) {
     // Store reference to global sidebar
     globalRightSidebar = verticalContainer;
     
-    // Add to the sheld container as a child
-    sheld.appendChild(verticalContainer);
+    // Insert the sidebar container directly before the sheld div in the body
+    sheld.parentNode.insertBefore(verticalContainer, sheld);
     
     return verticalContainer;
 }
