@@ -605,6 +605,7 @@ export {
   default_settings,
   settings,
   settings_ui_map,
+  showManagePresetsModal,
   get_settings,
   set_settings,
   get_extension_directory,
