@@ -9,7 +9,14 @@ import { SlashCommandParser } from "../../../slash-commands/SlashCommandParser.j
 
 const MODULE_NAME = "silly-sim-tracker";
 const CONTAINER_ID = "silly-sim-tracker-container";
-const SETTINGS_ID = "silly-sim-tracker-settings";
+
+// --- UTILITY FUNCTIONS ---
+const log = (message) => console.log(`[SST] [${MODULE_NAME}]`, message);
+const get_settings = (key) => settings[key] ?? default_settings[key];
+const set_settings = (key, value) => {
+  settings[key] = value;
+  saveSettingsDebounced();
+};
 
 // Global sidebar tracker elements
 let globalLeftSidebar = null;
@@ -17,18 +24,15 @@ let globalRightSidebar = null;
 
 // Helper function to create or update a global left sidebar
 function updateLeftSidebar(content) {
-  console.log("[SST] updateLeftSidebar called");
-  console.log("[SST] Content received:", content);
-
   // Remove existing global sidebar if it exists
   if (globalLeftSidebar) {
-    console.log("[SST] Removing existing left sidebar");
+    log("Removing existing left sidebar");
     globalLeftSidebar.remove();
   }
 
   // Find the sheld container
   const sheld = document.getElementById("sheld");
-  console.log("[SST] Found sheld element:", sheld);
+  log("Found sheld element:", sheld);
   if (!sheld) {
     console.warn("[SST] Could not find sheld container for sidebar");
     return;
@@ -59,7 +63,7 @@ function updateLeftSidebar(content) {
         visibility: visible !important;
         overflow: visible !important;
     `;
-  console.log("[SST] Created verticalContainer");
+  log("Created verticalContainer");
 
   // Create the actual sidebar content container
   const leftSidebar = document.createElement("div");
@@ -84,23 +88,12 @@ function updateLeftSidebar(content) {
         overflow: visible !important;
         position: relative !important;
     `;
-  console.log("[SST] Applied styles to leftSidebar");
+  log("Applied styles to leftSidebar");
 
   // Debug: Check what we actually have
   const trackerContainer = leftSidebar.querySelector(
     "#silly-sim-tracker-container"
   );
-  console.log("[SST] Found trackerContainer:", trackerContainer);
-  if (trackerContainer) {
-    console.log(
-      "[SST] trackerContainer innerHTML:",
-      trackerContainer.innerHTML
-    );
-    console.log(
-      "[SST] trackerContainer children count:",
-      trackerContainer.children.length
-    );
-  }
 
   // Add event listeners for tabs if this is a tabbed template
   setTimeout(() => {
@@ -183,7 +176,6 @@ function updateLeftSidebar(content) {
     }
 
     const container = leftSidebar.querySelector("#silly-sim-tracker-container");
-    console.log("[SST] Found container in setTimeout:", container);
     if (container) {
       container.style.cssText += `
                 width: 100% !important;
@@ -193,11 +185,10 @@ function updateLeftSidebar(content) {
                 visibility: visible !important;
                 height: 100%;
             `;
-      console.log("[SST] Applied additional styles to container");
     }
 
     // Log dimensions for debugging
-    console.log("[SST] Left sidebar dimensions:", {
+    log("Left sidebar dimensions:", {
       offsetWidth: leftSidebar.offsetWidth,
       offsetHeight: leftSidebar.offsetHeight,
       clientWidth: leftSidebar.clientWidth,
@@ -210,16 +201,16 @@ function updateLeftSidebar(content) {
 
   // Add the sidebar to the vertical container
   verticalContainer.appendChild(leftSidebar);
-  console.log("[SST] Appended leftSidebar to verticalContainer");
+  log("Appended leftSidebar to verticalContainer");
 
   // Store reference to global sidebar
   globalLeftSidebar = verticalContainer;
-  console.log("[SST] Stored reference to globalLeftSidebar");
+  log("Stored reference to globalLeftSidebar");
 
   // Insert the sidebar container directly before the sheld div in the body
   if (sheld.parentNode) {
     sheld.parentNode.insertBefore(verticalContainer, sheld);
-    console.log("[SST] Successfully inserted left sidebar before sheld");
+    log("Successfully inserted left sidebar before sheld");
   } else {
     console.error("[SST] sheld has no parent node!");
     // Fallback: append to body
@@ -227,25 +218,22 @@ function updateLeftSidebar(content) {
   }
 
   // Debug: Log the final container
-  console.log("[SST] Created left sidebar container:", verticalContainer);
+  log("Created left sidebar container:", verticalContainer);
 
   return verticalContainer;
 }
 
 // Helper function to create or update a global right sidebar
 function updateRightSidebar(content) {
-  console.log("[SST] updateRightSidebar called");
-  console.log("[SST] Content received:", content);
 
   // Remove existing global sidebar if it exists
   if (globalRightSidebar) {
-    console.log("[SST] Removing existing right sidebar");
+    log("Removing existing right sidebar");
     globalRightSidebar.remove();
   }
 
   // Find the sheld container
   const sheld = document.getElementById("sheld");
-  console.log("[SST] Found sheld element:", sheld);
   if (!sheld) {
     console.warn("[SST] Could not find sheld container for sidebar");
     return;
@@ -276,7 +264,7 @@ function updateRightSidebar(content) {
         visibility: visible !important;
         overflow: visible !important;
     `;
-  console.log("[SST] Created verticalContainer");
+  log("Created verticalContainer");
 
   // Create the actual sidebar content container
   const rightSidebar = document.createElement("div");
@@ -301,23 +289,11 @@ function updateRightSidebar(content) {
         overflow: visible !important;
         position: relative !important;
     `;
-  console.log("[SST] Applied styles to rightSidebar");
 
   // Debug: Check what we actually have
   const trackerContainer = rightSidebar.querySelector(
     "#silly-sim-tracker-container"
   );
-  console.log("[SST] Found trackerContainer:", trackerContainer);
-  if (trackerContainer) {
-    console.log(
-      "[SST] trackerContainer innerHTML:",
-      trackerContainer.innerHTML
-    );
-    console.log(
-      "[SST] trackerContainer children count:",
-      trackerContainer.children.length
-    );
-  }
 
   // Add event listeners for tabs if this is a tabbed template
   setTimeout(() => {
@@ -402,7 +378,6 @@ function updateRightSidebar(content) {
     const container = rightSidebar.querySelector(
       "#silly-sim-tracker-container"
     );
-    console.log("[SST] Found container in setTimeout:", container);
     if (container) {
       container.style.cssText += `
                 width: 100% !important;
@@ -412,16 +387,8 @@ function updateRightSidebar(content) {
                 visibility: visible !important;
                 height: 100%;
             `;
-      console.log("[SST] Applied additional styles to container");
+      log("Applied additional styles to container");
     }
-
-    // Log dimensions for debugging
-    console.log("[SST] Right sidebar dimensions:", {
-      offsetWidth: rightSidebar.offsetWidth,
-      offsetHeight: rightSidebar.offsetHeight,
-      clientWidth: rightSidebar.clientWidth,
-      clientHeight: rightSidebar.clientHeight,
-    });
 
     // Force reflow to ensure proper rendering
     verticalContainer.offsetHeight;
@@ -429,24 +396,21 @@ function updateRightSidebar(content) {
 
   // Add the sidebar to the vertical container
   verticalContainer.appendChild(rightSidebar);
-  console.log("[SST] Appended rightSidebar to verticalContainer");
+  log("Appended rightSidebar to verticalContainer");
 
   // Store reference to global sidebar
   globalRightSidebar = verticalContainer;
-  console.log("[SST] Stored reference to globalRightSidebar");
+  log("Stored reference to globalRightSidebar");
 
   // Insert the sidebar container directly before the sheld div in the body
   if (sheld.parentNode) {
     sheld.parentNode.insertBefore(verticalContainer, sheld);
-    console.log("[SST] Successfully inserted right sidebar before sheld");
+    log("Successfully inserted right sidebar before sheld");
   } else {
     console.error("[SST] sheld has no parent node!");
     // Fallback: append to body
     document.body.appendChild(verticalContainer);
   }
-
-  // Debug: Log the final container
-  console.log("[SST] Created right sidebar container:", verticalContainer);
 
   return verticalContainer;
 }
@@ -544,14 +508,6 @@ const settings_ui_map = {};
 let lastSimJsonString = "";
 // Keep track of when we're expecting code blocks to be generated
 let isGeneratingCodeBlocks = false;
-
-// --- UTILITY FUNCTIONS ---
-const log = (message) => console.log(`[SST] [${MODULE_NAME}]`, message);
-const get_settings = (key) => settings[key] ?? default_settings[key];
-const set_settings = (key, value) => {
-  settings[key] = value;
-  saveSettingsDebounced();
-};
 
 // Utility to sanitize a field key (replace spaces with underscores)
 const sanitizeFieldKey = (key) => key.replace(/\s+/g, "_");
