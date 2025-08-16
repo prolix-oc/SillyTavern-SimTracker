@@ -507,5 +507,7 @@ export {
   updateRightSidebar,
   removeGlobalSidebars,
   prepareCharacterData,
-  prepareTabbedCharacterData
+  prepareTabbedCharacterData,
+  getInactiveReasonEmoji,
+  getReactionEmoji
 };
