@@ -113,122 +113,125 @@ function updateLeftSidebar(content) {
   if (globalLeftSidebarContent) {
     globalLeftSidebarContent.innerHTML = content;
     
-    // Add event listeners for tabs if this is a tabbed template
-    const tabs = globalLeftSidebarContent.querySelectorAll(".sim-tracker-tab");
-    const cards = globalLeftSidebarContent.querySelectorAll(".sim-tracker-card");
+    // Use setTimeout to ensure DOM is fully rendered before attaching event listeners
+    setTimeout(() => {
+      // Add event listeners for tabs if this is a tabbed template
+      const tabs = globalLeftSidebarContent.querySelectorAll(".sim-tracker-tab");
+      const cards = globalLeftSidebarContent.querySelectorAll(".sim-tracker-card");
 
-    if (tabs.length > 0 && cards.length > 0) {
-      // Remove any existing active classes
-      tabs.forEach(tab => tab.classList.remove("active"));
-      cards.forEach(card => card.classList.remove("active"));
-      
-      // Initially activate the first non-inactive tab and card
-      let firstActiveIndex = 0;
-      // Find the first non-inactive card
-      for (let i = 0; i < cards.length; i++) {
-        if (!cards[i].classList.contains("narrative-inactive")) {
-          firstActiveIndex = i;
-          break;
-        }
-      }
-      
-      // If all cards are inactive, just activate the first one
-      if (tabs[firstActiveIndex]) tabs[firstActiveIndex].classList.add("active");
-      if (cards[firstActiveIndex]) cards[firstActiveIndex].classList.add("active");
-
-      // Add click listeners to tabs
-      tabs.forEach((tab, index) => {
-        // Store the event listener function so we can remove it later
-        const clickHandler = () => {
-          // Check if this tab is already active
-          const isActive = tab.classList.contains("active");
-
-          // Remove active class from all tabs
-          tabs.forEach((t) => t.classList.remove("active"));
-
-          // Handle card and tab animations
-          cards.forEach((card, cardIndex) => {
-            const correspondingTab = tabs[cardIndex];
-            if (cardIndex === index && !isActive) {
-              // Slide in the selected card and tab
-              card.classList.remove("sliding-out", "tab-hidden");
-              card.classList.add("sliding-in");
-              if (correspondingTab) {
-                correspondingTab.classList.remove("sliding-out", "tab-hidden");
-                correspondingTab.classList.add("sliding-in");
-              }
-              // Add active class after a short delay to ensure the animation works
-              setTimeout(() => {
-                card.classList.remove("sliding-in");
-                card.classList.add("active");
-                if (correspondingTab) {
-                  correspondingTab.classList.remove("sliding-in");
-                  correspondingTab.classList.add("active");
-                }
-              }, 10);
-            } else {
-              // Slide out all other cards and tabs
-              if (card.classList.contains("active")) {
-                card.classList.remove("active");
-                card.classList.remove("sliding-in");
-                card.classList.add("sliding-out");
-                if (correspondingTab) {
-                  correspondingTab.classList.remove("active");
-                  correspondingTab.classList.remove("sliding-in");
-                  correspondingTab.classList.add("sliding-out");
-                }
-                // Add tab-hidden class after animation completes
-                setTimeout(() => {
-                  card.classList.add("tab-hidden");
-                  card.classList.remove("sliding-out");
-                  if (correspondingTab) {
-                    correspondingTab.classList.add("tab-hidden");
-                    correspondingTab.classList.remove("sliding-out");
-                  }
-                }, 300);
-              }
-            }
-          });
-
-          // If the clicked tab wasn't already active, activate it
-          if (!isActive) {
-            tab.classList.add("active");
+      if (tabs.length > 0 && cards.length > 0) {
+        // Remove any existing active classes
+        tabs.forEach(tab => tab.classList.remove("active"));
+        cards.forEach(card => card.classList.remove("active"));
+        
+        // Initially activate the first non-inactive tab and card
+        let firstActiveIndex = 0;
+        // Find the first non-inactive card
+        for (let i = 0; i < cards.length; i++) {
+          if (!cards[i].classList.contains("narrative-inactive")) {
+            firstActiveIndex = i;
+            break;
           }
-        };
+        }
         
-        // Remove any existing event listeners by cloning and replacing the element
-        const newTab = tab.cloneNode(true);
-        tab.parentNode.replaceChild(newTab, tab);
-        // Update the tabs array with the new element
-        tabs[index] = newTab;
-        
-        // Add the new event listener
-        newTab.addEventListener("click", clickHandler);
+        // If all cards are inactive, just activate the first one
+        if (tabs[firstActiveIndex]) tabs[firstActiveIndex].classList.add("active");
+        if (cards[firstActiveIndex]) cards[firstActiveIndex].classList.add("active");
+
+        // Add click listeners to tabs
+        tabs.forEach((tab, index) => {
+          // Store the event listener function so we can remove it later
+          const clickHandler = () => {
+            // Check if this tab is already active
+            const isActive = tab.classList.contains("active");
+
+            // Remove active class from all tabs
+            tabs.forEach((t) => t.classList.remove("active"));
+
+            // Handle card and tab animations
+            cards.forEach((card, cardIndex) => {
+              const correspondingTab = tabs[cardIndex];
+              if (cardIndex === index && !isActive) {
+                // Slide in the selected card and tab
+                card.classList.remove("sliding-out", "tab-hidden");
+                card.classList.add("sliding-in");
+                if (correspondingTab) {
+                  correspondingTab.classList.remove("sliding-out", "tab-hidden");
+                  correspondingTab.classList.add("sliding-in");
+                }
+                // Add active class after a short delay to ensure the animation works
+                setTimeout(() => {
+                  card.classList.remove("sliding-in");
+                  card.classList.add("active");
+                  if (correspondingTab) {
+                    correspondingTab.classList.remove("sliding-in");
+                    correspondingTab.classList.add("active");
+                  }
+                }, 10);
+              } else {
+                // Slide out all other cards and tabs
+                if (card.classList.contains("active")) {
+                  card.classList.remove("active");
+                  card.classList.remove("sliding-in");
+                  card.classList.add("sliding-out");
+                  if (correspondingTab) {
+                    correspondingTab.classList.remove("active");
+                    correspondingTab.classList.remove("sliding-in");
+                    correspondingTab.classList.add("sliding-out");
+                  }
+                  // Add tab-hidden class after animation completes
+                  setTimeout(() => {
+                    card.classList.add("tab-hidden");
+                    card.classList.remove("sliding-out");
+                    if (correspondingTab) {
+                      correspondingTab.classList.add("tab-hidden");
+                      correspondingTab.classList.remove("sliding-out");
+                    }
+                  }, 300);
+                }
+              }
+            });
+
+            // If the clicked tab wasn't already active, activate it
+            if (!isActive) {
+              tab.classList.add("active");
+            }
+          };
+          
+          // Remove any existing event listeners by cloning and replacing the element
+          const newTab = tab.cloneNode(true);
+          tab.parentNode.replaceChild(newTab, tab);
+          // Update the tabs array with the new element
+          tabs[index] = newTab;
+          
+          // Add the new event listener
+          newTab.addEventListener("click", clickHandler);
+        });
+      }
+
+      const container = globalLeftSidebarContent.querySelector("#silly-sim-tracker-container");
+      if (container) {
+        container.style.cssText += `
+                  width: 100% !important;
+                  max-width: 100% !important;
+                  box-sizing: border-box !important;
+                  display: block !important;
+                  visibility: visible !important;
+                  height: 100%;
+              `;
+      }
+
+      // Log dimensions for debugging
+      log("Left sidebar dimensions:", {
+        offsetWidth: globalLeftSidebarContent.offsetWidth,
+        offsetHeight: globalLeftSidebarContent.offsetHeight,
+        clientWidth: globalLeftSidebarContent.clientWidth,
+        clientHeight: globalLeftSidebarContent.clientHeight,
       });
-    }
 
-    const container = globalLeftSidebarContent.querySelector("#silly-sim-tracker-container");
-    if (container) {
-      container.style.cssText += `
-                width: 100% !important;
-                max-width: 100% !important;
-                box-sizing: border-box !important;
-                display: block !important;
-                visibility: visible !important;
-                height: 100%;
-            `;
-    }
-
-    // Log dimensions for debugging
-    log("Left sidebar dimensions:", {
-      offsetWidth: globalLeftSidebarContent.offsetWidth,
-      offsetHeight: globalLeftSidebarContent.offsetHeight,
-      clientWidth: globalLeftSidebarContent.clientWidth,
-      clientHeight: globalLeftSidebarContent.clientHeight,
-    });
-
-    // Force reflow to ensure proper rendering
-    globalLeftSidebar.offsetHeight;
+      // Force reflow to ensure proper rendering
+      globalLeftSidebar.offsetHeight;
+    }, 0);
   }
 
   // Show the sidebar
@@ -323,115 +326,118 @@ function updateRightSidebar(content) {
   if (globalRightSidebarContent) {
     globalRightSidebarContent.innerHTML = content;
     
-    // Add event listeners for tabs if this is a tabbed template
-    const tabs = globalRightSidebarContent.querySelectorAll(".sim-tracker-tab");
-    const cards = globalRightSidebarContent.querySelectorAll(".sim-tracker-card");
+    // Use setTimeout to ensure DOM is fully rendered before attaching event listeners
+    setTimeout(() => {
+      // Add event listeners for tabs if this is a tabbed template
+      const tabs = globalRightSidebarContent.querySelectorAll(".sim-tracker-tab");
+      const cards = globalRightSidebarContent.querySelectorAll(".sim-tracker-card");
 
-    if (tabs.length > 0 && cards.length > 0) {
-      // Remove any existing active classes
-      tabs.forEach(tab => tab.classList.remove("active"));
-      cards.forEach(card => card.classList.remove("active"));
-      
-      // Initially activate the first non-inactive tab and card
-      let firstActiveIndex = 0;
-      // Find the first non-inactive card
-      for (let i = 0; i < cards.length; i++) {
-        if (!cards[i].classList.contains("narrative-inactive")) {
-          firstActiveIndex = i;
-          break;
-        }
-      }
-      
-      // If all cards are inactive, just activate the first one
-      if (tabs[firstActiveIndex]) tabs[firstActiveIndex].classList.add("active");
-      if (cards[firstActiveIndex]) cards[firstActiveIndex].classList.add("active");
-
-      // Add click listeners to tabs
-      tabs.forEach((tab, index) => {
-        // Store the event listener function so we can remove it later
-        const clickHandler = () => {
-          // Check if this tab is already active
-          const isActive = tab.classList.contains("active");
-
-          // Remove active class from all tabs
-          tabs.forEach((t) => t.classList.remove("active"));
-
-          // Handle card and tab animations
-          cards.forEach((card, cardIndex) => {
-            const correspondingTab = tabs[cardIndex];
-            if (cardIndex === index && !isActive) {
-              // Slide in the selected card and tab
-              card.classList.remove("sliding-out", "tab-hidden");
-              card.classList.add("sliding-in");
-              if (correspondingTab) {
-                correspondingTab.classList.remove("sliding-out", "tab-hidden");
-                correspondingTab.classList.add("sliding-in");
-              }
-              // Add active class after a short delay to ensure the animation works
-              setTimeout(() => {
-                card.classList.remove("sliding-in");
-                card.classList.add("active");
-                if (correspondingTab) {
-                  correspondingTab.classList.remove("sliding-in");
-                  correspondingTab.classList.add("active");
-                }
-              }, 10);
-            } else {
-              // Slide out all other cards and tabs
-              if (card.classList.contains("active")) {
-                card.classList.remove("active");
-                card.classList.remove("sliding-in");
-                card.classList.add("sliding-out");
-                if (correspondingTab) {
-                  correspondingTab.classList.remove("active");
-                  correspondingTab.classList.remove("sliding-in");
-                  correspondingTab.classList.add("sliding-out");
-                }
-                // Add tab-hidden class after animation completes
-                setTimeout(() => {
-                  card.classList.add("tab-hidden");
-                  card.classList.remove("sliding-out");
-                  if (correspondingTab) {
-                    correspondingTab.classList.add("tab-hidden");
-                    correspondingTab.classList.remove("sliding-out");
-                  }
-                }, 300);
-              }
-            }
-          });
-
-          // If the clicked tab wasn't already active, activate it
-          if (!isActive) {
-            tab.classList.add("active");
+      if (tabs.length > 0 && cards.length > 0) {
+        // Remove any existing active classes
+        tabs.forEach(tab => tab.classList.remove("active"));
+        cards.forEach(card => card.classList.remove("active"));
+        
+        // Initially activate the first non-inactive tab and card
+        let firstActiveIndex = 0;
+        // Find the first non-inactive card
+        for (let i = 0; i < cards.length; i++) {
+          if (!cards[i].classList.contains("narrative-inactive")) {
+            firstActiveIndex = i;
+            break;
           }
-        };
+        }
         
-        // Remove any existing event listeners by cloning and replacing the element
-        const newTab = tab.cloneNode(true);
-        tab.parentNode.replaceChild(newTab, tab);
-        // Update the tabs array with the new element
-        tabs[index] = newTab;
-        
-        // Add the new event listener
-        newTab.addEventListener("click", clickHandler);
-      });
-    }
+        // If all cards are inactive, just activate the first one
+        if (tabs[firstActiveIndex]) tabs[firstActiveIndex].classList.add("active");
+        if (cards[firstActiveIndex]) cards[firstActiveIndex].classList.add("active");
 
-    const container = globalRightSidebarContent.querySelector("#silly-sim-tracker-container");
-    if (container) {
-      container.style.cssText += `
-                width: 100% !important;
-                max-width: 100% !important;
-                box-sizing: border-box !important;
-                display: block !important;
-                visibility: visible !important;
-                height: 100%;
-            `;
-      log("Applied additional styles to container");
-    }
+        // Add click listeners to tabs
+        tabs.forEach((tab, index) => {
+          // Store the event listener function so we can remove it later
+          const clickHandler = () => {
+            // Check if this tab is already active
+            const isActive = tab.classList.contains("active");
 
-    // Force reflow to ensure proper rendering
-    globalRightSidebar.offsetHeight;
+            // Remove active class from all tabs
+            tabs.forEach((t) => t.classList.remove("active"));
+
+            // Handle card and tab animations
+            cards.forEach((card, cardIndex) => {
+              const correspondingTab = tabs[cardIndex];
+              if (cardIndex === index && !isActive) {
+                // Slide in the selected card and tab
+                card.classList.remove("sliding-out", "tab-hidden");
+                card.classList.add("sliding-in");
+                if (correspondingTab) {
+                  correspondingTab.classList.remove("sliding-out", "tab-hidden");
+                  correspondingTab.classList.add("sliding-in");
+                }
+                // Add active class after a short delay to ensure the animation works
+                setTimeout(() => {
+                  card.classList.remove("sliding-in");
+                  card.classList.add("active");
+                  if (correspondingTab) {
+                    correspondingTab.classList.remove("sliding-in");
+                    correspondingTab.classList.add("active");
+                  }
+                }, 10);
+              } else {
+                // Slide out all other cards and tabs
+                if (card.classList.contains("active")) {
+                  card.classList.remove("active");
+                  card.classList.remove("sliding-in");
+                  card.classList.add("sliding-out");
+                  if (correspondingTab) {
+                    correspondingTab.classList.remove("active");
+                    correspondingTab.classList.remove("sliding-in");
+                    correspondingTab.classList.add("sliding-out");
+                  }
+                  // Add tab-hidden class after animation completes
+                  setTimeout(() => {
+                    card.classList.add("tab-hidden");
+                    card.classList.remove("sliding-out");
+                    if (correspondingTab) {
+                      correspondingTab.classList.add("tab-hidden");
+                      correspondingTab.classList.remove("sliding-out");
+                    }
+                  }, 300);
+                }
+              }
+            });
+
+            // If the clicked tab wasn't already active, activate it
+            if (!isActive) {
+              tab.classList.add("active");
+            }
+          };
+          
+          // Remove any existing event listeners by cloning and replacing the element
+          const newTab = tab.cloneNode(true);
+          tab.parentNode.replaceChild(newTab, tab);
+          // Update the tabs array with the new element
+          tabs[index] = newTab;
+          
+          // Add the new event listener
+          newTab.addEventListener("click", clickHandler);
+        });
+      }
+
+      const container = globalRightSidebarContent.querySelector("#silly-sim-tracker-container");
+      if (container) {
+        container.style.cssText += `
+                  width: 100% !important;
+                  max-width: 100% !important;
+                  box-sizing: border-box !important;
+                  display: block !important;
+                  visibility: visible !important;
+                  height: 100%;
+              `;
+        log("Applied additional styles to container");
+      }
+
+      // Force reflow to ensure proper rendering
+      globalRightSidebar.offsetHeight;
+    }, 0);
   }
 
   // Show the sidebar
