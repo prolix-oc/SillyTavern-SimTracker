@@ -113,7 +113,7 @@ function updateLeftSidebar(content) {
       document.body.appendChild(verticalContainer);
     }
 
-    // Add event listeners for tabs
+    // Add event listeners for tabs (only once when creating)
     attachTabEventListeners(leftSidebar);
     
     // Debug: Log the final container
@@ -121,12 +121,10 @@ function updateLeftSidebar(content) {
 
     return verticalContainer;
   } else {
-    // Update existing sidebar content
+    // Update existing sidebar content without re-attaching event listeners
     const leftSidebar = globalLeftSidebar.querySelector("#sst-sidebar-left-content");
     if (leftSidebar) {
       leftSidebar.innerHTML = content;
-      // Re-attach event listeners for tabs
-      attachTabEventListeners(leftSidebar);
     }
   }
 }
@@ -213,17 +211,15 @@ function updateRightSidebar(content) {
       document.body.appendChild(verticalContainer);
     }
     
-    // Add event listeners for tabs
+    // Add event listeners for tabs (only once when creating)
     attachTabEventListeners(rightSidebar);
 
     return verticalContainer;
   } else {
-    // Update existing sidebar content
+    // Update existing sidebar content without re-attaching event listeners
     const rightSidebar = globalRightSidebar.querySelector("#sst-sidebar-right-content");
     if (rightSidebar) {
       rightSidebar.innerHTML = content;
-      // Re-attach event listeners for tabs
-      attachTabEventListeners(rightSidebar);
     }
   }
 }
@@ -231,10 +227,24 @@ function updateRightSidebar(content) {
 // Helper function to remove global sidebars
 function removeGlobalSidebars() {
   if (globalLeftSidebar) {
+    // Remove event listeners before removing the sidebar
+    const leftSidebar = globalLeftSidebar.querySelector("#sst-sidebar-left-content");
+    if (leftSidebar) {
+      // Remove any existing event listeners by cloning and replacing
+      const newLeftSidebar = leftSidebar.cloneNode(true);
+      leftSidebar.parentNode.replaceChild(newLeftSidebar, leftSidebar);
+    }
     globalLeftSidebar.remove();
     globalLeftSidebar = null;
   }
   if (globalRightSidebar) {
+    // Remove event listeners before removing the sidebar
+    const rightSidebar = globalRightSidebar.querySelector("#sst-sidebar-right-content");
+    if (rightSidebar) {
+      // Remove any existing event listeners by cloning and replacing
+      const newRightSidebar = rightSidebar.cloneNode(true);
+      rightSidebar.parentNode.replaceChild(newRightSidebar, rightSidebar);
+    }
     globalRightSidebar.remove();
     globalRightSidebar = null;
   }
