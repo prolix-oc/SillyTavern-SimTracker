@@ -2,6 +2,7 @@
 
 const { extensionSettings, saveSettingsDebounced } = SillyTavern.getContext();
 import { sanitizeFieldKey } from "./utils.js";
+import { populateTemplateDropdown } from "./templating.js";
 
 const MODULE_NAME = "silly-sim-tracker";
 
