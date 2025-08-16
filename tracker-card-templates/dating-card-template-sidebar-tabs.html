@@ -74,6 +74,7 @@
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     position: absolute;
     backdrop-filter: blur(10px);
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     left: 0;
     top: 50%;
     transform: translateY(-50%) translateX(-100%);
@@ -84,7 +85,21 @@
   }
 
   .sim-tracker-card.active {
-    /* Active state will be handled by JavaScript */
+    transform: translateY(-50%) translateX(0);
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .sim-tracker-card.sliding-in {
+    transform: translateY(-50%) translateX(0);
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .sim-tracker-card.sliding-out {
+    transform: translateY(-50%) translateX(-100%);
+    opacity: 0;
+    visibility: hidden;
   }
 
   .sim-tracker-card.inactive {

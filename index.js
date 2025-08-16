@@ -96,13 +96,7 @@ function updateLeftSidebar(content) {
         if (tabs.length > 0 && cards.length > 0) {
             // Initially activate the first tab and card
             if (tabs[0]) tabs[0].classList.add('active');
-            if (cards[0]) {
-                cards[0].classList.add('active');
-                // Position the first card initially
-                cards[0].style.transform = 'translateY(-50%) translateX(0)';
-                cards[0].style.opacity = '1';
-                cards[0].style.visibility = 'visible';
-            }
+            if (cards[0]) cards[0].classList.add('active');
             
             // Add click listeners to tabs
             tabs.forEach((tab, index) => {
@@ -110,34 +104,33 @@ function updateLeftSidebar(content) {
                     // Check if this tab is already active
                     const isActive = tab.classList.contains('active');
                     
-                    // Remove active class from all tabs and cards
+                    // Remove active class from all tabs
                     tabs.forEach(t => t.classList.remove('active'));
-                    cards.forEach(c => {
-                        c.classList.remove('active');
-                        // Start slide out animation for all cards
-                        c.style.transition = 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
-                        c.style.transform = 'translateY(-50%) translateX(100%)';
-                        c.style.opacity = '0';
-                        c.style.visibility = 'hidden';
+                    
+                    // Handle card animations
+                    cards.forEach((card, cardIndex) => {
+                        if (cardIndex === index && !isActive) {
+                            // Slide in the selected card
+                            card.classList.remove('sliding-out');
+                            card.classList.add('sliding-in');
+                            // Add active class after a short delay to ensure the animation works
+                            setTimeout(() => {
+                                card.classList.add('active');
+                            }, 10);
+                        } else {
+                            // Slide out all other cards
+                            if (card.classList.contains('active')) {
+                                card.classList.remove('active');
+                                card.classList.remove('sliding-in');
+                                card.classList.add('sliding-out');
+                            }
+                        }
                     });
                     
-                    // If the clicked tab wasn't already active, activate it and its card
+                    // If the clicked tab wasn't already active, activate it
                     if (!isActive) {
                         tab.classList.add('active');
-                        if (cards[index]) {
-                            const card = cards[index];
-                            card.classList.add('active');
-                            // Slide in the selected card
-                            card.style.transition = 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
-                            // Force reflow to ensure the transition works
-                            requestAnimationFrame(() => {
-                                card.style.transform = 'translateY(-50%) translateX(0)';
-                                card.style.opacity = '1';
-                                card.style.visibility = 'visible';
-                            });
-                        }
                     }
-                    // If it was already active, we just deselected it, hiding the card
                 });
             });
         }
@@ -275,13 +268,7 @@ function updateRightSidebar(content) {
         if (tabs.length > 0 && cards.length > 0) {
             // Initially activate the first tab and card
             if (tabs[0]) tabs[0].classList.add('active');
-            if (cards[0]) {
-                cards[0].classList.add('active');
-                // Position the first card initially
-                cards[0].style.transform = 'translateY(-50%) translateX(0)';
-                cards[0].style.opacity = '1';
-                cards[0].style.visibility = 'visible';
-            }
+            if (cards[0]) cards[0].classList.add('active');
             
             // Add click listeners to tabs
             tabs.forEach((tab, index) => {
@@ -289,34 +276,33 @@ function updateRightSidebar(content) {
                     // Check if this tab is already active
                     const isActive = tab.classList.contains('active');
                     
-                    // Remove active class from all tabs and cards
+                    // Remove active class from all tabs
                     tabs.forEach(t => t.classList.remove('active'));
-                    cards.forEach(c => {
-                        c.classList.remove('active');
-                        // Start slide out animation for all cards
-                        c.style.transition = 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
-                        c.style.transform = 'translateY(-50%) translateX(-100%)';
-                        c.style.opacity = '0';
-                        c.style.visibility = 'hidden';
+                    
+                    // Handle card animations
+                    cards.forEach((card, cardIndex) => {
+                        if (cardIndex === index && !isActive) {
+                            // Slide in the selected card
+                            card.classList.remove('sliding-out');
+                            card.classList.add('sliding-in');
+                            // Add active class after a short delay to ensure the animation works
+                            setTimeout(() => {
+                                card.classList.add('active');
+                            }, 10);
+                        } else {
+                            // Slide out all other cards
+                            if (card.classList.contains('active')) {
+                                card.classList.remove('active');
+                                card.classList.remove('sliding-in');
+                                card.classList.add('sliding-out');
+                            }
+                        }
                     });
                     
-                    // If the clicked tab wasn't already active, activate it and its card
+                    // If the clicked tab wasn't already active, activate it
                     if (!isActive) {
                         tab.classList.add('active');
-                        if (cards[index]) {
-                            const card = cards[index];
-                            card.classList.add('active');
-                            // Slide in the selected card
-                            card.style.transition = 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)';
-                            // Force reflow to ensure the transition works
-                            requestAnimationFrame(() => {
-                                card.style.transform = 'translateY(-50%) translateX(0)';
-                                card.style.opacity = '1';
-                                card.style.visibility = 'visible';
-                            });
-                        }
                     }
-                    // If it was already active, we just deselected it, hiding the card
                 });
             });
         }
