@@ -102,6 +102,7 @@ async function populateTemplateDropdown(get_settings) {
   const nameRegex = /<!--\s*TEMPLATE NAME\s*:\s*(.*?)\s*-->/;
   const authorRegex = /<!--\s*AUTHOR\s*:\s*(.*?)\s*-->/;
 
+  // Process default templates
   await Promise.all(
     defaultFiles.map(async (filename) => {
       const filePath = `${get_extension_directory()}/tracker-card-templates/${filename}`;
@@ -122,17 +123,45 @@ async function populateTemplateDropdown(get_settings) {
           friendlyName = templateName;
         }
 
-        templateOptions.push({ filename, friendlyName });
+        templateOptions.push({ filename, friendlyName, type: "default" });
       } catch (error) {
         console.error(
           `Could not fetch or parse template info for ${filename}:`,
           error
         );
         // If fetching fails, add it to the list with its filename so it's not missing
-        templateOptions.push({ filename, friendlyName: filename });
+        templateOptions.push({ filename, friendlyName: filename, type: "default" });
       }
     })
   );
+
+  // Process user presets
+  const userPresets = get_settings ? get_settings("userPresets") || [] : [];
+  userPresets.forEach((preset, index) => {
+    try {
+      // Parse the preset to extract metadata
+      const nameMatch = preset.htmlTemplate.match(nameRegex);
+      const authorMatch = preset.htmlTemplate.match(authorRegex);
+
+      const templateName = nameMatch ? nameMatch[1].trim() : preset.templateName || `User Preset ${index + 1}`;
+      const author = authorMatch ? authorMatch[1].trim() : preset.templateAuthor || "Unknown";
+
+      const friendlyName = `${templateName} - by ${author} (User Preset)`;
+      const filename = `user-preset-${index}`; // Unique identifier for user presets
+
+      templateOptions.push({ 
+        filename, 
+        friendlyName, 
+        type: "user",
+        presetData: preset // Store the preset data for later use
+      });
+    } catch (error) {
+      console.error(
+        `Could not process user preset ${index}:`,
+        error
+      );
+    }
+  });
 
   // Sort the results alphabetically by friendly name for a clean list
   templateOptions.sort((a, b) => a.friendlyName.localeCompare(b.friendlyName));
@@ -146,6 +175,8 @@ async function populateTemplateDropdown(get_settings) {
       $("<option>", {
         value: option.filename,
         text: option.friendlyName,
+        "data-type": option.type, // Store type as data attribute
+        "data-preset": option.presetData ? JSON.stringify(option.presetData) : undefined // Store preset data as data attribute
       })
     );
   });
@@ -252,32 +283,145 @@ const loadTemplate = async (get_settings, set_settings) => {
 
   const templateFile = get_settings("templateFile");
   if (templateFile) {
-    const defaultPath = `${get_extension_directory()}/tracker-card-templates/${templateFile}`;
-    try {
-      const templateContent = await $.get(defaultPath);
-      console.log(`[SST] [${MODULE_NAME}]`, `Loading template from default file: ${defaultPath}`);
+    // Check if this is a user preset
+    if (templateFile.startsWith("user-preset-")) {
+      try {
+        // Get the selected option to retrieve the preset data
+        const $select = $("#templateFile");
+        const $selectedOption = $select.find(`option[value="${templateFile}"]`);
+        const presetData = $selectedOption.data("preset");
+        
+        if (presetData) {
+          console.log(`[SST] [${MODULE_NAME}]`, `Loading template from user preset: ${templateFile}`);
+          
+          // Extract position metadata
+          const positionRegex = /<!--\s*POSITION\s*:\s*(.*?)\s*-->/i;
+          const positionMatch = presetData.htmlTemplate.match(positionRegex);
+          const templatePosition = positionMatch
+            ? positionMatch[1].trim().toUpperCase()
+            : presetData.templatePosition || get_settings("templatePosition") || "BOTTOM";
+          
+          // Parse the template content
+          const cardStartMarker = "<!-- CARD_TEMPLATE_START -->";
+          const cardEndMarker = "<!-- CARD_TEMPLATE_END -->";
+          let cardTemplate = "";
+          const startIndex = presetData.htmlTemplate.indexOf(cardStartMarker);
+          const endIndex = presetData.htmlTemplate.indexOf(cardEndMarker);
+          
+          if (startIndex !== -1 && endIndex !== -1) {
+            cardTemplate = presetData.htmlTemplate
+              .substring(startIndex + cardStartMarker.length, endIndex)
+              .trim();
+          } else {
+            let cleanedResponse = presetData.htmlTemplate
+              .replace(/<!--[\s\S]*?-->/g, "")
+              .trim();
+            const templateVarRegex = /\{\{[^}]+\}\}/;
+            const divMatches = [
+              ...cleanedResponse.matchAll(/<div[^>]*>[\s\S]*?<\/div>/g),
+            ];
+            let bestMatch = null;
+            let maxLength = 0;
+            for (const match of divMatches) {
+              if (templateVarRegex.test(match[0]) && match[0].length > maxLength) {
+                bestMatch = match[0];
+                maxLength = match[0].length;
+              }
+            }
+            if (bestMatch) {
+              cardTemplate = bestMatch;
+            } else {
+              throw new Error(
+                "Could not find template content with either markers or Handlebars variables."
+              );
+            }
+          }
+          
+          compiledCardTemplate = Handlebars.compile(cardTemplate);
+          // Store the template position in settings for use during rendering
+          set_settings("templatePosition", templatePosition);
+          console.log(`[SST] [${MODULE_NAME}]`,
+            `User preset '${templateFile}' compiled successfully. Position: ${templatePosition}`
+          );
+          return; // Exit successfully
+        }
+      } catch (error) {
+        console.log(`[SST] [${MODULE_NAME}]`,
+          `Could not load or parse user preset '${templateFile}'. Using default template.`
+        );
+      }
+    } else {
+      // Handle default templates
+      const defaultPath = `${get_extension_directory()}/tracker-card-templates/${templateFile}`;
+      try {
+        const templateContent = await $.get(defaultPath);
+        console.log(`[SST] [${MODULE_NAME}]`, `Loading template from default file: ${defaultPath}`);
 
-      // Extract position metadata
-      const positionRegex = /<!--\s*POSITION\s*:\s*(.*?)\s*-->/i;
-      const positionMatch = templateContent.match(positionRegex);
-      const templatePosition = positionMatch
-        ? positionMatch[1].trim().toUpperCase()
-        : get_settings("templatePosition") || "BOTTOM"; // Use setting as fallback
+        // Extract position metadata
+        const positionRegex = /<!--\s*POSITION\s*:\s*(.*?)\s*-->/i;
+        const positionMatch = templateContent.match(positionRegex);
+        const templatePosition = positionMatch
+          ? positionMatch[1].trim().toUpperCase()
+          : get_settings("templatePosition") || "BOTTOM"; // Use setting as fallback
 
-      // Re-run the same parsing logic for the file content
-      const cardStartMarker = "<!-- CARD_TEMPLATE_START -->";
-      const cardEndMarker = "<!-- CARD_TEMPLATE_END -->";
-      let cardTemplate = "";
-      const startIndex = templateContent.indexOf(cardStartMarker);
-      const endIndex = templateContent.indexOf(cardEndMarker);
-      if (startIndex !== -1 && endIndex !== -1) {
-        cardTemplate = templateContent
-          .substring(startIndex + cardStartMarker.length, endIndex)
-          .trim();
-      } else {
-        let cleanedResponse = templateContent
-          .replace(/<!--[\s\S]*?-->/g, "")
-          .trim();
+        // Re-run the same parsing logic for the file content
+        const cardStartMarker = "<!-- CARD_TEMPLATE_START -->";
+        const cardEndMarker = "<!-- CARD_TEMPLATE_END -->";
+        let cardTemplate = "";
+        const startIndex = templateContent.indexOf(cardStartMarker);
+        const endIndex = templateContent.indexOf(cardEndMarker);
+        if (startIndex !== -1 && endIndex !== -1) {
+          cardTemplate = templateContent
+            .substring(startIndex + cardStartMarker.length, endIndex)
+            .trim();
+        } else {
+          let cleanedResponse = templateContent
+            .replace(/<!--[\s\S]*?-->/g, "")
+            .trim();
+          const templateVarRegex = /\{\{[^}]+\}\}/;
+          const divMatches = [
+            ...cleanedResponse.matchAll(/<div[^>]*>[\s\S]*?<\/div>/g),
+          ];
+          let bestMatch = null;
+          let maxLength = 0;
+          for (const match of divMatches) {
+            if (templateVarRegex.test(match[0]) && match[0].length > maxLength) {
+              bestMatch = match[0];
+              maxLength = match[0].length;
+            }
+          }
+          if (bestMatch) {
+            cardTemplate = bestMatch;
+          } else {
+            throw new Error(
+              "Could not find template content with either markers or Handlebars variables."
+            );
+          }
+        }
+        compiledCardTemplate = Handlebars.compile(cardTemplate);
+        // Store the template position in settings for use during rendering
+        set_settings("templatePosition", templatePosition);
+        console.log(`[SST] [${MODULE_NAME}]`,
+          `Default template '${templateFile}' compiled successfully. Position: ${templatePosition}`
+        );
+        return; // Exit successfully
+      } catch (error) {
+        console.log(`[SST] [${MODULE_NAME}]`,
+          `Could not load or parse default template file '${templateFile}'. Using hardcoded fallback.`
+        );
+      }
+    }
+  }
+
+  console.log(`[SST] [${MODULE_NAME}]`, "Using hardcoded fallback template as a last resort.");
+  const fallbackTemplate = `
+    <div style="flex:1 1 100%;min-width:380px;max-width:500px;background:red;border-radius:16px;padding:16px;color:#fff;">
+        <b>Template Error</b><br>
+        No custom template is loaded and the selected default template could not be found or parsed.
+    </div>`;
+  compiledCardTemplate = Handlebars.compile(fallbackTemplate);
+  set_settings("templatePosition", "BOTTOM"); // Default position for fallback
+};
         const templateVarRegex = /\{\{[^}]+\}\}/;
         const divMatches = [
           ...cleanedResponse.matchAll(/<div[^>]*>[\s\S]*?<\/div>/g),

@@ -79,6 +79,7 @@ const default_settings = {
   customFields: [...defaultSimFields], // Clone the default fields
   hideSimBlocks: true, // New setting to hide sim blocks in message text
   templatePosition: "BOTTOM", // New setting for template position
+  userPresets: [] // New setting to store user presets
 };
 
 let settings = {};
@@ -156,7 +157,7 @@ const bind_setting = (selector, key, type) => {
   });
 };
 
-const initialize_settings_listeners = (loadTemplate, refreshAllCards, migrateAllSimData, handleCustomTemplateUpload, handlePresetExport, handlePresetImport) => {
+const initialize_settings_listeners = (loadTemplate, refreshAllCards, migrateAllSimData, handleCustomTemplateUpload, handlePresetExport, handlePresetImport, showManagePresetsModal) => {
   console.log(`[SST] [${MODULE_NAME}]`, "Binding settings UI elements...");
 
   bind_setting("#isEnabled", "isEnabled", "boolean");
@@ -172,7 +173,32 @@ const initialize_settings_listeners = (loadTemplate, refreshAllCards, migrateAll
   if ($templateSelect.length) {
     settings_ui_map["templateFile"] = [$templateSelect, "text"];
     $templateSelect.on("change", async () => {
-      set_settings("templateFile", $templateSelect.val());
+      const selectedValue = $templateSelect.val();
+      const $selectedOption = $templateSelect.find(`option[value="${selectedValue}"]`);
+      const presetData = $selectedOption.data("preset");
+      
+      // If this is a user preset, apply its settings
+      if (presetData) {
+        // Apply the preset data
+        set_settings("customTemplateHtml", presetData.htmlTemplate);
+        
+        // Apply other settings if they exist in the preset
+        if (presetData.sysPrompt !== undefined) {
+          set_settings("datingSimPrompt", presetData.sysPrompt);
+        }
+        
+        if (presetData.customFields !== undefined) {
+          set_settings("customFields", presetData.customFields);
+        }
+        
+        if (presetData.extSettings) {
+          Object.keys(presetData.extSettings).forEach(key => {
+            set_settings(key, presetData.extSettings[key]);
+          });
+        }
+      }
+      
+      set_settings("templateFile", selectedValue);
       await loadTemplate();
       refreshAllCards();
     });
@@ -217,165 +243,10 @@ const initialize_settings_listeners = (loadTemplate, refreshAllCards, migrateAll
     handlePresetImport(event, loadTemplate, refreshAllCards);
   });
 
-  // --- Custom Fields UI Logic ---
-  const $manageFieldsButton = $("#manageCustomFieldsBtn");
-
-  // Function to create and show the modal
-  const createAndShowModal = () => {
-    // Remove any existing modal
-    $("#sst-custom-fields-modal").remove();
-
-    // Create modal HTML using SillyTavern's built-in classes with dialog element
-    const modalHtml = `
-            <dialog id="sst-custom-fields-modal" class="popup wide_dialogue_popup large_dialogue_popup vertical_scrolling_dialogue_popup popup--animation-fast">
-                <div class="popup-header">
-                    <h3 style="margin: 0; padding: 10px 0;">Manage Custom Fields</h3>
-                </div>
-                <div class="popup-content" style="padding: 15px; flex: 1; display: flex; flex-direction: column;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <div style="flex: 1;"></div>
-                        <button id="addCustomFieldBtn" class="menu_button">Add New Field</button>
-                    </div>
-                    <div id="customFieldsList" class="sst-fields-container" style="flex: 1; overflow-y: auto;">
-                        <!-- Fields will be populated here by JavaScript -->
-                    </div>
-                </div>
-                <div class="popup-footer" style="display: flex; justify-content: center; padding: 15px;">
-                    <button id="sst-modal-close" class="menu_button">Close</button>
-                </div>
-            </dialog>
-        `;
-
-    // Append modal to body
-    $("body").append(modalHtml);
-
-    // Get references to modal elements
-    const $modal = $("#sst-custom-fields-modal");
-    const $fieldsContainer = $modal.find("#customFieldsList");
-    const $addFieldButton = $modal.find("#addCustomFieldBtn");
-    const $modalClose = $modal.find("#sst-modal-close");
-
-    // Create field template
-    const createFieldTemplate = () => {
-      return $(`
-                <div class="sst-field-item">
-                    <div class="sst-field-header">
-                        <input type="text" class="field-key-display field-key text_pole" placeholder="Field key" style="margin-right: 10px;" />
-                        <div>
-                            <button class="sst-toggle-field menu_button">Expand</button>
-                            <button class="remove-field-btn menu_button" style="margin-left: 5px;">Remove</button>
-                        </div>
-                    </div>
-                    <div class="sst-field-details" style="display: none; padding: 10px; border-top: 1px solid #444; margin-top: 5px;">
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <div>
-                                <label>Description for LLM:</label>
-                                <input type="text" class="field-description text_pole" placeholder="Field description" style="width: 100%;" />
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `);
-    };
-
-    // Function to render the list of fields
-    const renderFields = () => {
-      const fields = get_settings("customFields") || [];
-      $fieldsContainer.empty();
-      fields.forEach((field, index) => {
-        const $fieldElement = createFieldTemplate();
-
-        // Set values in the key input (which is now at the top level)
-        const fieldKey = field.key || "";
-        $fieldElement
-          .find(".field-key-display")
-          .val(fieldKey)
-          .on("input", function () {
-            const newValue = $(this).val();
-            const updatedFields = [...fields];
-            updatedFields[index].key = sanitizeFieldKey(newValue); // Sanitize on input
-            set_settings("customFields", updatedFields);
-          });
-
-        // Set values in the description input
-        $fieldElement
-          .find(".field-description")
-          .val(field.description)
-          .on("input", function () {
-            const newValue = $(this).val();
-            const updatedFields = [...fields];
-            updatedFields[index].description = newValue;
-            set_settings("customFields", updatedFields);
-          });
-
-        $fieldElement.find(".remove-field-btn").on("click", function () {
-          const updatedFields = fields.filter((_, i) => i !== index);
-          set_settings("customFields", updatedFields);
-          renderFields(); // Re-render the list
-        });
-
-        // Handle toggle button
-        const $toggleButton = $fieldElement.find(".sst-toggle-field");
-        const $details = $fieldElement.find(".sst-field-details");
-        $toggleButton.on("click", function () {
-          if ($details.is(":visible")) {
-            $details.hide();
-            $toggleButton.text("Expand");
-          } else {
-            $details.show();
-            $toggleButton.text("Collapse");
-          }
-        });
-
-        $fieldsContainer.append($fieldElement);
-      });
-    };
-
-    // Add new field button listener
-    $addFieldButton.on("click", () => {
-      const fields = get_settings("customFields") || [];
-      const newField = {
-        key: "new_field_key",
-        description: "Description for the LLM",
-      };
-      set_settings("customFields", [...fields, newField]);
-      renderFields(); // Re-render the list
-
-      // Scroll to the bottom where the new field was added
-      $fieldsContainer.scrollTop($fieldsContainer[0].scrollHeight);
-    });
-
-    // Close modal when clicking the Close button
-    $modalClose.on("click", () => {
-      $modal.remove();
-    });
-
-    // Close modal with Escape key
-    $modal.on("keydown", function (e) {
-      if (e.key === "Escape") {
-        $modal.remove();
-      }
-    });
-
-    // Also close when clicking on the backdrop (dialog native behavior)
-    $modal.on("click", function (e) {
-      if (e.target === this) {
-        $modal.remove();
-      }
-    });
-
-    // Render fields and show modal
-    renderFields();
-    $modal[0].showModal(); // Use the native dialog showModal() method
-  };
-
-  // Manage fields button opens the modal
-  $manageFieldsButton.on("click", () => {
-    createAndShowModal();
+  // Listener for manage presets button
+  $("#managePresetsBtn").on("click", () => {
+    showManagePresetsModal(loadTemplate, refreshAllCards);
   });
-
-  refresh_settings_ui();
-  console.log(`[SST] [${MODULE_NAME}]`, "Settings UI successfully bound.");
 };
 
 const initialize_settings = async () => {
@@ -480,8 +351,8 @@ const load_settings_html_manually = async () => {
           templatePosition: $templatePosition.val()
         };
 
-        // Add HTML template (escaped)
-        preset.htmlTemplate = escapeHtml(get_settings("customTemplateHtml") || "");
+        // Add HTML template
+        preset.htmlTemplate = get_settings("customTemplateHtml") || "";
 
         // Conditionally add other components
         if ($includeSysPrompt.is(":checked")) {
@@ -502,6 +373,14 @@ const load_settings_html_manually = async () => {
             templateFile: get_settings("templateFile")
           };
         }
+
+        // Add to user presets
+        const userPresets = get_settings("userPresets") || [];
+        userPresets.push(preset);
+        set_settings("userPresets", userPresets);
+
+        // Repopulate template dropdown to include the new preset
+        await populateTemplateDropdown(get_settings);
 
         // Create and download file
         const blob = new Blob([JSON.stringify(preset, null, 2)], { type: 'application/json' });
@@ -558,9 +437,8 @@ const load_settings_html_manually = async () => {
           throw new Error("Invalid preset file: Missing HTML template");
         }
 
-        // Apply HTML template (unescape first)
-        const unescapedTemplate = unescapeHtml(preset.htmlTemplate);
-        set_settings("customTemplateHtml", unescapedTemplate);
+        // Apply HTML template
+        set_settings("customTemplateHtml", preset.htmlTemplate);
 
         // Apply system prompt if included
         if (preset.sysPrompt !== undefined) {
@@ -584,9 +462,17 @@ const load_settings_html_manually = async () => {
           set_settings("templatePosition", preset.templatePosition);
         }
 
+        // Add to user presets
+        const userPresets = get_settings("userPresets") || [];
+        userPresets.push(preset);
+        set_settings("userPresets", userPresets);
+
         // Reload template and refresh cards
         await loadTemplate();
         refreshAllCards();
+
+        // Repopulate template dropdown to include the new preset
+        await populateTemplateDropdown(get_settings);
 
         toastr.success(`Preset "${preset.templateName || 'Unnamed'}" imported successfully!`);
       } catch (error) {
@@ -601,6 +487,116 @@ const load_settings_html_manually = async () => {
 
     reader.readAsText(file);
     event.target.value = ""; // Reset input
+  };
+
+  // Function to show the manage presets modal
+  const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
+    const $modal = $("#sst-manage-presets-modal");
+    const $presetsList = $modal.find("#userPresetsList");
+    const $closeBtn = $modal.find("#sst-manage-presets-close");
+
+    // Populate the presets list
+    const userPresets = get_settings("userPresets") || [];
+    $presetsList.empty();
+
+    if (userPresets.length === 0) {
+      $presetsList.append("<p>No user presets found.</p>");
+    } else {
+      userPresets.forEach((preset, index) => {
+        const presetElement = $(`
+          <div class="sst-preset-item" style="margin-bottom: 15px; padding: 10px; border: 1px solid #444; border-radius: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div>
+                <strong>${preset.templateName || `User Preset ${index + 1}`}</strong>
+                <div>by ${preset.templateAuthor || "Unknown"}</div>
+              </div>
+              <div>
+                <button class="sst-apply-preset menu_button" data-index="${index}" style="margin-right: 5px;">Apply</button>
+                <button class="sst-delete-preset menu_button" data-index="${index}">Delete</button>
+              </div>
+            </div>
+          </div>
+        `);
+        $presetsList.append(presetElement);
+      });
+
+      // Add event listeners for apply buttons
+      $presetsList.find(".sst-apply-preset").on("click", async function() {
+        const index = $(this).data("index");
+        const preset = userPresets[index];
+
+        if (preset) {
+          // Apply the preset
+          set_settings("customTemplateHtml", preset.htmlTemplate);
+
+          if (preset.sysPrompt !== undefined) {
+            set_settings("datingSimPrompt", preset.sysPrompt);
+          }
+
+          if (preset.customFields !== undefined) {
+            set_settings("customFields", preset.customFields);
+          }
+
+          if (preset.extSettings) {
+            Object.keys(preset.extSettings).forEach(key => {
+              set_settings(key, preset.extSettings[key]);
+            });
+          }
+
+          if (preset.templatePosition) {
+            set_settings("templatePosition", preset.templatePosition);
+          }
+
+          // Reload template and refresh cards
+          await loadTemplate();
+          refreshAllCards();
+
+          toastr.success(`Preset "${preset.templateName || 'Unnamed'}" applied successfully!`);
+          $modal[0].close();
+        }
+      });
+
+      // Add event listeners for delete buttons
+      $presetsList.find(".sst-delete-preset").on("click", function() {
+        const index = $(this).data("index");
+        
+        if (confirm(`Are you sure you want to delete the preset "${userPresets[index].templateName || `User Preset ${index + 1}`}"?`)) {
+          // Remove the preset
+          userPresets.splice(index, 1);
+          set_settings("userPresets", userPresets);
+
+          // Repopulate template dropdown
+          populateTemplateDropdown(get_settings);
+
+          // Show the modal again to refresh the list
+          showManagePresetsModal(loadTemplate, refreshAllCards);
+          
+          toastr.success("Preset deleted successfully!");
+        }
+      });
+    }
+
+    // Show modal
+    $modal[0].showModal();
+
+    // Handle close button
+    $closeBtn.off('click').on('click', () => {
+      $modal[0].close();
+    });
+
+    // Close modal with Escape key
+    $modal.off('keydown').on('keydown', function (e) {
+      if (e.key === "Escape") {
+        $modal[0].close();
+      }
+    });
+
+    // Close when clicking on backdrop
+    $modal.off('click').on('click', function (e) {
+      if (e.target === this) {
+        $modal[0].close();
+      }
+    });
   };
 
 // Export functions and variables

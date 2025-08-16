@@ -153,6 +153,39 @@ The extension includes several built-in templates for different use cases:
 
 To use a built-in template, simply select it from the template selection dropdown in the settings panel.
 
+## Template Preset Import/Export
+
+The extension now supports importing and exporting template presets, making it easy to share your custom tracker setups with others or back up your configurations.
+
+### Exporting a Preset
+
+1. Configure your template and settings as desired
+2. In the extension settings panel, click the "Export Preset" button
+3. In the export dialog, you can:
+   - Set a name and author for your template
+   - Choose the template position
+   - Select which components to include (System Prompt, Custom Fields, Extension Settings)
+4. Click "Export" to download a JSON file containing your preset
+5. The preset is also saved locally for future use
+
+### Importing a Preset
+
+1. Obtain a preset JSON file (either one you exported or one shared by another user)
+2. In the extension settings panel, click the "Import Preset" button
+3. Select the preset JSON file from your computer
+4. The extension will automatically apply all settings from the preset
+5. The preset is also saved locally for future use
+
+### Managing Presets
+
+1. In the extension settings panel, click the "Manage Presets" button
+2. In the modal that appears, you can:
+   - See a list of all your saved presets
+   - Apply any preset with the "Apply" button
+   - Delete any preset with the "Delete" button
+
+This feature allows for easy sharing of custom tracker designs and configurations within the community, as well as convenient management of your own templates.
+
 ## Migration Tools
 
 To help users transition to the improved JSON format:

@@ -387,3 +387,27 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 #sst-global-sidebar-right .sim-tracker-card.active {
     transform: translateY(-50%) translateX(0) !important;
 }
+
+/* Preset Management Styles */
+.sst-preset-item {
+    background-color: #2a2a2a;
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.sst-preset-item strong {
+    color: #fff;
+    font-size: 1.1em;
+}
+
+.sst-preset-item div {
+    color: #ccc;
+    font-size: 0.9em;
+}
+
+.sst-apply-preset, .sst-delete-preset {
+    padding: 8px 12px;
+    font-size: 0.9em;
+}
