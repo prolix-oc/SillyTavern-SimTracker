@@ -105,7 +105,12 @@
 </style>
 
 <div class="sim-tracker-container">
-  <div class="sim-tracker-card {{#if stats.inactive}}inactive{{/if}}">
+  <div class="sim-tracker-card {{#if stats.inactive}}inactive{{/if}}" style="background: linear-gradient(145deg, {{bgColor}} 0%, {{darkerBgColor}} 50%, {{darkerBgColor}} 100%); border: 1px solid rgba(255, 255, 255, 0.05);">
+    
+    <!-- Days counter at the top -->
+    <div class="days-counter" style="text-align: center; font-style: italic; color: rgba(255, 255, 255, 0.8); font-size: 1em; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
+      Day {{stats.days_since_first_meeting}}
+    </div>
     
     <!-- Character header with name and status -->
     <div class="character-header">
@@ -136,7 +141,7 @@
           <span>{{stats.ap}}</span>
         </div>
         <div class="stat-bar-bg">
-          <div class="stat-bar-fill" style="width: {{stats.ap}}%; height: 100%; background: linear-gradient(90deg, #ff9a9e, #fad0c4); border-radius: 4px;"></div>
+          <div class="stat-bar-fill" style="width: {{#if (gt stats.ap 200)}}100{{else}}{{#if stats.ap}}{{divide stats.ap 2}}{{else}}0{{/if}}{{/if}}%; height: 100%; background: linear-gradient(90deg, #ff9a9e, #fad0c4); border-radius: 4px;"></div>
         </div>
       </div>
       
@@ -147,7 +152,7 @@
           <span>{{stats.dp}}</span>
         </div>
         <div class="stat-bar-bg">
-          <div class="stat-bar-fill" style="width: {{stats.dp}}%; height: 100%; background: linear-gradient(90deg, #a1c4fd, #c2e9fb); border-radius: 4px;"></div>
+          <div class="stat-bar-fill" style="width: {{#if (gt stats.dp 150)}}100{{else}}{{#if stats.dp}}{{divideRoundUp stats.dp 1.5}}{{else}}0{{/if}}{{/if}}%; height: 100%; background: linear-gradient(90deg, #a1c4fd, #c2e9fb); border-radius: 4px;"></div>
         </div>
       </div>
       
@@ -158,7 +163,7 @@
           <span>{{stats.tp}}</span>
         </div>
         <div class="stat-bar-bg">
-          <div class="stat-bar-fill" style="width: {{stats.tp}}%; height: 100%; background: linear-gradient(90deg, #84fab0, #8fd3f4); border-radius: 4px;"></div>
+          <div class="stat-bar-fill" style="width: {{#if (gt stats.tp 150)}}100{{else}}{{#if stats.tp}}{{divideRoundUp stats.tp 1.5}}{{else}}0{{/if}}{{/if}}%; height: 100%; background: linear-gradient(90deg, #84fab0, #8fd3f4); border-radius: 4px;"></div>
         </div>
       </div>
       
@@ -169,21 +174,18 @@
           <span>{{stats.cp}}</span>
         </div>
         <div class="stat-bar-bg">
-          <div class="stat-bar-fill" style="width: {{stats.cp}}%; height: 100%; background: linear-gradient(90deg, #d4fc79, #96e6a1); border-radius: 4px;"></div>
+          <div class="stat-bar-fill" style="width: {{#if (gt stats.cp 150)}}100{{else}}{{#if stats.cp}}{{divideRoundUp stats.cp 1.5}}{{else}}0{{/if}}{{/if}}%; height: 100%; background: linear-gradient(90deg, #d4fc79, #96e6a1); border-radius: 4px;"></div>
         </div>
       </div>
     </div>
     
-    <!-- Status and days counter -->
+    <!-- Status -->
     <div class="status-container">
       <div class="relationship-status">
         <strong>Relationship:</strong> {{stats.relationshipStatus}}
       </div>
       <div class="desire-status">
         <strong>Desire:</strong> {{stats.desireStatus}}
-      </div>
-      <div class="days-counter">
-        Day {{stats.days_since_first_meeting}}
       </div>
     </div>
     
@@ -209,10 +211,10 @@ TEMPLATE VARIABLES:
 - {{bgColor}}: Primary background color
 - {{darkerBgColor}}: Darker variant of background color
 - {{contrastColor}}: Contrast color for text against background
-- {{stats.ap}}: Affection points
-- {{stats.dp}}: Desire points
-- {{stats.tp}}: Trust points
-- {{stats.cp}}: Contempt points
+- {{stats.ap}}: Affection points (max 200)
+- {{stats.dp}}: Desire points (max 150)
+- {{stats.tp}}: Trust points (max 150)
+- {{stats.cp}}: Contempt points (max 150)
 - {{stats.apChange}}: Change in affection points (positive/negative/zero)
 - {{stats.dpChange}}: Change in desire points (positive/negative/zero)
 - {{stats.tpChange}}: Change in trust points (positive/negative/zero)

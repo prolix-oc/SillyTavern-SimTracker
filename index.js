@@ -522,6 +522,20 @@ Handlebars.registerHelper('gt', function (a, b) {
     return a > b;
 });
 
+Handlebars.registerHelper('divide', function (a, b) {
+    if (typeof a !== 'number' || typeof b !== 'number' || b === 0) {
+        return 0;
+    }
+    return a / b;
+});
+
+Handlebars.registerHelper('divideRoundUp', function (a, b) {
+    if (typeof a !== 'number' || typeof b !== 'number' || b === 0) {
+        return 0;
+    }
+    return Math.ceil(a / b);
+});
+
 Handlebars.registerHelper('unless', function (conditional, options) {
     if (!conditional) {
         return options.fn(this);
