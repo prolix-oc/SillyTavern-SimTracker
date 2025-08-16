@@ -567,17 +567,14 @@ const updateLastSimStatsOnRegenerateOrSwipe = (currentMesId = null) => {
       return;
     }
 
-    // Determine starting point for search
-    let startIndex = context.chat.length - 1;
-    if (currentMesId !== null && typeof currentMesId === 'number') {
-      // If we have a current message ID, start searching from the message before it
-      startIndex = currentMesId - 1;
-    }
-
-    // Look for the most recent message with sim data, starting from startIndex and going backwards
-    for (let i = startIndex; i >= 0; i--) {
+    // Look for the most recent character message with sim data
+    // We iterate backwards from the end of the chat to find the most recent valid message
+    for (let i = context.chat.length - 1; i >= 0; i--) {
       const message = context.chat[i];
       if (!message || !message.mes) continue;
+      
+      // Only consider character messages (not user or system messages)
+      if (message.is_user || message.is_system) continue;
 
       // Check if this message contains sim data
       const identifier = get_settings("codeBlockIdentifier");
@@ -597,7 +594,7 @@ const updateLastSimStatsOnRegenerateOrSwipe = (currentMesId = null) => {
         return;
       }
     }
-    log("No message with sim data found for regenerate/swipe update");
+    log("No character message with sim data found for regenerate/swipe update");
   } catch (error) {
     log(`Error updating last sim stats on regenerate/swipe: ${error.message}`);
   }
