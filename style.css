@@ -327,8 +327,24 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     z-index: 30; /* Much higher z-index for active card to cover all tabs */
 }
 
-.sim-tracker-card.narrative-inactive {
+.sim-tracker-card.narrative-inactive:not(.active) {
     opacity: 0.6; /* Translucent for narrative inactive characters */
+}
+
+.sim-tracker-card.narrative-inactive.active {
+    opacity: 0.6; /* Translucent for narrative inactive characters */
+}
+
+.sim-tracker-card.sliding-in {
+    opacity: 1;
+    visibility: visible;
+    z-index: 30; /* Much higher z-index for active card to cover all tabs */
+}
+
+.sim-tracker-card.sliding-out {
+    opacity: 0;
+    visibility: hidden;
+    z-index: 5;
 }
 
 .sim-tracker-card.tab-hidden {
