@@ -111,7 +111,7 @@ The extension offers extensive configuration options through the SillyTavern set
 8. **Data Hiding**: Hide raw JSON code blocks from chat display
 9. **System Prompt**: Customize the base prompt for sim tracking
 
-## Template Positioning
+### Template Positioning
 
 Templates can define their preferred position using HTML comments. The positioning options are:
 
@@ -127,6 +127,8 @@ To set a position in your template, add a comment like this at the top of your t
 ```
 
 If no position is specified in the template, the extension will use the position selected in the settings panel.
+
+The LEFT and RIGHT positioning options now use a vertically-stretched container that centers the tracker cards vertically while maintaining their natural width, providing a more consistent and visually appealing layout.
 
 ### Positioning Examples
 

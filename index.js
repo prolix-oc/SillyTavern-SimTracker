@@ -9,27 +9,50 @@ const CONTAINER_ID = 'silly-sim-tracker-container';
 const SETTINGS_ID = 'silly-sim-tracker-settings';
 
 // Helper function to create a right sidebar
+// Updated to use a vertical container that stretches from top to bottom
+// and aligns the content to the right side of the screen
 function createRightSidebar(mesId, content) {
     const rightSidebarId = `sst-sidebar-right-${mesId}`;
     // Remove existing sidebar for this message if any
     const existingRightSidebar = document.getElementById(rightSidebarId);
     if (existingRightSidebar) existingRightSidebar.remove();
     
+    // Create a container that stretches vertically
+    const verticalContainer = document.createElement('div');
+    verticalContainer.className = 'vertical-container';
+    verticalContainer.style.cssText = `
+        position: fixed !important;
+        right: 10px !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        width: auto !important;
+        height: 100vh !important;
+        z-index: 10000 !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
+        padding: 10px !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: flex-end !important;
+        visibility: visible !important;
+        overflow: visible !important;
+    `;
+    
+    // Create the actual sidebar content container
     const rightSidebar = document.createElement('div');
     rightSidebar.id = rightSidebarId;
     rightSidebar.innerHTML = content;
     rightSidebar.style.cssText = `
-        position: fixed !important;
-        right: 10px !important;
-        top: 50% !important;
-        transform: translateY(-50%) !important;
-        z-index: 10000 !important;
         max-width: 300px !important;
         width: auto !important;
         height: auto !important;
         box-sizing: border-box !important;
         margin: 0 !important;
-        padding: 10px !important;
+        padding: 0 !important;
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
@@ -52,39 +75,65 @@ function createRightSidebar(mesId, content) {
         }
         
         // Force reflow to ensure proper rendering
-        rightSidebar.offsetHeight;
+        verticalContainer.offsetHeight;
     }, 0);
+    
+    // Add the sidebar to the vertical container
+    verticalContainer.appendChild(rightSidebar);
     
     // Add a small delay before appending to the DOM to ensure proper rendering
     setTimeout(() => {
-        document.body.appendChild(rightSidebar);
+        document.body.appendChild(verticalContainer);
     }, 0);
     
-    return rightSidebar;
+    return verticalContainer;
 }
 
 // Helper function to create a left sidebar
+// Updated to use a vertical container that stretches from top to bottom
+// and aligns the content to the left side of the screen
 function createLeftSidebar(mesId, content) {
     const leftSidebarId = `sst-sidebar-left-${mesId}`;
     // Remove existing sidebar for this message if any
     const existingLeftSidebar = document.getElementById(leftSidebarId);
     if (existingLeftSidebar) existingLeftSidebar.remove();
     
+    // Create a container that stretches vertically
+    const verticalContainer = document.createElement('div');
+    verticalContainer.className = 'vertical-container';
+    verticalContainer.style.cssText = `
+        position: fixed !important;
+        left: 10px !important;
+        top: 0 !important;
+        bottom: 0 !important;
+        width: auto !important;
+        height: 100vh !important;
+        z-index: 10000 !important;
+        box-sizing: border-box !important;
+        margin: 0 !important;
+        padding: 10px !important;
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: center !important;
+        align-items: flex-start !important;
+        visibility: visible !important;
+        overflow: visible !important;
+    `;
+    
+    // Create the actual sidebar content container
     const leftSidebar = document.createElement('div');
     leftSidebar.id = leftSidebarId;
     leftSidebar.innerHTML = content;
     leftSidebar.style.cssText = `
-        position: fixed !important;
-        left: 10px !important;
-        top: 50% !important;
-        transform: translateY(-50%) !important;
-        z-index: 10000 !important;
         max-width: 300px !important;
         width: auto !important;
         height: auto !important;
         box-sizing: border-box !important;
         margin: 0 !important;
-        padding: 10px !important;
+        padding: 0 !important;
         background: transparent !important;
         border: none !important;
         box-shadow: none !important;
@@ -107,15 +156,18 @@ function createLeftSidebar(mesId, content) {
         }
         
         // Force reflow to ensure proper rendering
-        leftSidebar.offsetHeight;
+        verticalContainer.offsetHeight;
     }, 0);
+    
+    // Add the sidebar to the vertical container
+    verticalContainer.appendChild(leftSidebar);
     
     // Add a small delay before appending to the DOM to ensure proper rendering
     setTimeout(() => {
-        document.body.appendChild(leftSidebar);
+        document.body.appendChild(verticalContainer);
     }, 0);
     
-    return leftSidebar;
+    return verticalContainer;
 }
 
 // Default fields for sim data, used for both initial settings and the {{sim_format}} macro

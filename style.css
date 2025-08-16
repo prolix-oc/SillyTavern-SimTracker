@@ -76,3 +76,18 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     visibility: visible !important;
     box-sizing: border-box !important;
 }
+
+/* Ensure sidebar content is visible */
+.sim-tracker-container {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+}
+
+.sim-tracker-card {
+    display: block !important;
+    visibility: visible !important;
+    box-sizing: border-box !important;
+}
