@@ -140,7 +140,72 @@
         <p class="description">
           Migrate all existing sim data to the new improved format with explicit worldData and characters array structure.
         </p>
+        
+        <hr />
+        
+        <div class="setting">
+          <label>Template Preset Import/Export</label>
+          <div class="flex-container">
+            <button id="exportPresetBtn" class="menu_button" title="Export current template and settings as a preset file.">
+              Export Preset
+            </button>
+            <button id="importPresetBtn" class="menu_button" title="Import a template preset from a file.">
+              Import Preset
+            </button>
+          </div>
+        </div>
+        <p class="description">
+          Export your current template setup or import a preset from another user.
+        </p>
+        <!-- Hidden input for file import -->
+        <input type="file" id="presetImportInput" hidden accept=".json" />
       </div>
     </div>
   </div>
+  
+  <!-- Export Preset Modal -->
+  <dialog id="sst-export-preset-modal" class="popup wide_dialogue_popup large_dialogue_popup vertical_scrolling_dialogue_popup popup--animation-fast">
+    <div class="popup-header">
+      <h3 style="margin: 0; padding: 10px 0;">Export Template Preset</h3>
+    </div>
+    <div class="popup-content" style="padding: 15px; flex: 1; display: flex; flex-direction: column;">
+      <div style="margin-bottom: 15px;">
+        <label for="exportTemplateName">Template Name:</label>
+        <input type="text" id="exportTemplateName" class="text_pole" style="width: 100%;" />
+      </div>
+      <div style="margin-bottom: 15px;">
+        <label for="exportTemplateAuthor">Author:</label>
+        <input type="text" id="exportTemplateAuthor" class="text_pole" style="width: 100%;" />
+      </div>
+      <div style="margin-bottom: 15px;">
+        <label for="exportTemplatePosition">Position:</label>
+        <select id="exportTemplatePosition" class="text_pole" style="width: 100%;">
+          <option value="BOTTOM">Bottom (Below message)</option>
+          <option value="ABOVE">Above Message</option>
+          <option value="LEFT">Left Sidebar</option>
+          <option value="RIGHT">Right Sidebar</option>
+          <option value="MACRO">Macro Replacement</option>
+        </select>
+      </div>
+      <div style="margin-bottom: 15px;">
+        <label>
+          <input type="checkbox" id="exportIncludeSysPrompt" checked /> Include System Prompt
+        </label>
+      </div>
+      <div style="margin-bottom: 15px;">
+        <label>
+          <input type="checkbox" id="exportIncludeCustomFields" checked /> Include Custom Fields
+        </label>
+      </div>
+      <div style="margin-bottom: 15px;">
+        <label>
+          <input type="checkbox" id="exportIncludeSettings" checked /> Include Extension Settings
+        </label>
+      </div>
+    </div>
+    <div class="popup-footer" style="display: flex; justify-content: center; padding: 15px; gap: 10px;">
+      <button id="sst-export-preset-confirm" class="menu_button">Export</button>
+      <button id="sst-export-preset-cancel" class="menu_button">Cancel</button>
+    </div>
+  </dialog>
 </div>

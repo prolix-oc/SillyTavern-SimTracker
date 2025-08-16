@@ -156,7 +156,7 @@ const bind_setting = (selector, key, type) => {
   });
 };
 
-const initialize_settings_listeners = (loadTemplate, refreshAllCards, migrateAllSimData, handleCustomTemplateUpload) => {
+const initialize_settings_listeners = (loadTemplate, refreshAllCards, migrateAllSimData, handleCustomTemplateUpload, handlePresetExport, handlePresetImport) => {
   console.log(`[SST] [${MODULE_NAME}]`, "Binding settings UI elements...");
 
   bind_setting("#isEnabled", "isEnabled", "boolean");
@@ -201,6 +201,20 @@ const initialize_settings_listeners = (loadTemplate, refreshAllCards, migrateAll
     ) {
       migrateAllSimData();
     }
+  });
+
+  // Listener for preset export button
+  $("#exportPresetBtn").on("click", () => {
+    handlePresetExport(loadTemplate, refreshAllCards);
+  });
+
+  // Listener for preset import button
+  $("#importPresetBtn").on("click", () => {
+    $("#presetImportInput").click(); // Trigger the hidden file input
+  });
+
+  $("#presetImportInput").on("change", (event) => {
+    handlePresetImport(event, loadTemplate, refreshAllCards);
   });
 
   // --- Custom Fields UI Logic ---
@@ -393,6 +407,202 @@ const load_settings_html_manually = async () => {
   }
 };
 
+  // Helper function to escape HTML
+  const escapeHtml = (unsafe) => {
+    if (typeof unsafe !== 'string') return unsafe;
+    return unsafe
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  };
+
+  // Helper function to unescape HTML
+  const unescapeHtml = (safe) => {
+    if (typeof safe !== 'string') return safe;
+    return safe
+      .replace(/&amp;/g, "&")
+      .replace(/&lt;/g, "<")
+      .replace(/&gt;/g, ">")
+      .replace(/&quot;/g, "\"")
+      .replace(/&#039;/g, "'");
+  };
+
+  // Function to handle preset export
+  const handlePresetExport = (loadTemplate, refreshAllCards) => {
+    // Get references to modal elements
+    const $modal = $("#sst-export-preset-modal");
+    const $templateName = $modal.find("#exportTemplateName");
+    const $templateAuthor = $modal.find("#exportTemplateAuthor");
+    const $templatePosition = $modal.find("#exportTemplatePosition");
+    const $includeSysPrompt = $modal.find("#exportIncludeSysPrompt");
+    const $includeCustomFields = $modal.find("#exportIncludeCustomFields");
+    const $includeSettings = $modal.find("#exportIncludeSettings");
+    const $confirmBtn = $modal.find("#sst-export-preset-confirm");
+    const $cancelBtn = $modal.find("#sst-export-preset-cancel");
+
+    // Pre-fill modal with current settings if available in template
+    const customTemplateHtml = get_settings("customTemplateHtml");
+    let templateName = "My Template";
+    let templateAuthor = "Anonymous";
+    let templatePosition = get_settings("templatePosition") || "BOTTOM";
+
+    // Try to extract metadata from custom template if it exists
+    if (customTemplateHtml) {
+      const nameRegex = /<!--\s*TEMPLATE NAME\s*:\s*(.*?)\s*-->/i;
+      const authorRegex = /<!--\s*AUTHOR\s*:\s*(.*?)\s*-->/i;
+      const positionRegex = /<!--\s*POSITION\s*:\s*(.*?)\s*-->/i;
+
+      const nameMatch = customTemplateHtml.match(nameRegex);
+      const authorMatch = customTemplateHtml.match(authorRegex);
+      const positionMatch = customTemplateHtml.match(positionRegex);
+
+      if (nameMatch && nameMatch[1]) templateName = nameMatch[1].trim();
+      if (authorMatch && authorMatch[1]) templateAuthor = authorMatch[1].trim();
+      if (positionMatch && positionMatch[1]) templatePosition = positionMatch[1].trim().toUpperCase();
+    }
+
+    $templateName.val(templateName);
+    $templateAuthor.val(templateAuthor);
+    $templatePosition.val(templatePosition);
+
+    // Show modal
+    $modal[0].showModal();
+
+    // Handle confirm button
+    $confirmBtn.off('click').on('click', async () => {
+      try {
+        // Create preset object
+        const preset = {
+          templateName: $templateName.val(),
+          templateAuthor: $templateAuthor.val(),
+          templatePosition: $templatePosition.val()
+        };
+
+        // Add HTML template (escaped)
+        preset.htmlTemplate = escapeHtml(get_settings("customTemplateHtml") || "");
+
+        // Conditionally add other components
+        if ($includeSysPrompt.is(":checked")) {
+          preset.sysPrompt = get_settings("datingSimPrompt") || "";
+        }
+
+        if ($includeCustomFields.is(":checked")) {
+          preset.customFields = get_settings("customFields") || [];
+        }
+
+        if ($includeSettings.is(":checked")) {
+          // Only include specific settings that make sense for a preset
+          preset.extSettings = {
+            codeBlockIdentifier: get_settings("codeBlockIdentifier"),
+            defaultBgColor: get_settings("defaultBgColor"),
+            showThoughtBubble: get_settings("showThoughtBubble"),
+            hideSimBlocks: get_settings("hideSimBlocks"),
+            templateFile: get_settings("templateFile")
+          };
+        }
+
+        // Create and download file
+        const blob = new Blob([JSON.stringify(preset, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${preset.templateName.replace(/\s+/g, '_')}_preset.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        toastr.success(`Preset "${preset.templateName}" exported successfully!`);
+        $modal[0].close();
+      } catch (error) {
+        console.error(`[SST] [${MODULE_NAME}]`, "Error exporting preset:", error);
+        toastr.error("Failed to export preset. Check console for details.");
+      }
+    });
+
+    // Handle cancel button
+    $cancelBtn.off('click').on('click', () => {
+      $modal[0].close();
+    });
+
+    // Close modal with Escape key
+    $modal.off('keydown').on('keydown', function (e) {
+      if (e.key === "Escape") {
+        $modal[0].close();
+      }
+    });
+
+    // Close when clicking on backdrop
+    $modal.off('click').on('click', function (e) {
+      if (e.target === this) {
+        $modal[0].close();
+      }
+    });
+  };
+
+  // Function to handle preset import
+  const handlePresetImport = (event, loadTemplate, refreshAllCards) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (e) => {
+      try {
+        const content = e.target.result;
+        const preset = JSON.parse(content);
+
+        // Validate preset structure
+        if (!preset.htmlTemplate) {
+          throw new Error("Invalid preset file: Missing HTML template");
+        }
+
+        // Apply HTML template (unescape first)
+        const unescapedTemplate = unescapeHtml(preset.htmlTemplate);
+        set_settings("customTemplateHtml", unescapedTemplate);
+
+        // Apply system prompt if included
+        if (preset.sysPrompt !== undefined) {
+          set_settings("datingSimPrompt", preset.sysPrompt);
+        }
+
+        // Apply custom fields if included
+        if (preset.customFields !== undefined) {
+          set_settings("customFields", preset.customFields);
+        }
+
+        // Apply extension settings if included
+        if (preset.extSettings) {
+          Object.keys(preset.extSettings).forEach(key => {
+            set_settings(key, preset.extSettings[key]);
+          });
+        }
+
+        // Apply template metadata if available
+        if (preset.templatePosition) {
+          set_settings("templatePosition", preset.templatePosition);
+        }
+
+        // Reload template and refresh cards
+        await loadTemplate();
+        refreshAllCards();
+
+        toastr.success(`Preset "${preset.templateName || 'Unnamed'}" imported successfully!`);
+      } catch (error) {
+        console.error(`[SST] [${MODULE_NAME}]`, "Error importing preset:", error);
+        toastr.error(`Failed to import preset: ${error.message}`);
+      }
+    };
+
+    reader.onerror = () => {
+      toastr.error("Failed to read preset file.");
+    };
+
+    reader.readAsText(file);
+    event.target.value = ""; // Reset input
+  };
+
 // Export functions and variables
 export {
   defaultSimFields,
@@ -407,5 +617,9 @@ export {
   bind_setting,
   initialize_settings_listeners,
   initialize_settings,
-  load_settings_html_manually
+  load_settings_html_manually,
+  escapeHtml,
+  unescapeHtml,
+  handlePresetExport,
+  handlePresetImport
 };

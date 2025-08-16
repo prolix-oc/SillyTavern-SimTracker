@@ -39,7 +39,9 @@ import {
   initialize_settings,
   initialize_settings_listeners,
   load_settings_html_manually,
-  defaultSimFields
+  defaultSimFields,
+  handlePresetExport,
+  handlePresetImport
 } from "./settingsHandler.js";
 
 import {
@@ -103,8 +105,10 @@ jQuery(async () => {
       (mesId) => renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString));
     const wrappedMigrateAllSimData = () => migrateAllSimData(get_settings);
     const wrappedHandleCustomTemplateUpload = (event) => handleCustomTemplateUpload(event, set_settings, wrappedLoadTemplate, wrappedRefreshAllCards);
+    const wrappedHandlePresetExport = () => handlePresetExport(wrappedLoadTemplate, wrappedRefreshAllCards);
+    const wrappedHandlePresetImport = (event) => handlePresetImport(event, wrappedLoadTemplate, wrappedRefreshAllCards);
     
-    initialize_settings_listeners(wrappedLoadTemplate, wrappedRefreshAllCards, wrappedMigrateAllSimData, wrappedHandleCustomTemplateUpload);
+    initialize_settings_listeners(wrappedLoadTemplate, wrappedRefreshAllCards, wrappedMigrateAllSimData, wrappedHandleCustomTemplateUpload, wrappedHandlePresetExport, wrappedHandlePresetImport);
     log("Settings panel listeners initialized.");
     await wrappedLoadTemplate();
 
