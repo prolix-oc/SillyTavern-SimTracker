@@ -88,9 +88,7 @@ const settings_ui_map = {};
 
 const get_settings = (key) => settings[key] ?? default_settings[key];
 const set_settings = (key, value) => {
-  console.log(`[SST] [${MODULE_NAME}]`, `Setting ${key} to:`, value);
   settings[key] = value;
-  console.log(`[SST] [${MODULE_NAME}]`, `Settings after update:`, settings);
   saveSettingsDebounced();
 };
 
@@ -164,10 +162,8 @@ const loadDefaultTemplate = async () => {
 // --- SETTINGS MANAGEMENT ---
 
 const refresh_settings_ui = () => {
-  console.log(`[SST] [${MODULE_NAME}]`, "Refreshing settings UI with values:", settings);
   for (const [key, [element, type]] of Object.entries(settings_ui_map)) {
     const value = get_settings(key);
-    console.log(`[SST] [${MODULE_NAME}]`, `Setting UI element ${key} to value:`, value);
     switch (type) {
       case "boolean":
         element.prop("checked", value);
@@ -236,19 +232,15 @@ const initialize_settings_listeners = (
     settings_ui_map["templateFile"] = [$templateSelect, "text"];
     $templateSelect.on("change", async () => {
       const selectedValue = $templateSelect.val();
-      console.log(`[SST] [${MODULE_NAME}]`, `Template selection changed to: ${selectedValue}`);
       
       const $selectedOption = $templateSelect.find(
         `option[value="${selectedValue}"]`
       );
       const presetData = $selectedOption.data("preset");
       const templateType = $selectedOption.data("type");
-      
-      console.log(`[SST] [${MODULE_NAME}]`, `Template type: ${templateType}, presetData:`, presetData);
 
       // If this is a user preset, apply its settings
       if (presetData) {
-        console.log(`[SST] [${MODULE_NAME}]`, `Applying user preset settings`);
         // Apply the preset data, unescaping HTML if needed
         set_settings(
           "customTemplateHtml",
@@ -276,14 +268,11 @@ const initialize_settings_listeners = (
       }
       // If this is a default template, load and apply its settings
       else if (templateType === "default" && selectedValue.endsWith(".json")) {
-        console.log(`[SST] [${MODULE_NAME}]`, `Loading and applying default template settings`);
         try {
           const defaultTemplatePath = `${get_extension_directory()}/tracker-card-templates/${selectedValue}`;
           const defaultTemplate = await $.get(defaultTemplatePath);
           // jQuery may automatically parse JSON responses, so we need to check if it's already an object
           const templateData = typeof defaultTemplate === "string" ? JSON.parse(defaultTemplate) : defaultTemplate;
-          
-          console.log(`[SST] [${MODULE_NAME}]`, `Default template data:`, templateData);
 
           // Apply the default template settings
           set_settings("customTemplateHtml", unescapeHtml(templateData.htmlTemplate));

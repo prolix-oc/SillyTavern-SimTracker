@@ -155,8 +155,6 @@ async function populateTemplateDropdown(get_settings) {
         } else if (templateName) {
           friendlyName = templateName;
         }
-        
-        console.log(`[SST] [${MODULE_NAME}]`, `Generated friendly name for ${filename}: ${friendlyName}`);
 
         templateOptions.push({ filename, friendlyName, type: "default" });
       } catch (error) {
@@ -179,8 +177,6 @@ async function populateTemplateDropdown(get_settings) {
 
       const friendlyName = `${templateName} - by ${author} (User Preset)`;
       const filename = `user-preset-${index}`; // Unique identifier for user presets
-      
-      console.log(`[SST] [${MODULE_NAME}]`, `Generated friendly name for user preset ${index}: ${friendlyName}`);
 
       templateOptions.push({ 
         filename, 
@@ -199,27 +195,26 @@ async function populateTemplateDropdown(get_settings) {
   // Sort the results alphabetically by friendly name for a clean list
   templateOptions.sort((a, b) => a.friendlyName.localeCompare(b.friendlyName));
 
+  console.log(`[SST] [${MODULE_NAME}]`, "Template options to be added to dropdown:", templateOptions);
+
   const $select = $("#templateFile");
   const currentSelection = get_settings ? get_settings("templateFile") : null;
 
   $select.empty();
   templateOptions.forEach((option) => {
-    console.log(`[SST] [${MODULE_NAME}]`, `Adding option to dropdown:`, option);
-    const $option = $("<option>", {
-      value: option.filename,
-      text: option.friendlyName,
-      "data-type": option.type, // Store type as data attribute
-      "data-preset": option.presetData ? JSON.stringify(option.presetData) : undefined // Store preset data as data attribute
-    });
-    console.log(`[SST] [${MODULE_NAME}]`, `Created option element:`, $option);
-    $select.append($option);
+    $select.append(
+      $("<option>", {
+        value: option.filename,
+        text: option.friendlyName,
+        "data-type": option.type, // Store type as data attribute
+        "data-preset": option.presetData ? JSON.stringify(option.presetData) : undefined // Store preset data as data attribute
+      })
+    );
   });
 
   // Restore the user's selection
   $select.val(currentSelection);
   console.log(`[SST] [${MODULE_NAME}]`, "Template dropdown populated with friendly names.");
-  console.log(`[SST] [${MODULE_NAME}]`, "Current selection:", currentSelection);
-  console.log(`[SST] [${MODULE_NAME}]`, "Dropdown options:", $select.find("option").map(function() { return { value: $(this).val(), text: $(this).text() }; }).get());
 }
 
 function handleCustomTemplateUpload(event, set_settings, loadTemplate, refreshAllCards) {
