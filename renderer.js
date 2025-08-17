@@ -2,6 +2,7 @@
 import { getContext } from "../../../extensions.js";
 import { messageFormatting } from "../../../../script.js";
 import { extractTemplatePosition, currentTemplatePosition } from "./templating.js";
+import { parseTrackerData } from "./formatUtils.js";
 
 const MODULE_NAME = "silly-sim-tracker";
 const CONTAINER_ID = "silly-sim-tracker-container";
@@ -419,14 +420,15 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
       // Set flag to indicate we're processing a message with sim data
       isGenerationInProgress = true;
 
-      // Extract JSON content from the match
-      const jsonContent = match[0]
+      // Extract content from the match
+      const fullContent = match[0];
+      const content = fullContent
         .replace(/```/g, "")
-        .replace(new RegExp(`^${identifier}\s*`), "")
+        .replace(new RegExp(`^${identifier}\\s*`), "")
         .trim();
 
       // Update lastSimJsonString
-      lastSimJsonString = jsonContent;
+      lastSimJsonString = content;
 
       // Remove any preparing text
       const preparingText = messageElement.parentNode.querySelector(".sst-preparing-text");
@@ -438,14 +440,15 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
 
       let jsonData;
       try {
-        jsonData = JSON.parse(jsonContent);
-      } catch (jsonError) {
+        // Use our new universal parser that can handle both JSON and YAML
+        jsonData = parseTrackerData(content);
+      } catch (parseError) {
         console.log(`[SST] [${MODULE_NAME}]`,
-          `Failed to parse JSON in message ID ${mesId}. Error: ${jsonError.message}`
+          `Failed to parse tracker data in message ID ${mesId}. Error: ${parseError.message}`
         );
         messageElement.insertAdjacentHTML(
           "beforeend",
-          `<div style="color: red; font-family: monospace;">[SillySimTracker] Error: Invalid JSON in code block.</div>`
+          `<div style="color: red; font-family: monospace;">[SillySimTracker] Error: Invalid tracker data format in code block.</div>`
         );
         return;
       }
@@ -710,12 +713,13 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
       let jsonData;
 
       try {
-        jsonData = JSON.parse(jsonContent);
-      } catch (jsonError) {
+        // Use our new universal parser that can handle both JSON and YAML
+        jsonData = parseTrackerData(jsonContent);
+      } catch (parseError) {
         console.log(`[SST] [${MODULE_NAME}]`,
-          `Failed to parse JSON in message ID ${mesId}. Error: ${jsonError.message}`
+          `Failed to parse tracker data in message ID ${mesId}. Error: ${parseError.message}`
         );
-        const errorHtml = `<div style="color: red; font-family: monospace;">[SillySimTracker] Error: Invalid JSON in code block.</div>`;
+        const errorHtml = `<div style="color: red; font-family: monospace;">[SillySimTracker] Error: Invalid tracker data format in code block.</div>`;
         messageElement.insertAdjacentHTML("beforeend", errorHtml);
         return;
       }
