@@ -121,7 +121,8 @@ const loadDefaultTemplate = async () => {
   try {
     const defaultTemplatePath = `${get_extension_directory()}/tracker-card-templates/dating-card-template.json`;
     const defaultTemplate = await $.get(defaultTemplatePath);
-    const templateData = JSON.parse(defaultTemplate);
+    // jQuery may automatically parse JSON responses, so we need to check if it's already an object
+    const templateData = typeof defaultTemplate === "string" ? JSON.parse(defaultTemplate) : defaultTemplate;
 
     // Apply the default template settings
     set_settings("customTemplateHtml", unescapeHtml(templateData.htmlTemplate));
@@ -261,7 +262,8 @@ const initialize_settings_listeners = (
         try {
           const defaultTemplatePath = `${get_extension_directory()}/tracker-card-templates/${selectedValue}`;
           const defaultTemplate = await $.get(defaultTemplatePath);
-          const templateData = JSON.parse(defaultTemplate);
+          // jQuery may automatically parse JSON responses, so we need to check if it's already an object
+          const templateData = typeof defaultTemplate === "string" ? JSON.parse(defaultTemplate) : defaultTemplate;
 
           // Apply the default template settings
           set_settings("customTemplateHtml", unescapeHtml(templateData.htmlTemplate));
@@ -595,10 +597,11 @@ const initialize_settings = async () => {
       try {
         const defaultTemplatePath = `${get_extension_directory()}/tracker-card-templates/${selectedTemplate}`;
         const defaultTemplate = await $.get(defaultTemplatePath);
-        const templateData = JSON.parse(defaultTemplate);
+        // jQuery may automatically parse JSON responses, so we need to check if it's already an object
+        const templateData = typeof defaultTemplate === "string" ? JSON.parse(defaultTemplate) : defaultTemplate;
 
         // Apply the default template settings
-        settings.customTemplateHtml = templateData.htmlTemplate;
+        settings.customTemplateHtml = unescapeHtml(templateData.htmlTemplate);
 
         if (templateData.sysPrompt !== undefined) {
           settings.datingSimPrompt = templateData.sysPrompt;
