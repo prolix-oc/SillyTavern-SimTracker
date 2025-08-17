@@ -120,7 +120,21 @@ async function populateTemplateDropdown(get_settings) {
 
       try {
         const content = await $.get(filePath);
-        const jsonData = JSON.parse(content);
+        let jsonData;
+        
+        // Try to parse as JSON first
+        try {
+          jsonData = JSON.parse(content);
+        } catch (jsonError) {
+          // If JSON parsing fails, log the error and skip this template
+          console.error(
+            `Could not parse JSON for template ${filename}:`,
+            jsonError
+          );
+          // If parsing fails, add it to the list with its filename so it's not missing
+          templateOptions.push({ filename, friendlyName: filename.replace(".json", ".html"), type: "default" });
+          return;
+        }
 
         const templateName = jsonData.templateName || null;
         const author = jsonData.templateAuthor || null;
@@ -359,15 +373,19 @@ const loadTemplate = async (get_settings, set_settings) => {
       const defaultPath = `${get_extension_directory()}/tracker-card-templates/${templateFile}`;
       try {
         const templateContent = await $.get(defaultPath);
-        const jsonData = JSON.parse(templateContent);
+        let jsonData;
+        
+        // Try to parse as JSON first
+        try {
+          jsonData = JSON.parse(templateContent);
+        } catch (jsonError) {
+          throw new Error(`Could not parse JSON for template ${templateFile}: ${jsonError.message}`);
+        }
+        
         console.log(`[SST] [${MODULE_NAME}]`, `Loading template from default file: ${defaultPath}`);
 
         // Extract position metadata
-        const positionRegex = /<!--\s*POSITION\s*:\s*(.*?)\s*-->/i;
-        const positionMatch = jsonData.htmlTemplate.match(positionRegex);
-        const templatePosition = positionMatch
-          ? positionMatch[1].trim().toUpperCase()
-          : jsonData.templatePosition || "BOTTOM"; // Use setting as fallback
+        const templatePosition = extractTemplatePosition(jsonData.htmlTemplate);
 
         // Parse the template content
         const cardStartMarker = "<!-- CARD_TEMPLATE_START -->";
@@ -414,7 +432,7 @@ const loadTemplate = async (get_settings, set_settings) => {
         return; // Exit successfully
       } catch (error) {
         console.log(`[SST] [${MODULE_NAME}]`,
-          `Could not load or parse default template file '${templateFile}'. Using hardcoded fallback.`
+          `Could not load or parse default template file '${templateFile}'. Using hardcoded fallback. Error: ${error.message}`
         );
       }
     }
