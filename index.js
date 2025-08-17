@@ -256,24 +256,27 @@ jQuery(async () => {
       const fields = get_settings("customFields") || [];
       log("Processed {{sim_format}} macro.");
 
-      // Start building the JSON example structure
-      let exampleJson = "{";
-      exampleJson += '  "characterName": {';
+      // Start building the JSON example structure with the new format
+      let exampleJson = "{\n";
+      exampleJson += "  \"worldData\": {\n";
+      exampleJson += "    \"current_date\": \"[CURRENT_STORY_DATE]\", // YYYY-MM-DD\n";
+      exampleJson += "    \"current_time\": \"[CURRENT_STORY_TIME]\" // 24-hour time (e.g., 21:34, 10:21)\n";
+      exampleJson += "  },\n";
+      exampleJson += "  \"characters\": [\n";
+      exampleJson += "    {\n";
+      exampleJson += "      \"name\": \"[CHARACTER_NAME]\",\n";
 
       // Add each custom field as a commented key-value pair
       fields.forEach((field) => {
         const sanitizedKey = sanitizeFieldKey(field.key);
-        exampleJson += `    "${sanitizedKey}\": [${sanitizedKey.toUpperCase()}_VALUE], // ${
+        exampleJson += `      "${sanitizedKey}": [${sanitizedKey.toUpperCase()}_VALUE], // ${
           field.description
-        }`;
+        }\n`;
       });
 
-      exampleJson += "  },";
-      exampleJson +=
-        '  "characterTwo": { ... }, // Repeat structure for each character';
-      exampleJson += '  "current_date": [CURRENT_STORY_DATE] // YYYY-MM-DD';
-      exampleJson +=
-        '  "current_time": [CURRENT_STORY_TIME] // 21:34, 10:21, etc (24-hour time)';
+      exampleJson += "    }\n";
+      exampleJson += "    // Add additional character objects here as needed\n";
+      exampleJson += "  ]\n";
       exampleJson += "}";
 
       // Wrap in the code block with the identifier
