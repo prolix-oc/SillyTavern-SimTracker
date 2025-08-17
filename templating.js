@@ -149,29 +149,21 @@ async function populateTemplateDropdown(get_settings) {
 
         const templateName = jsonData.templateName || null;
         const author = jsonData.templateAuthor || null;
-        const position = jsonData.templatePosition || "BOTTOM";
 
         if (templateName && author) {
-          friendlyName = `${templateName} - by ${author} [${position}]`;
+          friendlyName = `${templateName} - by ${author}`;
         } else if (templateName) {
-          friendlyName = `${templateName} [${position}]`;
-        } else {
-          friendlyName = `${filename.replace(".json", "")} [${position}]`;
+          friendlyName = templateName;
         }
 
-        templateOptions.push({ 
-          filename, 
-          friendlyName, 
-          type: "default",
-          templateData: jsonData // Store the template data for later use
-        });
+        templateOptions.push({ filename, friendlyName, type: "default" });
       } catch (error) {
         console.error(
           `Could not fetch or parse template info for ${filename}:`,
           error
         );
         // If fetching fails, add it to the list with its filename so it's not missing
-        templateOptions.push({ filename, friendlyName: `${filename.replace(".json", "")} [BOTTOM]`, type: "default" });
+        templateOptions.push({ filename, friendlyName: filename.replace(".json", ""), type: "default" });
       }
     })
   );
@@ -182,9 +174,8 @@ async function populateTemplateDropdown(get_settings) {
     try {
       const templateName = preset.templateName || `User Preset ${index + 1}`;
       const author = preset.templateAuthor || "Unknown";
-      const position = preset.templatePosition || "BOTTOM";
 
-      const friendlyName = `${templateName} - by ${author} [${position}] (User Preset)`;
+      const friendlyName = `${templateName} - by ${author} (User Preset)`;
       const filename = `user-preset-${index}`; // Unique identifier for user presets
 
       templateOptions.push({ 
@@ -214,8 +205,7 @@ async function populateTemplateDropdown(get_settings) {
         value: option.filename,
         text: option.friendlyName,
         "data-type": option.type, // Store type as data attribute
-        "data-preset": option.presetData ? JSON.stringify(option.presetData) : undefined, // Store preset data as data attribute
-        "data-template": option.templateData ? JSON.stringify(option.templateData) : undefined // Store template data as data attribute
+        "data-preset": option.presetData ? JSON.stringify(option.presetData) : undefined // Store preset data as data attribute
       })
     );
   });
@@ -333,45 +323,42 @@ const loadTemplate = async (get_settings, set_settings) => {
           const templatePosition = presetData.templatePosition || "BOTTOM";
           
           // Parse the template content, unescaping HTML if needed
-          const cardStartMarker = "<!-- CARD_TEMPLATE_START -->";
-          const cardEndMarker = "<!-- CARD_TEMPLATE_END -->";
-          let cardTemplate = "";
-          // Check if the HTML template is escaped and unescape it if needed
-          let processedHtmlTemplate = presetData.htmlTemplate;
-          if (processedHtmlTemplate.includes("&lt;") || processedHtmlTemplate.includes("&gt;")) {
-            processedHtmlTemplate = unescapeHtml(presetData.htmlTemplate);
+        const cardStartMarker = "<!-- CARD_TEMPLATE_START -->";
+        const cardEndMarker = "<!-- CARD_TEMPLATE_END -->";
+        let cardTemplate = "";
+        // First unescape the HTML template
+        const unescapedHtmlTemplate = unescapeHtml(presetData.htmlTemplate);
+        const startIndex = unescapedHtmlTemplate.indexOf(cardStartMarker);
+        const endIndex = unescapedHtmlTemplate.indexOf(cardEndMarker);
+        
+        if (startIndex !== -1 && endIndex !== -1) {
+          cardTemplate = unescapedHtmlTemplate
+            .substring(startIndex + cardStartMarker.length, endIndex)
+            .trim();
+        } else {
+          let cleanedResponse = unescapedHtmlTemplate
+            .replace(/<!--[\s\S]*?-->/g, "")
+            .trim();
+          const templateVarRegex = /\{\{[^}]+\}\}/;
+          const divMatches = [
+            ...cleanedResponse.matchAll(/<div[^>]*>[\s\S]*?<\/div>/g),
+          ];
+          let bestMatch = null;
+          let maxLength = 0;
+          for (const match of divMatches) {
+            if (templateVarRegex.test(match[0]) && match[0].length > maxLength) {
+              bestMatch = match[0];
+              maxLength = match[0].length;
+            }
           }
-          const startIndex = processedHtmlTemplate.indexOf(cardStartMarker);
-          const endIndex = processedHtmlTemplate.indexOf(cardEndMarker);
-          
-          if (startIndex !== -1 && endIndex !== -1) {
-            cardTemplate = processedHtmlTemplate
-              .substring(startIndex + cardStartMarker.length, endIndex)
-              .trim();
+          if (bestMatch) {
+            cardTemplate = bestMatch;
           } else {
-            let cleanedResponse = processedHtmlTemplate
-              .replace(/<!--[\s\S]*?-->/g, "")
-              .trim();
-            const templateVarRegex = /\{\{[^}]+\}\}/;
-            const divMatches = [
-              ...cleanedResponse.matchAll(/<div[^>]*>[\s\S]*?<\/div>/g),
-            ];
-            let bestMatch = null;
-            let maxLength = 0;
-            for (const match of divMatches) {
-              if (templateVarRegex.test(match[0]) && match[0].length > maxLength) {
-                bestMatch = match[0];
-                maxLength = match[0].length;
-              }
-            }
-            if (bestMatch) {
-              cardTemplate = bestMatch;
-            } else {
-              throw new Error(
-                "Could not find template content with either markers or Handlebars variables."
-              );
-            }
+            throw new Error(
+              "Could not find template content with either markers or Handlebars variables."
+            );
           }
+        }
           
           compiledCardTemplate = Handlebars.compile(cardTemplate);
           // Store the template position in a module-level variable for use during rendering
@@ -409,20 +396,17 @@ const loadTemplate = async (get_settings, set_settings) => {
         const cardStartMarker = "<!-- CARD_TEMPLATE_START -->";
         const cardEndMarker = "<!-- CARD_TEMPLATE_END -->";
         let cardTemplate = "";
-        // Check if the HTML template is escaped and unescape it if needed
-        let processedHtmlTemplate = jsonData.htmlTemplate;
-        if (processedHtmlTemplate.includes("&lt;") || processedHtmlTemplate.includes("&gt;")) {
-          processedHtmlTemplate = unescapeHtml(jsonData.htmlTemplate);
-        }
-        const startIndex = processedHtmlTemplate.indexOf(cardStartMarker);
-        const endIndex = processedHtmlTemplate.indexOf(cardEndMarker);
+        // First unescape the HTML template
+        const unescapedHtmlTemplate = unescapeHtml(jsonData.htmlTemplate);
+        const startIndex = unescapedHtmlTemplate.indexOf(cardStartMarker);
+        const endIndex = unescapedHtmlTemplate.indexOf(cardEndMarker);
         
         if (startIndex !== -1 && endIndex !== -1) {
-          cardTemplate = processedHtmlTemplate
+          cardTemplate = unescapedHtmlTemplate
             .substring(startIndex + cardStartMarker.length, endIndex)
             .trim();
         } else {
-          let cleanedResponse = processedHtmlTemplate
+          let cleanedResponse = unescapedHtmlTemplate
             .replace(/<!--[\s\S]*?-->/g, "")
             .trim();
           const templateVarRegex = /\{\{[^}]+\}\}/;

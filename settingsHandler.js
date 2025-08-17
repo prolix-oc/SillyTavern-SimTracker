@@ -227,10 +227,12 @@ const initialize_settings_listeners = (
     settings_ui_map["templateFile"] = [$templateSelect, "text"];
     $templateSelect.on("change", async () => {
       const selectedValue = $templateSelect.val();
-      const $selectedOption = $templateSelect.find(`option[value="${selectedValue}"]`);
+      const $selectedOption = $templateSelect.find(
+        `option[value="${selectedValue}"]`
+      );
       const presetData = $selectedOption.data("preset");
-      const templateData = $selectedOption.data("template"); // Get template data for default templates
-      
+      const templateType = $selectedOption.data("type");
+
       // If this is a user preset, apply its settings
       if (presetData) {
         // Apply the preset data, unescaping HTML if needed
@@ -254,27 +256,34 @@ const initialize_settings_listeners = (
           });
         }
       }
-      // If this is a default template, apply its settings
-      else if (templateData) {
-        // Apply the template data
-        set_settings(
-          "customTemplateHtml",
-          unescapeHtml(templateData.htmlTemplate)
-        );
+      // If this is a default template, load and apply its settings
+      else if (templateType === "default" && selectedValue.endsWith(".json")) {
+        try {
+          const defaultTemplatePath = `${get_extension_directory()}/tracker-card-templates/${selectedValue}`;
+          const defaultTemplate = await $.get(defaultTemplatePath);
+          const templateData = JSON.parse(defaultTemplate);
 
-        // Apply other settings if they exist in the template
-        if (templateData.sysPrompt !== undefined) {
-          set_settings("datingSimPrompt", templateData.sysPrompt);
-        }
+          // Apply the default template settings
+          set_settings("customTemplateHtml", unescapeHtml(templateData.htmlTemplate));
 
-        if (templateData.customFields !== undefined) {
-          set_settings("customFields", templateData.customFields);
-        }
+          if (templateData.sysPrompt !== undefined) {
+            set_settings("datingSimPrompt", templateData.sysPrompt);
+          }
 
-        if (templateData.extSettings) {
-          Object.keys(templateData.extSettings).forEach((key) => {
-            set_settings(key, templateData.extSettings[key]);
-          });
+          if (templateData.customFields !== undefined) {
+            set_settings("customFields", templateData.customFields);
+          }
+
+          if (templateData.extSettings) {
+            Object.keys(templateData.extSettings).forEach((key) => {
+              set_settings(key, templateData.extSettings[key]);
+            });
+          }
+        } catch (error) {
+          console.log(
+            `[SST] [${MODULE_NAME}]`,
+            `Error loading or applying default template ${selectedValue}: ${error.message}`
+          );
         }
       }
 
@@ -578,6 +587,38 @@ const initialize_settings = async () => {
         `[SST] [${MODULE_NAME}]`,
         `Error loading default JSON template: ${error.message}`
       );
+    }
+  } else {
+    // For existing users, if they have selected a default template, load its settings
+    const selectedTemplate = settings.templateFile;
+    if (selectedTemplate && selectedTemplate.endsWith(".json") && !selectedTemplate.startsWith("user-preset-")) {
+      try {
+        const defaultTemplatePath = `${get_extension_directory()}/tracker-card-templates/${selectedTemplate}`;
+        const defaultTemplate = await $.get(defaultTemplatePath);
+        const templateData = JSON.parse(defaultTemplate);
+
+        // Apply the default template settings
+        settings.customTemplateHtml = templateData.htmlTemplate;
+
+        if (templateData.sysPrompt !== undefined) {
+          settings.datingSimPrompt = templateData.sysPrompt;
+        }
+
+        if (templateData.customFields !== undefined) {
+          settings.customFields = templateData.customFields;
+        }
+
+        if (templateData.extSettings) {
+          Object.keys(templateData.extSettings).forEach((key) => {
+            settings[key] = templateData.extSettings[key];
+          });
+        }
+      } catch (error) {
+        console.log(
+          `[SST] [${MODULE_NAME}]`,
+          `Error loading selected default JSON template: ${error.message}`
+        );
+      }
     }
   }
 };
