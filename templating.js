@@ -4,6 +4,17 @@ const MODULE_NAME = "silly-sim-tracker";
 // Module-level variable to store the current template position
 let currentTemplatePosition = "BOTTOM";
 
+// Helper function to unescape HTML
+const unescapeHtml = (safe) => {
+  if (typeof safe !== 'string') return safe;
+  return safe
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#039;/g, "'");
+};
+
 // --- TEMPLATES ---
 const wrapperTemplate = `<div id="silly-sim-tracker-container" style="width:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:block !important;visibility:visible !important;">{{{cardsHtml}}}</div>`;
 let compiledWrapperTemplate = Handlebars.compile(wrapperTemplate);
@@ -312,41 +323,43 @@ const loadTemplate = async (get_settings, set_settings) => {
           // Extract position metadata from the preset data
           const templatePosition = presetData.templatePosition || "BOTTOM";
           
-          // Parse the template content
-          const cardStartMarker = "<!-- CARD_TEMPLATE_START -->";
-          const cardEndMarker = "<!-- CARD_TEMPLATE_END -->";
-          let cardTemplate = "";
-          const startIndex = presetData.htmlTemplate.indexOf(cardStartMarker);
-          const endIndex = presetData.htmlTemplate.indexOf(cardEndMarker);
-          
-          if (startIndex !== -1 && endIndex !== -1) {
-            cardTemplate = presetData.htmlTemplate
-              .substring(startIndex + cardStartMarker.length, endIndex)
-              .trim();
-          } else {
-            let cleanedResponse = presetData.htmlTemplate
-              .replace(/<!--[\s\S]*?-->/g, "")
-              .trim();
-            const templateVarRegex = /\{\{[^}]+\}\}/;
-            const divMatches = [
-              ...cleanedResponse.matchAll(/<div[^>]*>[\s\S]*?<\/div>/g),
-            ];
-            let bestMatch = null;
-            let maxLength = 0;
-            for (const match of divMatches) {
-              if (templateVarRegex.test(match[0]) && match[0].length > maxLength) {
-                bestMatch = match[0];
-                maxLength = match[0].length;
-              }
-            }
-            if (bestMatch) {
-              cardTemplate = bestMatch;
-            } else {
-              throw new Error(
-                "Could not find template content with either markers or Handlebars variables."
-              );
+          // Parse the template content, unescaping HTML if needed
+        const cardStartMarker = "<!-- CARD_TEMPLATE_START -->";
+        const cardEndMarker = "<!-- CARD_TEMPLATE_END -->";
+        let cardTemplate = "";
+        // First unescape the HTML template
+        const unescapedHtmlTemplate = unescapeHtml(presetData.htmlTemplate);
+        const startIndex = unescapedHtmlTemplate.indexOf(cardStartMarker);
+        const endIndex = unescapedHtmlTemplate.indexOf(cardEndMarker);
+        
+        if (startIndex !== -1 && endIndex !== -1) {
+          cardTemplate = unescapedHtmlTemplate
+            .substring(startIndex + cardStartMarker.length, endIndex)
+            .trim();
+        } else {
+          let cleanedResponse = unescapedHtmlTemplate
+            .replace(/<!--[\s\S]*?-->/g, "")
+            .trim();
+          const templateVarRegex = /\{\{[^}]+\}\}/;
+          const divMatches = [
+            ...cleanedResponse.matchAll(/<div[^>]*>[\s\S]*?<\/div>/g),
+          ];
+          let bestMatch = null;
+          let maxLength = 0;
+          for (const match of divMatches) {
+            if (templateVarRegex.test(match[0]) && match[0].length > maxLength) {
+              bestMatch = match[0];
+              maxLength = match[0].length;
             }
           }
+          if (bestMatch) {
+            cardTemplate = bestMatch;
+          } else {
+            throw new Error(
+              "Could not find template content with either markers or Handlebars variables."
+            );
+          }
+        }
           
           compiledCardTemplate = Handlebars.compile(cardTemplate);
           // Store the template position in a module-level variable for use during rendering
@@ -380,19 +393,21 @@ const loadTemplate = async (get_settings, set_settings) => {
         // Extract position metadata from the JSON data
         const templatePosition = jsonData.templatePosition || "BOTTOM";
 
-        // Parse the template content
+        // Parse the template content, unescaping HTML if needed
         const cardStartMarker = "<!-- CARD_TEMPLATE_START -->";
         const cardEndMarker = "<!-- CARD_TEMPLATE_END -->";
         let cardTemplate = "";
-        const startIndex = jsonData.htmlTemplate.indexOf(cardStartMarker);
-        const endIndex = jsonData.htmlTemplate.indexOf(cardEndMarker);
+        // First unescape the HTML template
+        const unescapedHtmlTemplate = unescapeHtml(jsonData.htmlTemplate);
+        const startIndex = unescapedHtmlTemplate.indexOf(cardStartMarker);
+        const endIndex = unescapedHtmlTemplate.indexOf(cardEndMarker);
         
         if (startIndex !== -1 && endIndex !== -1) {
-          cardTemplate = jsonData.htmlTemplate
+          cardTemplate = unescapedHtmlTemplate
             .substring(startIndex + cardStartMarker.length, endIndex)
             .trim();
         } else {
-          let cleanedResponse = jsonData.htmlTemplate
+          let cleanedResponse = unescapedHtmlTemplate
             .replace(/<!--[\s\S]*?-->/g, "")
             .trim();
           const templateVarRegex = /\{\{[^}]+\}\}/;
@@ -452,5 +467,6 @@ export {
   handleCustomTemplateUpload,
   loadTemplate,
   extractTemplatePosition,
-  currentTemplatePosition
+  currentTemplatePosition,
+  unescapeHtml
 };

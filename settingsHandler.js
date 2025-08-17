@@ -2,7 +2,7 @@
 
 const { extensionSettings, saveSettingsDebounced } = SillyTavern.getContext();
 import { sanitizeFieldKey } from "./utils.js";
-import { currentTemplatePosition } from "./templating.js";
+import { currentTemplatePosition, unescapeHtml } from "./templating.js";
 import { populateTemplateDropdown } from "./templating.js";
 
 const MODULE_NAME = "silly-sim-tracker";
@@ -119,7 +119,7 @@ const loadDefaultTemplate = async () => {
     const templateData = JSON.parse(defaultTemplate);
     
     // Apply the default template settings
-    set_settings("customTemplateHtml", templateData.htmlTemplate);
+    set_settings("customTemplateHtml", unescapeHtml(templateData.htmlTemplate));
     
     if (templateData.sysPrompt !== undefined) {
       set_settings("datingSimPrompt", templateData.sysPrompt);
@@ -210,8 +210,8 @@ const initialize_settings_listeners = (loadTemplate, refreshAllCards, migrateAll
       
       // If this is a user preset, apply its settings
       if (presetData) {
-        // Apply the preset data
-        set_settings("customTemplateHtml", presetData.htmlTemplate);
+        // Apply the preset data, unescaping HTML if needed
+        set_settings("customTemplateHtml", unescapeHtml(presetData.htmlTemplate));
         
         // Apply other settings if they exist in the preset
         if (presetData.sysPrompt !== undefined) {
@@ -679,8 +679,8 @@ const load_settings_html_manually = async () => {
           throw new Error("Invalid preset file: Missing HTML template");
         }
 
-        // Apply HTML template
-        set_settings("customTemplateHtml", preset.htmlTemplate);
+        // Apply HTML template, unescaping if needed
+        set_settings("customTemplateHtml", unescapeHtml(preset.htmlTemplate));
 
         // Apply system prompt if included
         if (preset.sysPrompt !== undefined) {
@@ -764,7 +764,7 @@ const load_settings_html_manually = async () => {
 
         if (preset) {
           // Apply the preset
-          set_settings("customTemplateHtml", preset.htmlTemplate);
+          set_settings("customTemplateHtml", unescapeHtml(preset.htmlTemplate));
 
           if (preset.sysPrompt !== undefined) {
             set_settings("datingSimPrompt", preset.sysPrompt);
