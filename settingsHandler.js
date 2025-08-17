@@ -69,20 +69,20 @@ const defaultSimFields = [
   },
 ];
 
+// Default settings
 const default_settings = {
   isEnabled: true,
   codeBlockIdentifier: "sim",
-  defaultBgColor: "#6a5acd",
+  defaultBgColor: "#4e4e4e",
   showThoughtBubble: true,
+  hideSimBlocks: false,
+  trackerFormat: "json",
+  templatePosition: "DEFAULT", // New setting - "DEFAULT" means use template-defined position
+  templateFile: "dating-card-template-sidebar-tabs.html",
   customTemplateHtml: "",
-  templateFile: "dating-card-template.json", // Changed to JSON file
-  templatePosition: "BOTTOM", // Default template position
-  datingSimPrompt:
-    "Default prompt could not be loaded. Please check file path.",
-  customFields: [...defaultSimFields], // Clone the default fields
-  hideSimBlocks: true, // New setting to hide sim blocks in message text
-  userPresets: [], // New setting to store user presets
-  trackerFormat: "json", // New setting for tracker format (json or yaml)
+  datingSimPrompt: "", // Will be loaded from file
+  customFields: [...defaultSimFields],
+  userPresets: [], // Initialize with empty array for user presets
 };
 
 let settings = {};
@@ -227,6 +227,7 @@ const initialize_settings_listeners = (
   bind_setting("#showThoughtBubble", "showThoughtBubble", "boolean");
   bind_setting("#hideSimBlocks", "hideSimBlocks", "boolean"); // New setting
   bind_setting("#trackerFormat", "trackerFormat", "text"); // New setting
+  bind_setting("#templatePosition", "templatePosition", "text"); // New setting
   bind_setting("#datingSimPrompt", "datingSimPrompt", "textarea");
 
   // Listener for the default template dropdown
@@ -241,86 +242,63 @@ const initialize_settings_listeners = (
       );
       const presetData = $selectedOption.data("preset");
       const templateType = $selectedOption.data("type");
-
-      // If this is a user preset, apply its settings
+      
+      // Handle preset selection
       if (presetData) {
-        // Apply the preset data, unescaping HTML if needed
-        set_settings(
-          "customTemplateHtml",
-          unescapeHtml(presetData.htmlTemplate)
-        );
-        
-        // Apply the template position if it exists in the preset
-        if (presetData.templatePosition !== undefined) {
-          set_settings("templatePosition", presetData.templatePosition);
+        // Apply preset data
+        if (presetData.htmlTemplate) {
+          set_settings("customTemplateHtml", unescapeHtml(presetData.htmlTemplate));
         }
-
-        // Apply other settings if they exist in the preset
+        
         if (presetData.sysPrompt !== undefined) {
           set_settings("datingSimPrompt", presetData.sysPrompt);
         }
-
+        
         if (presetData.customFields !== undefined) {
           set_settings("customFields", presetData.customFields);
         }
-
+        
         if (presetData.extSettings) {
           Object.keys(presetData.extSettings).forEach((key) => {
-            // Don't overwrite the templateFile setting with the one from extSettings
-            // as it refers to the HTML template file, not the JSON preset file
-            if (key !== "templateFile") {
-              set_settings(key, presetData.extSettings[key]);
-            }
+            set_settings(key, presetData.extSettings[key]);
           });
         }
+        
+        // Reload template and refresh cards
+        await loadTemplate(get_settings, set_settings);
+        refreshAllCards(get_settings, CONTAINER_ID, renderTrackerWithoutSim);
+        
+        // Repopulate template dropdown to maintain selection
+        await populateTemplateDropdown(get_settings);
+        
+        toastr.success(`Preset "${presetData.templateName || "Unnamed"}" applied successfully!`);
+        return;
       }
-      // If this is a default template, load and apply its settings
-      else if (templateType === "default" && selectedValue.endsWith(".json")) {
-        try {
-          const defaultTemplatePath = `${get_extension_directory()}/tracker-card-templates/${selectedValue}`;
-          const defaultTemplate = await $.get(defaultTemplatePath);
-          // jQuery may automatically parse JSON responses, so we need to check if it's already an object
-          const templateData = typeof defaultTemplate === "string" ? JSON.parse(defaultTemplate) : defaultTemplate;
-
-          // Apply the default template settings
-          set_settings("customTemplateHtml", unescapeHtml(templateData.htmlTemplate));
-          
-          // Apply the template position if it exists in the template data
-          if (templateData.templatePosition !== undefined) {
-            set_settings("templatePosition", templateData.templatePosition);
-          }
-
-          if (templateData.sysPrompt !== undefined) {
-            set_settings("datingSimPrompt", templateData.sysPrompt);
-          }
-
-          if (templateData.customFields !== undefined) {
-            set_settings("customFields", templateData.customFields);
-          }
-
-          if (templateData.extSettings) {
-            Object.keys(templateData.extSettings).forEach((key) => {
-              // Don't overwrite the templateFile setting with the one from extSettings
-              // as it refers to the HTML template file, not the JSON preset file
-              if (key !== "templateFile") {
-                set_settings(key, templateData.extSettings[key]);
-              }
-            });
-          }
-        } catch (error) {
-          console.log(
-            `[SST] [${MODULE_NAME}]`,
-            `Error loading or applying default template ${selectedValue}: ${error.message}`
-          );
-        }
-      }
-
-      set_settings("templateFile", selectedValue);
-      await loadTemplate();
-      refreshAllCards();
       
-      // Refresh the UI to reflect the new settings
-      refresh_settings_ui();
+      // Handle regular template selection
+      set_settings("templateFile", selectedValue);
+      
+      // If it's a user preset, we need to clear the custom template
+      if (templateType === "user") {
+        set_settings("customTemplateHtml", "");
+      }
+      
+      // Reload template and refresh cards
+      await loadTemplate(get_settings, set_settings);
+      refreshAllCards(get_settings, CONTAINER_ID, renderTrackerWithoutSim);
+    });
+  }
+
+  // Listener for the template position dropdown
+  const $templatePosition = $("#templatePosition");
+  if ($templatePosition.length) {
+    settings_ui_map["templatePosition"] = [$templatePosition, "text"];
+    $templatePosition.on("change", async () => {
+      const selectedPosition = $templatePosition.val();
+      set_settings("templatePosition", selectedPosition);
+      
+      // Refresh all cards to apply the new position
+      refreshAllCards(get_settings, CONTAINER_ID, renderTrackerWithoutSim);
     });
   }
 
@@ -748,7 +726,7 @@ const handlePresetExport = (loadTemplate, refreshAllCards) => {
   // Pre-fill modal with current settings
   let templateName = "My Template";
   let templateAuthor = "Anonymous";
-  let templatePosition = currentTemplatePosition || "BOTTOM";
+  let templatePosition = get_settings("templatePosition") || "DEFAULT";
 
   $templateName.val(templateName);
   $templateAuthor.val(templateAuthor);
@@ -763,7 +741,7 @@ const handlePresetExport = (loadTemplate, refreshAllCards) => {
       const preset = {
         templateName: $templateName.val(),
         templateAuthor: $templateAuthor.val(),
-        templatePosition: templatePosition,
+        templatePosition: get_settings("templatePosition") || "DEFAULT",
       };
 
       // Add HTML template
@@ -876,6 +854,11 @@ const handlePresetImport = (event, loadTemplate, refreshAllCards) => {
         set_settings("customFields", preset.customFields);
       }
 
+      // Apply template position if included
+      if (preset.templatePosition !== undefined) {
+        set_settings("templatePosition", preset.templatePosition);
+      }
+
       // Apply extension settings if included
       if (preset.extSettings) {
         Object.keys(preset.extSettings).forEach((key) => {
@@ -983,6 +966,11 @@ const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
 
         if (preset.customFields !== undefined) {
           set_settings("customFields", preset.customFields);
+        }
+
+        // Apply template position if included
+        if (preset.templatePosition !== undefined) {
+          set_settings("templatePosition", preset.templatePosition);
         }
 
         if (preset.extSettings) {

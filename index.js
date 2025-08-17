@@ -109,8 +109,16 @@ jQuery(async () => {
     
     // Create wrapper functions that pass the required dependencies
     const wrappedLoadTemplate = () => loadTemplate(get_settings, set_settings);
-    const wrappedRefreshAllCards = () => refreshAllCards(get_settings, CONTAINER_ID, 
-      (mesId) => renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString));
+    const wrappedRefreshAllCards = () => refreshAllCards(
+      get_settings, 
+      CONTAINER_ID, 
+      (mesId) => renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString),
+      compiledWrapperTemplate,
+      compiledCardTemplate,
+      getReactionEmoji,
+      darkenColor,
+      lastSimJsonString
+    );
     const wrappedMigrateAllSimData = () => migrateAllSimData(get_settings);
     const wrappedHandleCustomTemplateUpload = (event) => handleCustomTemplateUpload(event, set_settings, wrappedLoadTemplate, wrappedRefreshAllCards);
     const wrappedHandlePresetExport = () => handlePresetExport(wrappedLoadTemplate, wrappedRefreshAllCards);

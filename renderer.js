@@ -359,15 +359,21 @@ function attachTabEventListeners(sidebarElement) {
 }
 
 // --- RENDER LOGIC ---
-const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString) => {
+const renderTracker = async (mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString) => {
   try {
     if (!get_settings("isEnabled")) return;
     const context = getContext();
-    const message = context.chat[mesId];
-    if (!message) {
-      console.log(`[SST] [${MODULE_NAME}]`, `Error: Could not find message with ID ${mesId}. Aborting render.`);
+    if (!context || !context.chat || mesId >= context.chat.length) {
+      console.log(`[SST] [${MODULE_NAME}]`, "Invalid context or message ID for tracker rendering");
       return;
     }
+
+    const message = context.chat[mesId];
+    if (!message || !message.mes) {
+      console.log(`[SST] [${MODULE_NAME}]`, "Invalid message for tracker rendering");
+      return;
+    }
+    
     const messageElement = document.querySelector(
       `div[mesid="${mesId}"] .mes_text`
     );
@@ -381,10 +387,92 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
       )}px, Height: ${messageRect.height.toFixed(2)}px`
     );
 
-    // Parse the sim data from the original message content
+    // Get the template position from settings, with fallback to template-defined position
+    const settingsTemplatePosition = get_settings("templatePosition");
+    const templateDefinedPosition = currentTemplatePosition;
+    
+    // Use settings position if it's not "DEFAULT", otherwise use template-defined position
+    const effectivePosition = settingsTemplatePosition !== "DEFAULT" 
+      ? settingsTemplatePosition 
+      : (templateDefinedPosition || "BOTTOM");
+
+    // Process message text to extract sim data
     const identifier = get_settings("codeBlockIdentifier");
-    const jsonRegex = new RegExp("```" + identifier + "[\\s\\S]*?```");
-    const match = message.mes.match(jsonRegex);
+    const regexPattern = "```" + identifier + "[\\s\\S]*?```";
+    const regex = new RegExp(regexPattern, "gm");
+    let match;
+    const simBlocks = [];
+
+    // Extract all sim blocks from the message
+    while ((match = regex.exec(message.mes)) !== null) {
+      try {
+        const fullContent = match[0];
+        const content = fullContent
+          .replace(/```/g, "")
+          .replace(new RegExp(`^${identifier}\\s*`), "")
+          .trim();
+
+        // Parse the content (handles both JSON and YAML)
+        const jsonData = parseTrackerData(content);
+        simBlocks.push(jsonData);
+      } catch (error) {
+        console.log(`[SST] [${MODULE_NAME}]`, `Error parsing sim block in message ${mesId}: ${error.message}`);
+      }
+    }
+
+    // If no sim blocks found, exit early
+    if (simBlocks.length === 0) {
+      return;
+    }
+
+    // Prepare character data for templates
+    const allCharacters = [];
+    simBlocks.forEach((block) => {
+      // Handle both legacy and modern formats
+      if (block.characters && Array.isArray(block.characters)) {
+        // Modern format with characters array
+        block.characters.forEach((char) => {
+          allCharacters.push({
+            ...char,
+            worldData: block.worldData || {},
+          });
+        });
+      } else {
+        // Legacy format with character objects
+        Object.keys(block).forEach((key) => {
+          if (key !== "current_date" && key !== "current_time") {
+            allCharacters.push({
+              name: key,
+              ...block[key],
+              worldData: {
+                current_date: block.current_date,
+                current_time: block.current_time,
+              },
+            });
+          }
+        });
+      }
+    });
+
+    // If no characters found, exit early
+    if (allCharacters.length === 0) {
+      return;
+    }
+
+    // Prepare template data
+    const templateData = {
+      characters: allCharacters,
+      worldData: allCharacters[0].worldData || {},
+    };
+
+    // Render cards
+    const renderedCards = compiledCardTemplate(templateData);
+
+    // Wrap cards in container
+    const wrappedContent = compiledWrapperTemplate({
+      cards: renderedCards,
+      worldData: templateData.worldData,
+    });
 
     // Handle message formatting and sim block hiding
     if (get_settings("hideSimBlocks")) {
@@ -416,222 +504,64 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
       );
     }
 
-    if (match) {
-      // Set flag to indicate we're processing a message with sim data
-      isGenerationInProgress = true;
-
-      // Extract content from the match
-      const fullContent = match[0];
-      const content = fullContent
-        .replace(/```/g, "")
-        .replace(new RegExp(`^${identifier}\\s*`), "")
-        .trim();
-
-      // Update lastSimJsonString
-      lastSimJsonString = content;
-
-      // Remove any preparing text
-      const preparingText = messageElement.parentNode.querySelector(".sst-preparing-text");
-      if (preparingText) {
-        preparingText.remove();
-        // Remove this mesText from the set since it no longer has preparing text
-        mesTextsWithPreparingText.delete(messageElement);
-      }
-
-      let jsonData;
-      try {
-        // Use our new universal parser that can handle both JSON and YAML
-        jsonData = parseTrackerData(content);
-      } catch (parseError) {
-        console.log(`[SST] [${MODULE_NAME}]`,
-          `Failed to parse tracker data in message ID ${mesId}. Error: ${parseError.message}`
+    // Handle positioning
+    switch (effectivePosition) {
+      case "ABOVE":
+        // Insert above the message content
+        const reasoningElement = messageElement.querySelector(
+          ".mes_reasoning_details"
         );
-        messageElement.insertAdjacentHTML(
-          "beforeend",
-          `<div style="color: red; font-family: monospace;">[SillySimTracker] Error: Invalid tracker data format in code block.</div>`
-        );
-        return;
-      }
-
-      if (typeof jsonData !== "object" || jsonData === null) {
-        console.log(`[SST] [${MODULE_NAME}]`, `Parsed data in message ID ${mesId} is not a valid object.`);
-        return;
-      }
-
-      // Handle both old and new JSON formats
-      let worldData, characterList;
-
-      // Check if it's the new format (with worldData and characters array)
-      if (jsonData.worldData && Array.isArray(jsonData.characters)) {
-        worldData = jsonData.worldData;
-        characterList = jsonData.characters;
-      } else {
-        // Handle old format - convert object structure to array format
-        const worldDataFields = ["current_date", "current_time"];
-        worldData = {};
-        characterList = [];
-
-        Object.keys(jsonData).forEach((key) => {
-          if (worldDataFields.includes(key)) {
-            worldData[key] = jsonData[key];
-          } else {
-            // Convert character object to array item
-            characterList.push({
-              name: key,
-              ...jsonData[key],
-            });
-          }
-        });
-      }
-
-      const currentDate = worldData.current_date || "Unknown Date";
-      const currentTime = worldData.current_time || "Unknown Time";
-
-      if (!characterList.length) return;
-
-      // For tabbed templates, we need to pass all characters to the template
-      const isTabbedTemplate = get_settings("templateFile").includes("tabs");
-
-      let cardsHtml = "";
-      if (isTabbedTemplate) {
-        // Prepare data for all characters
-        const charactersData = characterList
-          .map((character, index) => {
-            const stats = character;
-            const name = character.name;
-            if (!stats) {
-              console.log(`[SST] [${MODULE_NAME}]`,
-                `No stats found for character "${name}" in message ID ${mesId}. Skipping card.`
-              );
-              return null;
-            }
-            const bgColor = stats.bg || get_settings("defaultBgColor");
-            return {
-              characterName: name,
-              currentDate: currentDate,
-              currentTime: currentTime,
-              stats: {
-                ...stats,
-                internal_thought:
-                  stats.internal_thought ||
-                  stats.thought ||
-                  "No thought recorded.",
-                relationshipStatus:
-                  stats.relationshipStatus || "Unknown Status",
-                desireStatus: stats.desireStatus || "Unknown Desire",
-                inactive: stats.inactive || false,
-                inactiveReason: stats.inactiveReason || 0,
-              },
-              bgColor: bgColor,
-              darkerBgColor: darkenColor(bgColor),
-              reactionEmoji: getReactionEmoji(stats.last_react),
-              healthIcon:
-                stats.health === 1 ? "🤕" : stats.health === 2 ? "💀" : null,
-              showThoughtBubble: get_settings("showThoughtBubble"),
-            };
-          })
-          .filter(Boolean); // Remove any null entries
-
-        // For tabbed templates, we pass all characters in one data object
-        const templateData = {
-          characters: charactersData,
-          currentDate: currentDate,
-          currentTime: currentTime,
-        };
-
-        cardsHtml = compiledCardTemplate(templateData);
-      } else {
-        cardsHtml = characterList
-          .map((character) => {
-            const stats = character;
-            const name = character.name;
-            if (!stats) {
-              console.log(`[SST] [${MODULE_NAME}]`,
-                `No stats found for character "${name}" in message ID ${mesId}. Skipping card.`
-              );
-              return "";
-            }
-            const bgColor = stats.bg || get_settings("defaultBgColor");
-            const cardData = {
-              characterName: name,
-              currentDate: currentDate,
-              currentTime: currentTime,
-              stats: {
-                ...stats,
-                internal_thought:
-                  stats.internal_thought ||
-                  stats.thought ||
-                  "No thought recorded.",
-                relationshipStatus:
-                  stats.relationshipStatus || "Unknown Status",
-                desireStatus: stats.desireStatus || "Unknown Desire",
-                inactive: stats.inactive || false,
-                inactiveReason: stats.inactiveReason || 0,
-              },
-              bgColor: bgColor,
-              darkerBgColor: darkenColor(bgColor),
-              reactionEmoji: getReactionEmoji(stats.last_react),
-              healthIcon:
-                stats.health === 1 ? "🤕" : stats.health === 2 ? "💀" : null,
-              showThoughtBubble: get_settings("showThoughtBubble"),
-            };
-            return compiledCardTemplate(cardData);
-          })
-          .join("");
-      }
-
-      // Use the template position from the templating module
-      const templatePosition = currentTemplatePosition;
-
-      // Handle different positions
-      switch (templatePosition) {
-        case "ABOVE":
-          // Insert above the message content (inside the message block)
-          const reasoningElement = messageElement.querySelector(
-            ".mes_reasoning_details"
-          );
-          if (reasoningElement) {
-            // Insert above reasoning details if they exist
-            const finalHtml =
-              compiledWrapperTemplate({ cardsHtml }) +
-              `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
-            reasoningElement.insertAdjacentHTML("beforebegin", finalHtml);
-          } else {
-            // If no reasoning details, insert at the beginning of the message
-            const finalHtml =
-              compiledWrapperTemplate({ cardsHtml }) +
-              `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
-            messageElement.insertAdjacentHTML("afterbegin", finalHtml);
-          }
-          break;
-        case "LEFT":
-          // Update the global left sidebar with the latest data
-          updateLeftSidebar(compiledWrapperTemplate({ cardsHtml }));
-          break;
-        case "RIGHT":
-          // Update the global right sidebar with the latest data
-          updateRightSidebar(compiledWrapperTemplate({ cardsHtml }));
-          break;
-        case "MACRO":
-          // For MACRO position, replace the placeholder in the message
-          const placeholder = messageElement.querySelector(
-            "#sst-macro-placeholder"
-          );
-          if (placeholder) {
-            const finalHtml = compiledWrapperTemplate({ cardsHtml });
-            placeholder.insertAdjacentHTML("beforebegin", finalHtml);
-            placeholder.remove();
-          }
-          break;
-        case "BOTTOM":
-        default:
-          // Add a horizontal divider before the cards
+        if (reasoningElement) {
+          // Insert above reasoning details if they exist
           const finalHtml =
-            `<hr style="margin-top: 15px; margin-bottom: 20px;">` +
-            compiledWrapperTemplate({ cardsHtml });
-          messageElement.insertAdjacentHTML("beforeend", finalHtml);
-          break;
-      }
+            wrappedContent +
+            `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
+          reasoningElement.insertAdjacentHTML("beforebegin", finalHtml);
+        } else {
+          // If no reasoning details, insert at the beginning of the message
+          const finalHtml =
+            wrappedContent +
+            `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
+          messageElement.insertAdjacentHTML("afterbegin", finalHtml);
+        }
+        break;
+
+      case "BOTTOM":
+        // Add a horizontal divider before the cards
+        const finalHtml =
+          `<hr style="margin-top: 15px; margin-bottom: 20px;">` +
+          wrappedContent;
+        messageElement.insertAdjacentHTML("beforeend", finalHtml);
+        break;
+
+      case "LEFT":
+        // Update the global left sidebar with the latest data
+        updateLeftSidebar(wrappedContent);
+        break;
+
+      case "RIGHT":
+        // Update the global right sidebar with the latest data
+        updateRightSidebar(wrappedContent);
+        break;
+
+      case "MACRO":
+        // For MACRO position, replace the placeholder in the message
+        const placeholder = messageElement.querySelector(
+          "#sst-macro-placeholder"
+        );
+        if (placeholder) {
+          placeholder.insertAdjacentHTML("beforebegin", wrappedContent);
+          placeholder.remove();
+        }
+        break;
+
+      default:
+        // Default to BOTTOM positioning
+        const finalHtmlDefault =
+          `<hr style="margin-top: 15px; margin-bottom: 20px;">` +
+          wrappedContent;
+        messageElement.insertAdjacentHTML("beforeend", finalHtmlDefault);
+        break;
     }
   } catch (error) {
     // Clear the flag on error
@@ -850,11 +780,17 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
           .join("");
       }
 
-      // Use the template position from the templating module
-      const templatePosition = currentTemplatePosition;
+      // Get the template position from settings, with fallback to template-defined position
+      const settingsTemplatePosition = get_settings("templatePosition");
+      const templateDefinedPosition = currentTemplatePosition;
+      
+      // Use settings position if it's not "DEFAULT", otherwise use template-defined position
+      const effectivePosition = settingsTemplatePosition !== "DEFAULT" 
+        ? settingsTemplatePosition 
+        : (templateDefinedPosition || "BOTTOM");
 
       // Handle different positions
-      switch (templatePosition) {
+      switch (effectivePosition) {
         case "ABOVE":
           // Insert above the message content (inside the message block)
           const reasoningElement = messageElement.querySelector(
@@ -910,7 +846,16 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
   }
 };
 
-const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) => {
+const refreshAllCards = (
+  get_settings,
+  CONTAINER_ID,
+  renderTrackerWithoutSim,
+  compiledWrapperTemplate,
+  compiledCardTemplate,
+  getReactionEmoji,
+  darkenColor,
+  lastSimJsonString
+) => {
   console.log(`[SST] [${MODULE_NAME}]`, "Refreshing all tracker cards on screen.");
 
   // First, remove all existing tracker containers to prevent duplicates
@@ -924,7 +869,15 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
     const mesId = messageElement.getAttribute("mesid");
     if (mesId) {
       // Call the existing render function for each visible message
-      renderTrackerWithoutSim(parseInt(mesId, 10));
+      renderTrackerWithoutSim(
+        parseInt(mesId, 10),
+        get_settings,
+        compiledWrapperTemplate,
+        compiledCardTemplate,
+        getReactionEmoji,
+        darkenColor,
+        lastSimJsonString
+      );
     }
   });
 };
