@@ -149,11 +149,14 @@ async function populateTemplateDropdown(get_settings) {
 
         const templateName = jsonData.templateName || null;
         const author = jsonData.templateAuthor || null;
+        const position = jsonData.templatePosition || "BOTTOM";
 
         if (templateName && author) {
-          friendlyName = `${templateName} - by ${author}`;
+          friendlyName = `${templateName} - by ${author} [${position}]`;
         } else if (templateName) {
-          friendlyName = templateName;
+          friendlyName = `${templateName} [${position}]`;
+        } else {
+          friendlyName = `${filename.replace(".json", "")} [${position}]`;
         }
 
         templateOptions.push({ filename, friendlyName, type: "default" });
@@ -163,7 +166,7 @@ async function populateTemplateDropdown(get_settings) {
           error
         );
         // If fetching fails, add it to the list with its filename so it's not missing
-        templateOptions.push({ filename, friendlyName: filename.replace(".json", ""), type: "default" });
+        templateOptions.push({ filename, friendlyName: `${filename.replace(".json", "")} [BOTTOM]`, type: "default" });
       }
     })
   );
@@ -174,8 +177,9 @@ async function populateTemplateDropdown(get_settings) {
     try {
       const templateName = preset.templateName || `User Preset ${index + 1}`;
       const author = preset.templateAuthor || "Unknown";
+      const position = preset.templatePosition || "BOTTOM";
 
-      const friendlyName = `${templateName} - by ${author} (User Preset)`;
+      const friendlyName = `${templateName} - by ${author} [${position}] (User Preset)`;
       const filename = `user-preset-${index}`; // Unique identifier for user presets
 
       templateOptions.push({ 
@@ -323,42 +327,42 @@ const loadTemplate = async (get_settings, set_settings) => {
           const templatePosition = presetData.templatePosition || "BOTTOM";
           
           // Parse the template content, unescaping HTML if needed
-        const cardStartMarker = "<!-- CARD_TEMPLATE_START -->";
-        const cardEndMarker = "<!-- CARD_TEMPLATE_END -->";
-        let cardTemplate = "";
-        // First unescape the HTML template
-        const unescapedHtmlTemplate = unescapeHtml(presetData.htmlTemplate);
-        const startIndex = unescapedHtmlTemplate.indexOf(cardStartMarker);
-        const endIndex = unescapedHtmlTemplate.indexOf(cardEndMarker);
-        
-        if (startIndex !== -1 && endIndex !== -1) {
-          cardTemplate = unescapedHtmlTemplate
-            .substring(startIndex + cardStartMarker.length, endIndex)
-            .trim();
-        } else {
-          let cleanedResponse = unescapedHtmlTemplate
-            .replace(/<!--[\s\S]*?-->/g, "")
-            .trim();
-          const templateVarRegex = /\{\{[^}]+\}\}/;
-          const divMatches = [
-            ...cleanedResponse.matchAll(/<div[^>]*>[\s\S]*?<\/div>/g),
-          ];
-          let bestMatch = null;
-          let maxLength = 0;
-          for (const match of divMatches) {
-            if (templateVarRegex.test(match[0]) && match[0].length > maxLength) {
-              bestMatch = match[0];
-              maxLength = match[0].length;
+          const cardStartMarker = "<!-- CARD_TEMPLATE_START -->";
+          const cardEndMarker = "<!-- CARD_TEMPLATE_END -->";
+          let cardTemplate = "";
+          // First unescape the HTML template
+          const unescapedHtmlTemplate = unescapeHtml(presetData.htmlTemplate);
+          const startIndex = unescapedHtmlTemplate.indexOf(cardStartMarker);
+          const endIndex = unescapedHtmlTemplate.indexOf(cardEndMarker);
+          
+          if (startIndex !== -1 && endIndex !== -1) {
+            cardTemplate = unescapedHtmlTemplate
+              .substring(startIndex + cardStartMarker.length, endIndex)
+              .trim();
+          } else {
+            let cleanedResponse = unescapedHtmlTemplate
+              .replace(/<!--[\s\S]*?-->/g, "")
+              .trim();
+            const templateVarRegex = /\{\{[^}]+\}\}/;
+            const divMatches = [
+              ...cleanedResponse.matchAll(/<div[^>]*>[\s\S]*?<\/div>/g),
+            ];
+            let bestMatch = null;
+            let maxLength = 0;
+            for (const match of divMatches) {
+              if (templateVarRegex.test(match[0]) && match[0].length > maxLength) {
+                bestMatch = match[0];
+                maxLength = match[0].length;
+              }
+            }
+            if (bestMatch) {
+              cardTemplate = bestMatch;
+            } else {
+              throw new Error(
+                "Could not find template content with either markers or Handlebars variables."
+              );
             }
           }
-          if (bestMatch) {
-            cardTemplate = bestMatch;
-          } else {
-            throw new Error(
-              "Could not find template content with either markers or Handlebars variables."
-            );
-          }
-        }
           
           compiledCardTemplate = Handlebars.compile(cardTemplate);
           // Store the template position in a module-level variable for use during rendering
