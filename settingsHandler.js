@@ -689,6 +689,50 @@ const escapeHtml = (unsafe) => {
 
 // Function to handle preset export
 const handlePresetExport = (loadTemplate, refreshAllCards) => {
+  // Remove any existing modal
+  $("#sst-export-preset-modal").remove();
+
+  // Create modal HTML using SillyTavern's built-in classes with dialog element
+  const modalHtml = `
+    <dialog id="sst-export-preset-modal" class="popup wide_dialogue_popup large_dialogue_popup vertical_scrolling_dialogue_popup popup--animation-fast">
+      <div class="popup-header">
+        <h3 style="margin: 0; padding: 10px 0;">Export Template Preset</h3>
+      </div>
+      <div class="popup-content" style="padding: 15px; flex: 1; display: flex; flex-direction: column;">
+        <div style="margin-bottom: 15px;">
+          <label for="exportTemplateName">Template Name:</label>
+          <input type="text" id="exportTemplateName" class="text_pole" style="width: 100%;" />
+        </div>
+        <div style="margin-bottom: 15px;">
+          <label for="exportTemplateAuthor">Author:</label>
+          <input type="text" id="exportTemplateAuthor" class="text_pole" style="width: 100%;" />
+        </div>
+        <div style="margin-bottom: 15px;">
+          <label>
+            <input type="checkbox" id="exportIncludeSysPrompt" checked /> Include System Prompt
+          </label>
+        </div>
+        <div style="margin-bottom: 15px;">
+          <label>
+            <input type="checkbox" id="exportIncludeCustomFields" checked /> Include Custom Fields
+          </label>
+        </div>
+        <div style="margin-bottom: 15px;">
+          <label>
+            <input type="checkbox" id="exportIncludeSettings" checked /> Include Extension Settings
+          </label>
+        </div>
+      </div>
+      <div class="popup-footer" style="display: flex; justify-content: center; padding: 15px; gap: 10px;">
+        <button id="sst-export-preset-confirm" class="menu_button">Export</button>
+        <button id="sst-export-preset-cancel" class="menu_button">Cancel</button>
+      </div>
+    </dialog>
+  `;
+
+  // Append modal to body
+  $("body").append(modalHtml);
+
   // Get references to modal elements
   const $modal = $("#sst-export-preset-modal");
   const $templateName = $modal.find("#exportTemplateName");
@@ -766,6 +810,7 @@ const handlePresetExport = (loadTemplate, refreshAllCards) => {
 
       toastr.success(`Preset "${preset.templateName}" exported successfully!`);
       $modal[0].close();
+      $modal.remove();
     } catch (error) {
       console.error(`[SST] [${MODULE_NAME}]`, "Error exporting preset:", error);
       toastr.error("Failed to export preset. Check console for details.");
@@ -775,12 +820,14 @@ const handlePresetExport = (loadTemplate, refreshAllCards) => {
   // Handle cancel button
   $cancelBtn.off("click").on("click", () => {
     $modal[0].close();
+    $modal.remove();
   });
 
   // Close modal with Escape key
   $modal.off("keydown").on("keydown", function (e) {
     if (e.key === "Escape") {
       $modal[0].close();
+      $modal.remove();
     }
   });
 
@@ -788,7 +835,13 @@ const handlePresetExport = (loadTemplate, refreshAllCards) => {
   $modal.off("click").on("click", function (e) {
     if (e.target === this) {
       $modal[0].close();
+      $modal.remove();
     }
+  });
+  
+  // Also remove the modal when it's closed
+  $modal.off("close").on("close", function () {
+    $modal.remove();
   });
 };
 
@@ -859,6 +912,29 @@ const handlePresetImport = (event, loadTemplate, refreshAllCards) => {
 
 // Function to show the manage presets modal
 const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
+  // Remove any existing modal
+  $("#sst-manage-presets-modal").remove();
+
+  // Create modal HTML using SillyTavern's built-in classes with dialog element
+  const modalHtml = `
+    <dialog id="sst-manage-presets-modal" class="popup wide_dialogue_popup large_dialogue_popup vertical_scrolling_dialogue_popup popup--animation-fast">
+      <div class="popup-header">
+        <h3 style="margin: 0; padding: 10px 0;">Manage Presets</h3>
+      </div>
+      <div class="popup-content" style="padding: 15px; flex: 1; display: flex; flex-direction: column;">
+        <div id="userPresetsList" style="flex: 1; overflow-y: auto;">
+          <!-- User presets will be populated here -->
+        </div>
+      </div>
+      <div class="popup-footer" style="display: flex; justify-content: center; padding: 15px;">
+        <button id="sst-manage-presets-close" class="menu_button">Close</button>
+      </div>
+    </dialog>
+  `;
+
+  // Append modal to body
+  $("body").append(modalHtml);
+
   const $modal = $("#sst-manage-presets-modal");
   const $presetsList = $modal.find("#userPresetsList");
   const $closeBtn = $modal.find("#sst-manage-presets-close");
@@ -921,6 +997,7 @@ const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
           `Preset "${preset.templateName || "Unnamed"}" applied successfully!`
         );
         $modal[0].close();
+        $modal.remove();
       }
     });
 
@@ -956,12 +1033,14 @@ const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
   // Handle close button
   $closeBtn.off("click").on("click", () => {
     $modal[0].close();
+    $modal.remove();
   });
 
   // Close modal with Escape key
   $modal.off("keydown").on("keydown", function (e) {
     if (e.key === "Escape") {
       $modal[0].close();
+      $modal.remove();
     }
   });
 
@@ -969,7 +1048,13 @@ const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
   $modal.off("click").on("click", function (e) {
     if (e.target === this) {
       $modal[0].close();
+      $modal.remove();
     }
+  });
+  
+  // Also remove the modal when it's closed
+  $modal.off("close").on("close", function () {
+    $modal.remove();
   });
 };
 
