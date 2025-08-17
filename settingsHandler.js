@@ -82,6 +82,7 @@ const default_settings = {
   customFields: [...defaultSimFields], // Clone the default fields
   hideSimBlocks: true, // New setting to hide sim blocks in message text
   userPresets: [], // New setting to store user presets
+  trackerFormat: "json", // New setting for tracker format (json or yaml)
 };
 
 let settings = {};
@@ -225,6 +226,7 @@ const initialize_settings_listeners = (
   bind_setting("#defaultBgColor", "defaultBgColor", "color");
   bind_setting("#showThoughtBubble", "showThoughtBubble", "boolean");
   bind_setting("#hideSimBlocks", "hideSimBlocks", "boolean"); // New setting
+  bind_setting("#trackerFormat", "trackerFormat", "text"); // New setting
   bind_setting("#datingSimPrompt", "datingSimPrompt", "textarea");
 
   // Listener for the default template dropdown
@@ -347,21 +349,21 @@ const initialize_settings_listeners = (
     }
   });
 
-  // Listener for preset export button
+  // Handle preset export
   $("#exportPresetBtn").on("click", () => {
     handlePresetExport(loadTemplate, refreshAllCards);
   });
 
-  // Listener for preset import button
+  // Handle preset import
   $("#importPresetBtn").on("click", () => {
-    $("#presetImportInput").click(); // Trigger the hidden file input
+    $("#presetImportInput").click();
   });
-
+  
   $("#presetImportInput").on("change", (event) => {
     handlePresetImport(event, loadTemplate, refreshAllCards);
   });
 
-  // Listener for manage presets button
+  // Handle manage presets
   $("#managePresetsBtn").on("click", () => {
     showManagePresetsModal(loadTemplate, refreshAllCards);
   });

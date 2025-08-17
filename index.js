@@ -58,6 +58,11 @@ import {
   migrateAllSimData
 } from "./utils.js";
 
+import {
+  parseTrackerData,
+  generateTrackerBlock
+} from "./formatUtils.js";
+
 const MODULE_NAME = "silly-sim-tracker";
 
 let lastSimJsonString = "";
@@ -221,29 +226,59 @@ jQuery(async () => {
     SlashCommandParser.addCommandObject(
       SlashCommand.fromProps({
         name: "sst-convert",
-        callback: () => {
-          if (
-            confirm(
-              "This will convert all sim data in the current chat to the new format. Are you sure?"
-            )
-          ) {
+        callback: (args) => {
+          // Check if a format parameter was provided
+          const targetFormat = args && args.length > 0 ? args[0].toLowerCase() : null;
+          
+          // Validate format parameter
+          if (targetFormat && targetFormat !== "json" && targetFormat !== "yaml") {
+            return "Invalid format specified. Use 'json' or 'yaml'.";
+          }
+          
+          let message = "This will convert all sim data in the current chat to the new format.";
+          if (targetFormat) {
+            message += ` All blocks will be converted to ${targetFormat.toUpperCase()} format.`;
+          }
+          message += " Are you sure?";
+          
+          if (confirm(message)) {
+            // If a target format was specified, update the user's setting
+            if (targetFormat) {
+              set_settings("trackerFormat", targetFormat);
+            }
             wrappedMigrateAllSimData();
             return "Converting sim data formats... Check notifications for results.";
           }
           return "Conversion cancelled.";
         },
         returns: "status message",
-        unnamedArgumentList: [],
+        unnamedArgumentList: [
+          {
+            name: "format",
+            type: "string",
+            description: "Target format (json or yaml). If not specified, uses current setting.",
+            optional: true,
+          },
+        ],
         helpString: `
                 <div>
                     Converts all sim data in the current chat from the old format to the new format.
+                    Optionally converts all blocks to a specific format.
                 </div>
                 <div>
-                    <strong>Example:</strong>
+                    <strong>Examples:</strong>
                     <ul>
                         <li>
                             <pre><code class="language-stscript">/sst-convert</code></pre>
-                            Converts all sim data in the current chat
+                            Converts all sim data in the current chat to the new format using current settings
+                        </li>
+                        <li>
+                            <pre><code class="language-stscript">/sst-convert json</code></pre>
+                            Converts all sim data to JSON format
+                        </li>
+                        <li>
+                            <pre><code class="language-stscript">/sst-convert yaml</code></pre>
+                            Converts all sim data to YAML format
                         </li>
                     </ul>
                 </div>
@@ -254,36 +289,61 @@ jQuery(async () => {
     MacrosParser.registerMacro("sim_format", () => {
       if (!get_settings("isEnabled")) return "";
       const fields = get_settings("customFields") || [];
+      const format = get_settings("trackerFormat") || "json";
       log("Processed {{sim_format}} macro.");
 
-      // Start building the JSON example structure with the new format
-      let exampleJson = "{\n";
-      exampleJson += "  \"worldData\": {\n";
-      exampleJson += "    \"current_date\": \"[CURRENT_STORY_DATE]\", // YYYY-MM-DD\n";
-      exampleJson += "    \"current_time\": \"[CURRENT_STORY_TIME]\" // 24-hour time (e.g., 21:34, 10:21)\n";
-      exampleJson += "  },\n";
-      exampleJson += "  \"characters\": [\n";
-      exampleJson += "    {\n";
-      exampleJson += "      \"name\": \"[CHARACTER_NAME]\",\n";
+      if (format === "yaml") {
+        // Generate YAML example structure with the new format
+        let exampleYaml = "worldData:\n";
+        exampleYaml += "  current_date: \"[CURRENT_STORY_DATE]\"  # YYYY-MM-DD\n";
+        exampleYaml += "  current_time: \"[CURRENT_STORY_TIME]\"  # 24-hour time (e.g., 21:34, 10:21)\n";
+        exampleYaml += "characters:\n";
+        exampleYaml += "  - name: \"[CHARACTER_NAME]\"\n";
 
-      // Add each custom field as a commented key-value pair
-      fields.forEach((field) => {
-        const sanitizedKey = sanitizeFieldKey(field.key);
-        exampleJson += `      "${sanitizedKey}": [${sanitizedKey.toUpperCase()}_VALUE], // ${
-          field.description
-        }\n`;
-      });
+        // Add each custom field as a commented key-value pair
+        fields.forEach((field) => {
+          const sanitizedKey = sanitizeFieldKey(field.key);
+          exampleYaml += `    ${sanitizedKey}: [${sanitizedKey.toUpperCase()}_VALUE]  # ${
+            field.description
+          }\n`;
+        });
 
-      exampleJson += "    }\n";
-      exampleJson += "    // Add additional character objects here as needed\n";
-      exampleJson += "  ]\n";
-      exampleJson += "}";
+        exampleYaml += "  # Add additional character objects here as needed\n";
 
-      // Wrap in the code block with the identifier
-      const identifier = get_settings("codeBlockIdentifier") || "sim";
-      return `\`\`\`${identifier}
+        // Wrap in the code block with the identifier
+        const identifier = get_settings("codeBlockIdentifier") || "sim";
+        return `\`\`\`${identifier}
+${exampleYaml}\`\`\``;
+      } else {
+        // Generate JSON example structure with the new format
+        let exampleJson = "{\n";
+        exampleJson += "  \"worldData\": {\n";
+        exampleJson += "    \"current_date\": \"[CURRENT_STORY_DATE]\", // YYYY-MM-DD\n";
+        exampleJson += "    \"current_time\": \"[CURRENT_STORY_TIME]\" // 24-hour time (e.g., 21:34, 10:21)\n";
+        exampleJson += "  },\n";
+        exampleJson += "  \"characters\": [\n";
+        exampleJson += "    {\n";
+        exampleJson += "      \"name\": \"[CHARACTER_NAME]\",\n";
+
+        // Add each custom field as a commented key-value pair
+        fields.forEach((field) => {
+          const sanitizedKey = sanitizeFieldKey(field.key);
+          exampleJson += `      "${sanitizedKey}": [${sanitizedKey.toUpperCase()}_VALUE], // ${
+            field.description
+          }\n`;
+        });
+
+        exampleJson += "    }\n";
+        exampleJson += "    // Add additional character objects here as needed\n";
+        exampleJson += "  ]\n";
+        exampleJson += "}";
+
+        // Wrap in the code block with the identifier
+        const identifier = get_settings("codeBlockIdentifier") || "sim";
+        return `\`\`\`${identifier}
 ${exampleJson}
 \`\`\``;
+      }
     });
 
     // Register a new macro for positionable tracker replacement
@@ -337,10 +397,46 @@ ${exampleJson}
               return "Last character message already contains a sim block.";
             }
 
-            // Append the sim block to the message
-            const simBlock = `
+            // Append the sim block to the message in the user's preferred format
+            const format = get_settings("trackerFormat") || "json";
+            let simBlock;
+            
+            if (format === "yaml") {
+              // Create a basic YAML structure
+              simBlock = `
 \`\`\`${identifier}
-`;
+worldData:
+  current_date: ""
+  current_time: ""
+characters:
+  - name: ""
+    ap: 0
+    dp: 0
+    tp: 0
+    cp: 0
+\`\`\``;
+            } else {
+              // Create a basic JSON structure
+              simBlock = `
+\`\`\`${identifier}
+{
+  "worldData": {
+    "current_date": "",
+    "current_time": ""
+  },
+  "characters": [
+    {
+      "name": "",
+      "ap": 0,
+      "dp": 0,
+      "tp": 0,
+      "cp": 0
+    }
+  ]
+}
+\`\`\``;
+            }
+            
             lastCharMessage.mes += simBlock;
 
             // Update the message in the UI

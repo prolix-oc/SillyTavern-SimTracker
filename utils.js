@@ -1,5 +1,6 @@
 // utils.js - Miscellaneous helper functions
 import { getContext } from "../../../extensions.js";
+import { parseTrackerData, generateTrackerBlock } from "./formatUtils.js";
 
 const MODULE_NAME = "silly-sim-tracker";
 
@@ -87,14 +88,10 @@ const updateLastSimStatsOnRegenerateOrSwipe = (currentMesId = null, get_settings
       const match = message.mes.match(simRegex);
 
       if (match) {
-        // Extract JSON content from the match
-        const jsonContent = match[0]
-          .replace(/```/g, "")
-          .replace(new RegExp(`^${identifier}\\\\s*`), "")
-          .trim();
+        // Extract content from the match\n        const fullContent = match[0];\n        const content = fullContent\n          .replace(/```/g, \"\")\n          .replace(new RegExp(`^${identifier}\\\\s*`), \"\")\n          .trim();
 
         // Update the lastSimJsonString with the found message's sim data
-        return jsonContent;
+        return content;
       }
     }
     log("No character message with sim data found for regenerate/swipe update");
@@ -216,12 +213,14 @@ const migrateAllSimData = async (get_settings) => {
 
         matches.forEach((match) => {
           try {
-            // Extract JSON content
-            const jsonContent = match
+            // Extract content
+            const content = match
               .replace(/```/g, "")
               .replace(new RegExp(`^${identifier}\\s*`), "")
               .trim();
-            const jsonData = JSON.parse(jsonContent);
+            
+            // Parse the content (handles both JSON and YAML)
+            const jsonData = parseTrackerData(content);
 
             // Check if it's already in new format
             if (jsonData.worldData && Array.isArray(jsonData.characters)) {
@@ -231,12 +230,9 @@ const migrateAllSimData = async (get_settings) => {
             // Migrate to new format
             const migratedData = migrateJsonFormat(jsonData);
 
-            // Convert back to JSON string
-            const migratedJsonString = JSON.stringify(migratedData, null, 2);
-
-            // Reconstruct the code block
-            const migratedCodeBlock =
-              "```" + identifier + "" + migratedJsonString + "```";
+            // Convert back to the user's preferred format
+            const format = get_settings("trackerFormat") || "json";
+            const migratedCodeBlock = generateTrackerBlock(migratedData, format, identifier);
 
             // Replace in message
             updatedMessage = updatedMessage.replace(match, migratedCodeBlock);

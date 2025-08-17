@@ -40,6 +40,7 @@ A powerful SillyTavern extension that dynamically renders visually appealing tra
 - **Macro Integration**: Includes `{{sim_tracker}}` and `{{last_sim_stats}}` macros for prompt engineering
 - **Data Hiding**: Option to hide raw JSON code blocks while keeping the visual cards
 - **Custom Fields Definition**: Define your own data fields for use in templates and prompts
+- **YAML/JSON Format Switching**: Choose between JSON and YAML formats for your tracker blocks with automatic parsing of both formats
 
 ### Template System
 - **Handlebars.js Templates**: Powerful templating engine for creating rich, dynamic cards
@@ -85,6 +86,19 @@ Supports both legacy and modern JSON formats:
     }
   ]
 }
+```
+
+**YAML Format** (alternative):
+```yaml
+worldData:
+  current_date: "2025-08-10"
+  current_time: "14:30"
+characters:
+  - name: "Alice"
+    ap: 75
+    dp: 60
+    tp: 80
+    cp: 20
 ```
 
 ## Usage Examples
@@ -217,5 +231,21 @@ To help users transition to the improved JSON format:
 1. **Settings Button**: Use the "Migrate to New Format" button in the settings panel
 2. **Slash Command**: Type `/sst-convert` in any chat to migrate all data in that chat
 3. **Automatic Compatibility**: Both old and new formats are supported seamlessly
+
+## Slash Commands
+
+### /sst-convert
+Converts all sim data in the current chat from the old format to the new format.
+
+**Usage:**
+- `/sst-convert` - Converts all sim data to the new format using current settings
+- `/sst-convert json` - Converts all sim data to JSON format
+- `/sst-convert yaml` - Converts all sim data to YAML format
+
+### /sst-add
+Adds a sim block to the last character message if it doesn't already have one, and requests continuation.
+
+**Usage:**
+- `/sst-add` - Adds a sim block in the user's preferred format (JSON or YAML)
 
 ---
