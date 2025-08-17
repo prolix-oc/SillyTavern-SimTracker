@@ -159,7 +159,12 @@ async function populateTemplateDropdown(get_settings) {
           friendlyName = `${filename.replace(".json", "")} [${position}]`;
         }
 
-        templateOptions.push({ filename, friendlyName, type: "default" });
+        templateOptions.push({ 
+          filename, 
+          friendlyName, 
+          type: "default",
+          templateData: jsonData // Store the template data for later use
+        });
       } catch (error) {
         console.error(
           `Could not fetch or parse template info for ${filename}:`,
@@ -209,7 +214,8 @@ async function populateTemplateDropdown(get_settings) {
         value: option.filename,
         text: option.friendlyName,
         "data-type": option.type, // Store type as data attribute
-        "data-preset": option.presetData ? JSON.stringify(option.presetData) : undefined // Store preset data as data attribute
+        "data-preset": option.presetData ? JSON.stringify(option.presetData) : undefined, // Store preset data as data attribute
+        "data-template": option.templateData ? JSON.stringify(option.templateData) : undefined // Store template data as data attribute
       })
     );
   });
@@ -330,17 +336,20 @@ const loadTemplate = async (get_settings, set_settings) => {
           const cardStartMarker = "<!-- CARD_TEMPLATE_START -->";
           const cardEndMarker = "<!-- CARD_TEMPLATE_END -->";
           let cardTemplate = "";
-          // First unescape the HTML template
-          const unescapedHtmlTemplate = unescapeHtml(presetData.htmlTemplate);
-          const startIndex = unescapedHtmlTemplate.indexOf(cardStartMarker);
-          const endIndex = unescapedHtmlTemplate.indexOf(cardEndMarker);
+          // Check if the HTML template is escaped and unescape it if needed
+          let processedHtmlTemplate = presetData.htmlTemplate;
+          if (processedHtmlTemplate.includes("&lt;") || processedHtmlTemplate.includes("&gt;")) {
+            processedHtmlTemplate = unescapeHtml(presetData.htmlTemplate);
+          }
+          const startIndex = processedHtmlTemplate.indexOf(cardStartMarker);
+          const endIndex = processedHtmlTemplate.indexOf(cardEndMarker);
           
           if (startIndex !== -1 && endIndex !== -1) {
-            cardTemplate = unescapedHtmlTemplate
+            cardTemplate = processedHtmlTemplate
               .substring(startIndex + cardStartMarker.length, endIndex)
               .trim();
           } else {
-            let cleanedResponse = unescapedHtmlTemplate
+            let cleanedResponse = processedHtmlTemplate
               .replace(/<!--[\s\S]*?-->/g, "")
               .trim();
             const templateVarRegex = /\{\{[^}]+\}\}/;
@@ -400,17 +409,20 @@ const loadTemplate = async (get_settings, set_settings) => {
         const cardStartMarker = "<!-- CARD_TEMPLATE_START -->";
         const cardEndMarker = "<!-- CARD_TEMPLATE_END -->";
         let cardTemplate = "";
-        // First unescape the HTML template
-        const unescapedHtmlTemplate = unescapeHtml(jsonData.htmlTemplate);
-        const startIndex = unescapedHtmlTemplate.indexOf(cardStartMarker);
-        const endIndex = unescapedHtmlTemplate.indexOf(cardEndMarker);
+        // Check if the HTML template is escaped and unescape it if needed
+        let processedHtmlTemplate = jsonData.htmlTemplate;
+        if (processedHtmlTemplate.includes("&lt;") || processedHtmlTemplate.includes("&gt;")) {
+          processedHtmlTemplate = unescapeHtml(jsonData.htmlTemplate);
+        }
+        const startIndex = processedHtmlTemplate.indexOf(cardStartMarker);
+        const endIndex = processedHtmlTemplate.indexOf(cardEndMarker);
         
         if (startIndex !== -1 && endIndex !== -1) {
-          cardTemplate = unescapedHtmlTemplate
+          cardTemplate = processedHtmlTemplate
             .substring(startIndex + cardStartMarker.length, endIndex)
             .trim();
         } else {
-          let cleanedResponse = unescapedHtmlTemplate
+          let cleanedResponse = processedHtmlTemplate
             .replace(/<!--[\s\S]*?-->/g, "")
             .trim();
           const templateVarRegex = /\{\{[^}]+\}\}/;

@@ -227,11 +227,10 @@ const initialize_settings_listeners = (
     settings_ui_map["templateFile"] = [$templateSelect, "text"];
     $templateSelect.on("change", async () => {
       const selectedValue = $templateSelect.val();
-      const $selectedOption = $templateSelect.find(
-        `option[value="${selectedValue}"]`
-      );
+      const $selectedOption = $templateSelect.find(`option[value="${selectedValue}"]`);
       const presetData = $selectedOption.data("preset");
-
+      const templateData = $selectedOption.data("template"); // Get template data for default templates
+      
       // If this is a user preset, apply its settings
       if (presetData) {
         // Apply the preset data, unescaping HTML if needed
@@ -252,6 +251,29 @@ const initialize_settings_listeners = (
         if (presetData.extSettings) {
           Object.keys(presetData.extSettings).forEach((key) => {
             set_settings(key, presetData.extSettings[key]);
+          });
+        }
+      }
+      // If this is a default template, apply its settings
+      else if (templateData) {
+        // Apply the template data
+        set_settings(
+          "customTemplateHtml",
+          unescapeHtml(templateData.htmlTemplate)
+        );
+
+        // Apply other settings if they exist in the template
+        if (templateData.sysPrompt !== undefined) {
+          set_settings("datingSimPrompt", templateData.sysPrompt);
+        }
+
+        if (templateData.customFields !== undefined) {
+          set_settings("customFields", templateData.customFields);
+        }
+
+        if (templateData.extSettings) {
+          Object.keys(templateData.extSettings).forEach((key) => {
+            set_settings(key, templateData.extSettings[key]);
           });
         }
       }
