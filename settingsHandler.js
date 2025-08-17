@@ -139,7 +139,11 @@ const loadDefaultTemplate = async () => {
 
     if (templateData.extSettings) {
       Object.keys(templateData.extSettings).forEach((key) => {
-        set_settings(key, templateData.extSettings[key]);
+        // Don't overwrite the templateFile setting with the one from extSettings
+        // as it refers to the HTML template file, not the JSON preset file
+        if (key !== "templateFile") {
+          set_settings(key, templateData.extSettings[key]);
+        }
       });
     }
 
@@ -262,7 +266,11 @@ const initialize_settings_listeners = (
 
         if (presetData.extSettings) {
           Object.keys(presetData.extSettings).forEach((key) => {
-            set_settings(key, presetData.extSettings[key]);
+            // Don't overwrite the templateFile setting with the one from extSettings
+            // as it refers to the HTML template file, not the JSON preset file
+            if (key !== "templateFile") {
+              set_settings(key, presetData.extSettings[key]);
+            }
           });
         }
       }
@@ -290,7 +298,11 @@ const initialize_settings_listeners = (
 
           if (templateData.extSettings) {
             Object.keys(templateData.extSettings).forEach((key) => {
-              set_settings(key, templateData.extSettings[key]);
+              // Don't overwrite the templateFile setting with the one from extSettings
+              // as it refers to the HTML template file, not the JSON preset file
+              if (key !== "templateFile") {
+                set_settings(key, templateData.extSettings[key]);
+              }
             });
           }
         } catch (error) {
@@ -625,7 +637,11 @@ const initialize_settings = async () => {
 
         if (templateData.extSettings) {
           Object.keys(templateData.extSettings).forEach((key) => {
-            settings[key] = templateData.extSettings[key];
+            // Don't overwrite the templateFile setting with the one from extSettings
+            // as it refers to the HTML template file, not the JSON preset file
+            if (key !== "templateFile") {
+              settings[key] = templateData.extSettings[key];
+            }
           });
         }
       } catch (error) {
