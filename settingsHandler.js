@@ -76,6 +76,7 @@ const default_settings = {
   showThoughtBubble: true,
   customTemplateHtml: "",
   templateFile: "dating-card-template.json", // Changed to JSON file
+  templatePosition: "BOTTOM", // Default template position
   datingSimPrompt:
     "Default prompt could not be loaded. Please check file path.",
   customFields: [...defaultSimFields], // Clone the default fields
@@ -246,6 +247,11 @@ const initialize_settings_listeners = (
           "customTemplateHtml",
           unescapeHtml(presetData.htmlTemplate)
         );
+        
+        // Apply the template position if it exists in the preset
+        if (presetData.templatePosition !== undefined) {
+          set_settings("templatePosition", presetData.templatePosition);
+        }
 
         // Apply other settings if they exist in the preset
         if (presetData.sysPrompt !== undefined) {
@@ -276,6 +282,11 @@ const initialize_settings_listeners = (
 
           // Apply the default template settings
           set_settings("customTemplateHtml", unescapeHtml(templateData.htmlTemplate));
+          
+          // Apply the template position if it exists in the template data
+          if (templateData.templatePosition !== undefined) {
+            set_settings("templatePosition", templateData.templatePosition);
+          }
 
           if (templateData.sysPrompt !== undefined) {
             set_settings("datingSimPrompt", templateData.sysPrompt);

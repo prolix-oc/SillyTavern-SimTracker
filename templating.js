@@ -257,7 +257,7 @@ const loadTemplate = async (get_settings, set_settings) => {
       let cardTemplate = "";
 
       // Extract position metadata from the templatePosition setting or default to BOTTOM
-      const templatePosition = get_settings("templatePosition") || "BOTTOM";
+      const templatePosition = get_settings("templatePosition") || extractTemplatePosition(customTemplateHtml) || "BOTTOM";
 
       const startIndex = customTemplateHtml.indexOf(cardStartMarker);
       const endIndex = customTemplateHtml.indexOf(cardEndMarker);
