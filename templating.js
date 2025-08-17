@@ -155,6 +155,8 @@ async function populateTemplateDropdown(get_settings) {
         } else if (templateName) {
           friendlyName = templateName;
         }
+        
+        console.log(`[SST] [${MODULE_NAME}]`, `Generated friendly name for ${filename}: ${friendlyName}`);
 
         templateOptions.push({ filename, friendlyName, type: "default" });
       } catch (error) {
@@ -177,6 +179,8 @@ async function populateTemplateDropdown(get_settings) {
 
       const friendlyName = `${templateName} - by ${author} (User Preset)`;
       const filename = `user-preset-${index}`; // Unique identifier for user presets
+      
+      console.log(`[SST] [${MODULE_NAME}]`, `Generated friendly name for user preset ${index}: ${friendlyName}`);
 
       templateOptions.push({ 
         filename, 
