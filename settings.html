@@ -53,7 +53,7 @@
         </div>
         <div class="description">
           Select a built-in template. This is used when no custom template is
-          loaded.
+          loaded. Templates define their own position.
         </div>
 
         <div class="setting">
@@ -88,10 +88,7 @@
         <h4>Custom Sim Data Fields</h4>
         <div class="setting">
             <label>Define the data fields for your sim tracker.</label>
-            <div id="customFieldsList">
-                <!-- Fields will be populated here by JavaScript -->
-            </div>
-            <button id="addCustomFieldBtn" class="menu_button">Add Field</button>
+            <button id="manageCustomFieldsBtn" class="menu_button" style="margin-top: 5px;">Manage Fields</button>
         </div>
         <p class="description">
           These fields define the structure of your sim data and are used by the <code>{{sim_format}}</code> macro in prompts.
@@ -128,7 +125,94 @@
         <p class="description">
           Migrate all existing sim data to the new improved format with explicit worldData and characters array structure.
         </p>
+        
+        <hr />
+        
+        <div class="setting">
+          <label>Template Preset Import/Export</label>
+          <div class="flex-container">
+            <button id="exportPresetBtn" class="menu_button" title="Export current template and settings as a preset file.">
+              Export Preset
+            </button>
+            <button id="importPresetBtn" class="menu_button" title="Import a template preset from a file.">
+              Import Preset
+            </button>
+            <button id="managePresetsBtn" class="menu_button" title="Manage your saved presets.">
+              Manage Presets
+            </button>
+          </div>
+        </div>
+        <p class="description">
+          Export your current template setup or import a preset from another user.
+        </p>
+        <!-- Hidden input for file import -->
+        <input type="file" id="presetImportInput" hidden accept=".json" />
+        
+        <hr />
+        
+        <div class="setting">
+          <label>Reset All Settings</label>
+          <div class="flex-container">
+            <button id="resetDefaultsBtn" class="menu_button" style="background-color: #c0392b; color: white;" title="Reset all settings to their default values.">
+              Reset Defaults
+            </button>
+          </div>
+        </div>
+        <p class="description">
+          This will reset all extension settings to their default values. This action cannot be undone.
+        </p>
       </div>
     </div>
   </div>
+  
+  <!-- Export Preset Modal -->
+  <dialog id="sst-export-preset-modal" class="popup wide_dialogue_popup large_dialogue_popup vertical_scrolling_dialogue_popup popup--animation-fast">
+    <div class="popup-header">
+      <h3 style="margin: 0; padding: 10px 0;">Export Template Preset</h3>
+    </div>
+    <div class="popup-content" style="padding: 15px; flex: 1; display: flex; flex-direction: column;">
+      <div style="margin-bottom: 15px;">
+        <label for="exportTemplateName">Template Name:</label>
+        <input type="text" id="exportTemplateName" class="text_pole" style="width: 100%;" />
+      </div>
+      <div style="margin-bottom: 15px;">
+        <label for="exportTemplateAuthor">Author:</label>
+        <input type="text" id="exportTemplateAuthor" class="text_pole" style="width: 100%;" />
+      </div>
+      <div style="margin-bottom: 15px;">
+        <label>
+          <input type="checkbox" id="exportIncludeSysPrompt" checked /> Include System Prompt
+        </label>
+      </div>
+      <div style="margin-bottom: 15px;">
+        <label>
+          <input type="checkbox" id="exportIncludeCustomFields" checked /> Include Custom Fields
+        </label>
+      </div>
+      <div style="margin-bottom: 15px;">
+        <label>
+          <input type="checkbox" id="exportIncludeSettings" checked /> Include Extension Settings
+        </label>
+      </div>
+    </div>
+    <div class="popup-footer" style="display: flex; justify-content: center; padding: 15px; gap: 10px;">
+      <button id="sst-export-preset-confirm" class="menu_button">Export</button>
+      <button id="sst-export-preset-cancel" class="menu_button">Cancel</button>
+    </div>
+  </dialog>
+  
+  <!-- Manage Presets Modal -->
+  <dialog id="sst-manage-presets-modal" class="popup wide_dialogue_popup large_dialogue_popup vertical_scrolling_dialogue_popup popup--animation-fast">
+    <div class="popup-header">
+      <h3 style="margin: 0; padding: 10px 0;">Manage Presets</h3>
+    </div>
+    <div class="popup-content" style="padding: 15px; flex: 1; display: flex; flex-direction: column;">
+      <div id="userPresetsList" style="flex: 1; overflow-y: auto;">
+        <!-- User presets will be populated here -->
+      </div>
+    </div>
+    <div class="popup-footer" style="display: flex; justify-content: center; padding: 15px;">
+      <button id="sst-manage-presets-close" class="menu_button">Close</button>
+    </div>
+  </dialog>
 </div>

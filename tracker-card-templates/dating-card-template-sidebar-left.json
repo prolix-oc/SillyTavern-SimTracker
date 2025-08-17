@@ -1,0 +1,96 @@
+{
+  "templateName": "Dating Sim Tracker (Left, Single)",
+  "templateAuthor": "Prolix OCs",
+  "templatePosition": "LEFT",
+  "htmlTemplate": "<!-- TEMPLATE NAME: Dating Sim Tracker (Left Side) -->\n<!-- AUTHOR: Prolix OCs -->\n<!-- POSITION: LEFT -->\n\n<!-- CARD_TEMPLATE_START -->\n<style>\n/* The actual template styling */\n.sim-tracker-container {\n  display: flex;\n  flex-direction: column;\n  gap: 20px;\n  width: 100%;\n}\n\n.sim-tracker-card {\n  background: linear-gradient(145deg, #2c2c2c, #1a1a1a);\n  border-radius: 18px;\n  padding: 20px;\n  width: 100%;\n  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);\n  position: relative;\n  border: 1px solid rgba(255, 255, 255, 0.05);\n  backdrop-filter: blur(10px);\n  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);\n}\n\n.sim-tracker-card.inactive {\n  opacity: 0.6;\n}\n\n.character-header {\n  display: flex;\n  justify-content: space-between;\n  align-items: flex-start;\n  margin-bottom: 18px;\n}\n\n.character-name {\n  font-size: 1.3em;\n  font-weight: 600;\n  color: #ffffff;\n}\n\n.status-indicator {\n  font-size: 1.4em;\n}\n\n.stats-container {\n  display: flex;\n  flex-direction: column;\n  gap: 16px;\n}\n\n.stat-item {\n  display: flex;\n  flex-direction: column;\n  gap: 6px;\n}\n\n.stat-header {\n  display: flex;\n  justify-content: space-between;\n  font-size: 0.9em;\n  color: rgba(255, 255, 255, 0.7);\n}\n\n.stat-bar-bg {\n  height: 8px;\n  background: rgba(255, 255, 255, 0.1);\n  border-radius: 4px;\n  overflow: hidden;\n}\n\n.stat-bar-fill {\n  height: 100%;\n  border-radius: 4px;\n}\n\n.status-container {\n  margin-top: 20px;\n  padding-top: 16px;\n  border-top: 1px solid rgba(255, 255, 255, 0.05);\n}\n\n.relationship-status, .desire-status {\n  margin-bottom: 10px;\n  font-size: 0.95em;\n  color: rgba(255, 255, 255, 0.9);\n}\n\n.days-counter {\n  text-align: center;\n  font-style: italic;\n  color: rgba(255, 255, 255, 0.6);\n  font-size: 0.9em;\n}\n\n.thought-bubble {\n  margin-top: 20px;\n  padding: 15px;\n  background: rgba(255, 255, 255, 0.05);\n  border-radius: 12px;\n  border: 1px solid rgba(255, 255, 255, 0.08);\n}\n</style>\n\n<div class=\"sim-tracker-container\">\n  <div class=\"sim-tracker-card {{#if stats.inactive}}inactive{{/if}}\" style=\"background: linear-gradient(145deg, {{adjustColorBrightness bgColor 70}} 0%, {{adjustColorBrightness darkerBgColor 60}} 50%, {{adjustColorBrightness darkerBgColor 50}} 100%); border: 1px solid rgba(255, 255, 255, 0.05);\">\n    \n    <!-- Days counter at the top -->\n    <div class=\"days-counter\" style=\"text-align: left; font-style: italic; color: rgba(255, 255, 255, 0.8); font-size: 1em; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);\">\n      Day {{stats.days_since_first_meeting}}\n    </div>\n    \n    <!-- Character header with name and status -->\n    <div class=\"character-header\">\n      <div class=\"character-name\">\n        {{characterName}}\n      </div>\n      <div class=\"status-indicator\">\n        {{#if stats.inactive}}\n          💤\n        {{else}}\n          {{#if (gt stats.ap 70)}}\n            😊\n          {{else if (gt stats.ap 40)}}\n            😐\n          {{else}}\n            😞\n          {{/if}}\n        {{/if}}\n      </div>\n    </div>\n    \n    <!-- Stats grid with progress bars -->\n    <div class=\"stats-container\">\n      <!-- Affection -->\n      <div class=\"stat-item\">\n        <div class=\"stat-header\">\n          <span>Affection</span>\n          <span>{{stats.ap}}</span>\n        </div>\n        <div class=\"stat-bar-bg\">\n          <div class=\"stat-bar-fill\" style=\"width: {{#if (gt stats.ap 200)}}100{{else}}{{#if stats.ap}}{{divide stats.ap 2}}{{else}}0{{/if}}{{/if}}%; height: 100%; background: linear-gradient(90deg, #ff9a9e, #fad0c4); border-radius: 4px;\"></div>\n        </div>\n      </div>\n      \n      <!-- Desire -->\n      <div class=\"stat-item\">\n        <div class=\"stat-header\">\n          <span>Desire</span>\n          <span>{{stats.dp}}</span>\n        </div>\n        <div class=\"stat-bar-bg\">\n          <div class=\"stat-bar-fill\" style=\"width: {{#if (gt stats.dp 150)}}100{{else}}{{#if stats.dp}}{{divideRoundUp stats.dp 1.5}}{{else}}0{{/if}}{{/if}}%; height: 100%; background: linear-gradient(90deg, #a1c4fd, #c2e9fb); border-radius: 4px;\"></div>\n        </div>\n      </div>\n      \n      <!-- Trust -->\n      <div class=\"stat-item\">\n        <div class=\"stat-header\">\n          <span>Trust</span>\n          <span>{{stats.tp}}</span>\n        </div>\n        <div class=\"stat-bar-bg\">\n          <div class=\"stat-bar-fill\" style=\"width: {{#if (gt stats.tp 150)}}100{{else}}{{#if stats.tp}}{{divideRoundUp stats.tp 1.5}}{{else}}0{{/if}}{{/if}}%; height: 100%; background: linear-gradient(90deg, #84fab0, #8fd3f4); border-radius: 4px;\"></div>\n        </div>\n      </div>\n      \n      <!-- Contempt -->\n      <div class=\"stat-item\">\n        <div class=\"stat-header\">\n          <span>Contempt</span>\n          <span>{{stats.cp}}</span>\n        </div>\n        <div class=\"stat-bar-bg\">\n          <div class=\"stat-bar-fill\" style=\"width: {{#if (gt stats.cp 150)}}100{{else}}{{#if stats.cp}}{{divideRoundUp stats.cp 1.5}}{{else}}0{{/if}}{{/if}}%; height: 100%; background: linear-gradient(90deg, #d4fc79, #96e6a1); border-radius: 4px;\"></div>\n        </div>\n      </div>\n    </div>\n    \n    <!-- Status -->\n    <div class=\"status-container\">\n      <div class=\"relationship-status\">\n        <strong>Relationship:</strong> {{stats.relationshipStatus}}\n      </div>\n      <div class=\"desire-status\">\n        <strong>Desire:</strong> {{stats.desireStatus}}\n      </div>\n    </div>\n    \n    <!-- Internal thought bubble (conditionally shown) -->\n    {{#if stats.internal_thought}}\n    <div class=\"thought-bubble\">\n      <div style=\"display: flex; align-items: flex-start; gap: 10px;\">\n        <div style=\"font-size: 1.2em; flex-shrink: 0;\">💭</div>\n        <div style=\"font-size: 0.95em; line-height: 1.4; color: rgba(255, 255, 255, 0.85);\">\n          <strong>Thinks:</strong> {{stats.internal_thought}}\n        </div>\n      </div>\n    </div>\n    {{/if}}\n  </div>\n</div>\n<!-- CARD_TEMPLATE_END -->\n\n<!-- \nTEMPLATE VARIABLES:\n- {{characterName}}: Character's name\n- {{currentDate}}: Current date in YYYY-MM-DD format\n- {{bgColor}}: Primary background color\n- {{darkerBgColor}}: Darker variant of background color\n- {{contrastColor}}: Contrast color for text against background\n- {{stats.ap}}: Affection points (max 200)\n- {{stats.dp}}: Desire points (max 150)\n- {{stats.tp}}: Trust points (max 150)\n- {{stats.cp}}: Contempt points (max 150)\n- {{stats.apChange}}: Change in affection points (positive/negative/zero)\n- {{stats.dpChange}}: Change in desire points (positive/negative/zero)\n- {{stats.tpChange}}: Change in trust points (positive/negative/zero)\n- {{stats.cpChange}}: Change in contempt points (positive/negative/zero)\n- {{stats.days_since_first_meeting}}: Days since first meeting\n- {{stats.preg}}: Boolean for pregnancy status\n- {{stats.days_preg}}: Days pregnant (if applicable)\n- {{stats.internal_thought}}: Character's internal thoughts\n- {{stats.relationshipStatus}}: Relationship status text\n- {{stats.desireStatus}}: Desire status text\n- {{stats.inactive}}: Boolean for inactive status\n- {{stats.inactiveReason}}: Number indicating reason for inactivity (0-5)\n- {{healthIcon}}: Health status icon (🤕 or 💀)\n- {{reactionEmoji}}: Reaction emoji (👍, 👎, or 😐)\n- {{showThoughtBubble}}: Boolean to show/hide thought bubble\n-->",
+  "sysPrompt": "## DATING SIM MODE ENABLED\r\n\r\nYour objective: Prioritize narrative reality for relationship/status updates. Analyze chat context to determine current date (YYYY-MM-DD format) and time (24-hour time). Update all trackers instantly when events occur. ALWAYS check for `sim` codeblocks containing JSON. Ensure ALL necessary data is recalculated if missing.\r\n\r\nWhen using the MACRO position for templates, you can place the {{sim_tracker_positioned}} macro anywhere in your response to control exactly where the tracker appears.\r\n\r\n## Core Systems:\r\n\r\n### Key Rules:\r\n\r\n1. **Output Order**:\r\n\r\n   - ALWAYS generate narrative content first\r\n   - ONLY AFTER narrative content, output tracker block\r\n   - FINALLY output sim codeblock\r\n\r\n2. **Relationship Meters**:\r\n\r\n- Affection (AP): 0-200\r\n- Desire (DP): 0-150\r\n- Trust (TP): 0-150\r\n- Contempt (CP): 0-150\r\n- Update based on interaction quality/current relationship with {{user}}\r\n- Relationship Status (based on current AP Level):\r\n  - 0-30: \"Strangers\"\r\n  - 31-60: \"Acquaintances\"\r\n  - 61-90: \"Good Friends\"\r\n  - 91-120: \"Romantic Interest\"\r\n  - 121-150: \"Going Steady\"\r\n  - 151-180: \"Committed Relationship\"\r\n  - 181-200 (MAX LEVEL): \"Devoted Partner\"\r\n- Desire Status (based on current DP Level):\r\n  - 0-25: \"Not feeling the heat.\"\r\n  - 26-50: \"A smoldering flame builds.\"\r\n  - 51-75: \"Starting to feel warm in here.\"\r\n  - 76-100: \"Body's burning up!\"\r\n  - 101-125: \"A desperate need presents.\"\r\n  - 126-150 (MAX LEVEL): \"Pliable in the lustful hunger.\"\r\n\r\n3. **Multi-Character Support**:\r\n\r\n   - Generate ONE card per active character\r\n   - Track relationships separately for each character\r\n   - Maintain independent status for each character\r\n\r\n4. **Date System**:\r\n\r\n- **Inference**: Analyze narrative context to determine current date\r\n- **Format**: Store as YYYY-MM-DD in sim block (e.g., 2025-08-10)\r\n- **Progression**:\r\n  - Advance date when narrative time passes\r\n  - Handle month/year rollovers automatically\r\n  - Track conception days relative to conception date\r\n- **Display**: Show in ISO format at top of card\r\n- **Day Tracking**: Confirm the amount of days that have passed since the first meeting of the character.\r\n- **Time Tracking**: Confirm the time of day of the interaction, and present it as the story progresses realistically.\r\n\r\n5. **Status Trackers**:\r\n\r\n   - Health Status: `0`=Unharmed, `1`=Injured, `2`=Critical\r\n     - If character is left without treatment for grave, critical wounds: FORCE character to be inactive and do not continue roleplay or create dialog, as they are now dead.\r\n   - Reaction to User: `0`=Neutral, `1`=Like, `2`=Dislike\r\n   - Pregnancy: Track conception days when relevant (\uD83E\uDD30[days]d)\r\n   - Internal Thought: Character's current internal thoughts/feelings\r\n   - Inactivity:\r\n     - If character is inactive (`true`), list the REASON why via a number.\r\n     - `0`: Not inactive (irrelevant if inactive is `false`)\r\n     - `1`: Asleep (\uD83D\uDE34)\r\n     - `2`: Comatose (\uD83C\uDFE5)\r\n     - `3`: Contempt/anger level forced character to leave (\uD83D\uDE21)\r\n     - `4`: Incapacitated (\uD83E\uDEE0)\r\n     - `5`: Death (\uD83E\uDEA6)\r\n\r\n6. **Change Tracking**:\r\n   - **apChange**: Numerical change in Affection Points from user's action (positive/negative/zero)\r\n   - **dpChange**: Numerical change in Desire Points from user's action (positive/negative/zero)\r\n   - **tpChange**: Numerical change in Trust Points from user's action (positive/negative/zero)\r\n   - **cpChange**: Numerical change in Contempt Points from user's action (positive/negative/zero)\r\n   - If no change occurred in a stat, set the change value to 0\r\n   - These values represent the immediate impact of the user's most recent action\r\n\r\n### Other Tracking Elements:\r\n\r\n- **Day Counter**: Track narrative days (starts at 1)\r\n- **Reaction**: \uD83D\uDC4D (Liked), \uD83D\uDC4E (Disliked), \uD83D\uDE10 (Neutral)\r\n- **BG Color**: Set hex color based on {{char}}'s appearance/personality\r\n\r\n### Output Workflow:\r\n\r\n1. Process narrative events\r\n2. Calculate status changes for ALL active characters\r\n3. Output narrative content\r\n4. Output ONLY the sim codeblock (no HTML)\r\n\r\nOutput the sim codeblock with all character data:\r\n\r\n{{sim_format}}\r\n\r\n## Critical Enforcement:\r\n\r\n1. **Statistic Definition**:\r\n\r\n   - **Affection**: the character\u2019s romantic feelings towards the user. The higher this level is, the more they may be willing to engage in more flowery, \u201Clovey-dovey\u201D speech or activities with them.\r\n   - **Desire**: the level of sexual attraction the character feels for the user. The higher this level is, the higher the chance that the character may engage the user sexually. A maxed or close-to-max DP level may make the character more pliable or impressionable in the bedroom.\r\n   - **Trust**: the level of trust the character has in the user personally. Raising this level will make the character more likely to admit their own faults, or make them more willing to believe you. The user lying, cheating, or breaking promises can cause this stat to fall.\r\n   - **Contempt**: the level of the character\u2019s disdain towards the user. This stat will raise when the user causes harm to the character or hurts their feelings. Minor transgressions will bear a minor raise, while other actions will cause a sharp rise. A rise in CP can also cause a drop from the other 3 statistics. Good faith actions to show regret or concern can cause this level to fall.\r\n\r\n2. **Position Lock**:\r\n\r\n   - Narrative content MUST come FIRST\r\n   - Tracker cards MUST come AFTER narrative\r\n   - Sim codeblock MUST be LAST OUTPUT\r\n   - NEVER exclude the sim codeblock from ANY character response. It must always be included.\r\n\r\n3. **Multi-Character Handling**:\r\n\r\n   - Generate cards for ALL ACTIVE characters\r\n   - Maintain separate state per character\r\n   - Process interactions individually\r\n\r\n4. **Game Master Role**:\r\n\r\n   - Only story characters receive trackers, no other assistants\r\n\r\n5. **Performance Notes**:\r\n\r\n   - Limit to 4 active characters maximum at a time\r\n   - Collapse inactive character cards\r\n   - Preserve state for all known characters\r\n   - Previous tracker blocks are only to be used as references\r\n   - ALWAYS generate fresh tracker data for each message\r\n\r\n6. **Data Correction**:\r\n   - If ANY data is missing from the previous sim tracker block, add the missing data and continue your assessment.\r\n   - Do not leave any relevant data empty or unavailable. The JSON block, its presence at the end of the message, and its complete formatting is mission critical.\r\n   - If data from previous run does not match expected formatting, or contains missing keys, perform self-correction of the data and present the new code block at the end of the message.",
+  "customFields": [
+    {
+      "key": "ap",
+      "description": "Affection Points (0-200)"
+    },
+    {
+      "key": "dp",
+      "description": "Desire Points (0-150)"
+    },
+    {
+      "key": "tp",
+      "description": "Trust Points (0-150)"
+    },
+    {
+      "key": "cp",
+      "description": "Contempt Points (0-150)"
+    },
+    {
+      "key": "apChange",
+      "description": "Change in Affection from last action (positive/negative/zero)"
+    },
+    {
+      "key": "dpChange",
+      "description": "Change in Desire from last action (positive/negative/zero)"
+    },
+    {
+      "key": "tpChange",
+      "description": "Change in Trust from last action (positive/negative/zero)"
+    },
+    {
+      "key": "cpChange",
+      "description": "Change in Contempt from last action (positive/negative/zero)"
+    },
+    {
+      "key": "relationshipStatus",
+      "description": "Relationship status text (e.g., 'Romantic Interest')"
+    },
+    {
+      "key": "desireStatus",
+      "description": "Desire status text (e.g., 'A smoldering flame builds.')"
+    },
+    {
+      "key": "preg",
+      "description": "Boolean for pregnancy status (true/false)"
+    },
+    {
+      "key": "days_preg",
+      "description": "Days pregnant (if applicable)"
+    },
+    {
+      "key": "conception_date",
+      "description": "Date of conception (YYYY-MM-DD)"
+    },
+    {
+      "key": "health",
+      "description": "Health Status (0=Unharmed, 1=Injured, 2=Critical)"
+    },
+    {
+      "key": "bg",
+      "description": "Hex color for card background (e.g., #6a5acd)"
+    },
+    {
+      "key": "last_react",
+      "description": "Reaction to User (0=Neutral, 1=Like, 2=Dislike)"
+    },
+    {
+      "key": "internal_thought",
+      "description": "Character's current internal thoughts/feelings"
+    },
+    {
+      "key": "days_since_first_meeting",
+      "description": "Total days since first meeting"
+    },
+    {
+      "key": "inactive",
+      "description": "Boolean for character inactivity (true/false)"
+    },
+    {
+      "key": "inactiveReason",
+      "description": "Reason for inactivity (0=Not inactive, 1=Asleep, 2=Comatose, 3=Contempt/anger, 4=Incapacitated, 5=Death)"
+    }
+  ],
+  "extSettings": {
+    "codeBlockIdentifier": "sim",
+    "defaultBgColor": "#6a5acd",
+    "showThoughtBubble": true,
+    "hideSimBlocks": true,
+    "templateFile": "dating-card-template-sidebar-left.html"
+  }
+}

@@ -2,6 +2,8 @@
 
 Your objective: Prioritize narrative reality for relationship/status updates. Analyze chat context to determine current date (YYYY-MM-DD format) and time (24-hour time). Update all trackers instantly when events occur. ALWAYS check for `sim` codeblocks containing JSON. Ensure ALL necessary data is recalculated if missing.
 
+When using the MACRO position for templates, you can place the {{sim_tracker_positioned}} macro anywhere in your response to control exactly where the tracker appears.
+
 ## Core Systems:
 
 ### Key Rules:
