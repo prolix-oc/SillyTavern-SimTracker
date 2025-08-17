@@ -1,19 +1,9 @@
+import { unescapeHtml } from "./settingsHandler";
 // templating.js - Handlebar replacements and template parsing
 const MODULE_NAME = "silly-sim-tracker";
 
 // Module-level variable to store the current template position
 let currentTemplatePosition = "BOTTOM";
-
-// Helper function to unescape HTML
-const unescapeHtml = (safe) => {
-  if (typeof safe !== 'string') return safe;
-  return safe
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, "\"")
-    .replace(/&#039;/g, "'");
-};
 
 // --- TEMPLATES ---
 const wrapperTemplate = `<div id="silly-sim-tracker-container" style="width:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:block !important;visibility:visible !important;">{{{cardsHtml}}}</div>`;
@@ -468,5 +458,4 @@ export {
   loadTemplate,
   extractTemplatePosition,
   currentTemplatePosition,
-  unescapeHtml
 };

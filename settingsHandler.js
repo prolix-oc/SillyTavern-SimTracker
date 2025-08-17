@@ -15,7 +15,8 @@ const defaultSimFields = [
   { key: "cp", description: "Contempt Points (0-150)" },
   {
     key: "apChange",
-    description: "Change in Affection from last action (positive/negative/zero)",
+    description:
+      "Change in Affection from last action (positive/negative/zero)",
   },
   {
     key: "dpChange",
@@ -79,7 +80,7 @@ const default_settings = {
     "Default prompt could not be loaded. Please check file path.",
   customFields: [...defaultSimFields], // Clone the default fields
   hideSimBlocks: true, // New setting to hide sim blocks in message text
-  userPresets: [] // New setting to store user presets
+  userPresets: [], // New setting to store user presets
 };
 
 let settings = {};
@@ -100,10 +101,14 @@ const loadDefaultPromptFromFile = async () => {
   const promptPath = `${get_extension_directory()}/prompts/default-prompt.md`;
   try {
     const response = await $.get(promptPath);
-    console.log(`[SST] [${MODULE_NAME}]`, `Successfully loaded default prompt from ${promptPath}`);
+    console.log(
+      `[SST] [${MODULE_NAME}]`,
+      `Successfully loaded default prompt from ${promptPath}`
+    );
     return response;
   } catch (error) {
-    console.log(`[SST] [${MODULE_NAME}]`,
+    console.log(
+      `[SST] [${MODULE_NAME}]`,
       `Error loading default prompt from ${promptPath}. The file might be missing. Error: ${error.statusText}`
     );
     console.error(error);
@@ -117,28 +122,34 @@ const loadDefaultTemplate = async () => {
     const defaultTemplatePath = `${get_extension_directory()}/tracker-card-templates/dating-card-template.json`;
     const defaultTemplate = await $.get(defaultTemplatePath);
     const templateData = JSON.parse(defaultTemplate);
-    
+
     // Apply the default template settings
     set_settings("customTemplateHtml", unescapeHtml(templateData.htmlTemplate));
-    
+
     if (templateData.sysPrompt !== undefined) {
       set_settings("datingSimPrompt", templateData.sysPrompt);
     }
-    
+
     if (templateData.customFields !== undefined) {
       set_settings("customFields", templateData.customFields);
     }
-    
+
     if (templateData.extSettings) {
-      Object.keys(templateData.extSettings).forEach(key => {
+      Object.keys(templateData.extSettings).forEach((key) => {
         set_settings(key, templateData.extSettings[key]);
       });
     }
-    
-    console.log(`[SST] [${MODULE_NAME}]`, "Successfully loaded default JSON template");
+
+    console.log(
+      `[SST] [${MODULE_NAME}]`,
+      "Successfully loaded default JSON template"
+    );
     return true;
   } catch (error) {
-    console.log(`[SST] [${MODULE_NAME}]`, `Error loading default JSON template: ${error.message}`);
+    console.log(
+      `[SST] [${MODULE_NAME}]`,
+      `Error loading default JSON template: ${error.message}`
+    );
     return false;
   }
 };
@@ -164,7 +175,10 @@ const refresh_settings_ui = () => {
 const bind_setting = (selector, key, type) => {
   const element = $(selector);
   if (element.length === 0) {
-    console.log(`[SST] [${MODULE_NAME}]`, `Could not find settings element: ${selector}`);
+    console.log(
+      `[SST] [${MODULE_NAME}]`,
+      `Could not find settings element: ${selector}`
+    );
     return;
   }
   settings_ui_map[key] = [element, type];
@@ -189,7 +203,15 @@ const bind_setting = (selector, key, type) => {
   });
 };
 
-const initialize_settings_listeners = (loadTemplate, refreshAllCards, migrateAllSimData, handleCustomTemplateUpload, handlePresetExport, handlePresetImport, showManagePresetsModal) => {
+const initialize_settings_listeners = (
+  loadTemplate,
+  refreshAllCards,
+  migrateAllSimData,
+  handleCustomTemplateUpload,
+  handlePresetExport,
+  handlePresetImport,
+  showManagePresetsModal
+) => {
   console.log(`[SST] [${MODULE_NAME}]`, "Binding settings UI elements...");
 
   bind_setting("#isEnabled", "isEnabled", "boolean");
@@ -205,30 +227,35 @@ const initialize_settings_listeners = (loadTemplate, refreshAllCards, migrateAll
     settings_ui_map["templateFile"] = [$templateSelect, "text"];
     $templateSelect.on("change", async () => {
       const selectedValue = $templateSelect.val();
-      const $selectedOption = $templateSelect.find(`option[value="${selectedValue}"]`);
+      const $selectedOption = $templateSelect.find(
+        `option[value="${selectedValue}"]`
+      );
       const presetData = $selectedOption.data("preset");
-      
+
       // If this is a user preset, apply its settings
       if (presetData) {
         // Apply the preset data, unescaping HTML if needed
-        set_settings("customTemplateHtml", unescapeHtml(presetData.htmlTemplate));
-        
+        set_settings(
+          "customTemplateHtml",
+          unescapeHtml(presetData.htmlTemplate)
+        );
+
         // Apply other settings if they exist in the preset
         if (presetData.sysPrompt !== undefined) {
           set_settings("datingSimPrompt", presetData.sysPrompt);
         }
-        
+
         if (presetData.customFields !== undefined) {
           set_settings("customFields", presetData.customFields);
         }
-        
+
         if (presetData.extSettings) {
-          Object.keys(presetData.extSettings).forEach(key => {
+          Object.keys(presetData.extSettings).forEach((key) => {
             set_settings(key, presetData.extSettings[key]);
           });
         }
       }
-      
+
       set_settings("templateFile", selectedValue);
       await loadTemplate();
       refreshAllCards();
@@ -281,31 +308,35 @@ const initialize_settings_listeners = (loadTemplate, refreshAllCards, migrateAll
 
   // Listener for reset defaults button
   $("#resetDefaultsBtn").on("click", () => {
-    if (confirm("Are you sure you want to reset all settings to their default values? This action cannot be undone.")) {
+    if (
+      confirm(
+        "Are you sure you want to reset all settings to their default values? This action cannot be undone."
+      )
+    ) {
       // Reset all settings to defaults
-      Object.keys(default_settings).forEach(key => {
+      Object.keys(default_settings).forEach((key) => {
         set_settings(key, default_settings[key]);
       });
-      
+
       // Special handling for customFields to ensure we clone the array
       set_settings("customFields", [...defaultSimFields]);
-      
+
       // Special handling for userPresets to ensure we have an empty array
       set_settings("userPresets", []);
-      
+
       // Auto-load the default JSON template
       loadDefaultTemplate().then(() => {
         // Refresh the UI to reflect the changes
         refresh_settings_ui();
-        
+
         // Reload template and refresh all cards
         loadTemplate().then(() => {
           refreshAllCards();
         });
-        
+
         // Repopulate template dropdown to remove any user presets
         populateTemplateDropdown(get_settings);
-        
+
         toastr.success("All settings have been reset to their default values.");
       });
     }
@@ -486,42 +517,45 @@ const initialize_settings = async () => {
     extensionSettings[MODULE_NAME]
   );
   settings = extensionSettings[MODULE_NAME];
-  
+
   // Ensure that customFields always has the default values if it's empty or missing
   if (!settings.customFields || settings.customFields.length === 0) {
     settings.customFields = [...defaultSimFields];
   }
-  
+
   // Ensure that userPresets always exists
   if (!settings.userPresets) {
     settings.userPresets = [];
   }
-  
+
   // For first-time users, auto-load the default JSON template
   if (!extensionSettings[MODULE_NAME]) {
     try {
       const defaultTemplatePath = `${get_extension_directory()}/tracker-card-templates/dating-card-template.json`;
       const defaultTemplate = await $.get(defaultTemplatePath);
       const templateData = JSON.parse(defaultTemplate);
-      
+
       // Apply the default template settings
       settings.customTemplateHtml = templateData.htmlTemplate;
-      
+
       if (templateData.sysPrompt !== undefined) {
         settings.datingSimPrompt = templateData.sysPrompt;
       }
-      
+
       if (templateData.customFields !== undefined) {
         settings.customFields = templateData.customFields;
       }
-      
+
       if (templateData.extSettings) {
-        Object.keys(templateData.extSettings).forEach(key => {
+        Object.keys(templateData.extSettings).forEach((key) => {
           settings[key] = templateData.extSettings[key];
         });
       }
     } catch (error) {
-      console.log(`[SST] [${MODULE_NAME}]`, `Error loading default JSON template: ${error.message}`);
+      console.log(
+        `[SST] [${MODULE_NAME}]`,
+        `Error loading default JSON template: ${error.message}`
+      );
     }
   }
 };
@@ -531,220 +565,232 @@ const load_settings_html_manually = async () => {
   try {
     const response = await $.get(settingsHtmlPath);
     $("#extensions_settings2").append(response);
-    console.log(`[SST] [${MODULE_NAME}]`, "Settings HTML manually injected into right-side panel.");
+    console.log(
+      `[SST] [${MODULE_NAME}]`,
+      "Settings HTML manually injected into right-side panel."
+    );
   } catch (error) {
-    console.log(`[SST] [${MODULE_NAME}]`, `Error loading settings.html: ${error.statusText}`);
+    console.log(
+      `[SST] [${MODULE_NAME}]`,
+      `Error loading settings.html: ${error.statusText}`
+    );
     console.error(error);
   }
 };
 
-  // Helper function to escape HTML
-  const escapeHtml = (unsafe) => {
-    if (typeof unsafe !== 'string') return unsafe;
-    return unsafe
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
-  };
+// Helper function to escape HTML
+const escapeHtml = (unsafe) => {
+  if (typeof unsafe !== "string") return unsafe;
+  return unsafe
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+};
 
-  // Helper function to unescape HTML
-  const unescapeHtml = (safe) => {
-    if (typeof safe !== 'string') return safe;
-    return safe
-      .replace(/&amp;/g, "&")
-      .replace(/&lt;/g, "<")
-      .replace(/&gt;/g, ">")
-      .replace(/&quot;/g, "\"")
-      .replace(/&#039;/g, "'");
-  };
+// Helper function to unescape HTML
+const unescapeHtml = (safe) => {
+  if (typeof safe !== "string") return safe;
+  return safe
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&quot;/g, '"')
+    .replace(/&#039;/g, "'");
+};
 
-  // Function to handle preset export
-  const handlePresetExport = (loadTemplate, refreshAllCards) => {
-    // Get references to modal elements
-    const $modal = $("#sst-export-preset-modal");
-    const $templateName = $modal.find("#exportTemplateName");
-    const $templateAuthor = $modal.find("#exportTemplateAuthor");
-    const $includeSysPrompt = $modal.find("#exportIncludeSysPrompt");
-    const $includeCustomFields = $modal.find("#exportIncludeCustomFields");
-    const $includeSettings = $modal.find("#exportIncludeSettings");
-    const $confirmBtn = $modal.find("#sst-export-preset-confirm");
-    const $cancelBtn = $modal.find("#sst-export-preset-cancel");
+// Function to handle preset export
+const handlePresetExport = (loadTemplate, refreshAllCards) => {
+  // Get references to modal elements
+  const $modal = $("#sst-export-preset-modal");
+  const $templateName = $modal.find("#exportTemplateName");
+  const $templateAuthor = $modal.find("#exportTemplateAuthor");
+  const $includeSysPrompt = $modal.find("#exportIncludeSysPrompt");
+  const $includeCustomFields = $modal.find("#exportIncludeCustomFields");
+  const $includeSettings = $modal.find("#exportIncludeSettings");
+  const $confirmBtn = $modal.find("#sst-export-preset-confirm");
+  const $cancelBtn = $modal.find("#sst-export-preset-cancel");
 
-    // Pre-fill modal with current settings
-    let templateName = "My Template";
-    let templateAuthor = "Anonymous";
-    let templatePosition = currentTemplatePosition || "BOTTOM";
+  // Pre-fill modal with current settings
+  let templateName = "My Template";
+  let templateAuthor = "Anonymous";
+  let templatePosition = currentTemplatePosition || "BOTTOM";
 
-    $templateName.val(templateName);
-    $templateAuthor.val(templateAuthor);
+  $templateName.val(templateName);
+  $templateAuthor.val(templateAuthor);
 
-    // Show modal
-    $modal[0].showModal();
+  // Show modal
+  $modal[0].showModal();
 
-    // Handle confirm button
-    $confirmBtn.off('click').on('click', async () => {
-      try {
-        // Create preset object
-        const preset = {
-          templateName: $templateName.val(),
-          templateAuthor: $templateAuthor.val(),
-          templatePosition: templatePosition
+  // Handle confirm button
+  $confirmBtn.off("click").on("click", async () => {
+    try {
+      // Create preset object
+      const preset = {
+        templateName: $templateName.val(),
+        templateAuthor: $templateAuthor.val(),
+        templatePosition: templatePosition,
+      };
+
+      // Add HTML template
+      preset.htmlTemplate = get_settings("customTemplateHtml") || "";
+
+      // Conditionally add other components
+      if ($includeSysPrompt.is(":checked")) {
+        preset.sysPrompt = get_settings("datingSimPrompt") || "";
+      }
+
+      if ($includeCustomFields.is(":checked")) {
+        preset.customFields = get_settings("customFields") || [];
+      }
+
+      if ($includeSettings.is(":checked")) {
+        // Only include specific settings that make sense for a preset
+        preset.extSettings = {
+          codeBlockIdentifier: get_settings("codeBlockIdentifier"),
+          defaultBgColor: get_settings("defaultBgColor"),
+          showThoughtBubble: get_settings("showThoughtBubble"),
+          hideSimBlocks: get_settings("hideSimBlocks"),
+          templateFile: get_settings("templateFile"),
         };
-
-        // Add HTML template
-        preset.htmlTemplate = get_settings("customTemplateHtml") || "";
-
-        // Conditionally add other components
-        if ($includeSysPrompt.is(":checked")) {
-          preset.sysPrompt = get_settings("datingSimPrompt") || "";
-        }
-
-        if ($includeCustomFields.is(":checked")) {
-          preset.customFields = get_settings("customFields") || [];
-        }
-
-        if ($includeSettings.is(":checked")) {
-          // Only include specific settings that make sense for a preset
-          preset.extSettings = {
-            codeBlockIdentifier: get_settings("codeBlockIdentifier"),
-            defaultBgColor: get_settings("defaultBgColor"),
-            showThoughtBubble: get_settings("showThoughtBubble"),
-            hideSimBlocks: get_settings("hideSimBlocks"),
-            templateFile: get_settings("templateFile")
-          };
-        }
-
-        // Add to user presets
-        const userPresets = get_settings("userPresets") || [];
-        userPresets.push(preset);
-        set_settings("userPresets", userPresets);
-
-        // Repopulate template dropdown to include the new preset
-        await populateTemplateDropdown(get_settings);
-
-        // Create and download file
-        const blob = new Blob([JSON.stringify(preset, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${preset.templateName.replace(/\s+/g, '_')}_preset.json`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        toastr.success(`Preset "${preset.templateName}" exported successfully!`);
-        $modal[0].close();
-      } catch (error) {
-        console.error(`[SST] [${MODULE_NAME}]`, "Error exporting preset:", error);
-        toastr.error("Failed to export preset. Check console for details.");
       }
-    });
 
-    // Handle cancel button
-    $cancelBtn.off('click').on('click', () => {
+      // Add to user presets
+      const userPresets = get_settings("userPresets") || [];
+      userPresets.push(preset);
+      set_settings("userPresets", userPresets);
+
+      // Repopulate template dropdown to include the new preset
+      await populateTemplateDropdown(get_settings);
+
+      // Create and download file
+      const blob = new Blob([JSON.stringify(preset, null, 2)], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${preset.templateName.replace(/\s+/g, "_")}_preset.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toastr.success(`Preset "${preset.templateName}" exported successfully!`);
       $modal[0].close();
-    });
+    } catch (error) {
+      console.error(`[SST] [${MODULE_NAME}]`, "Error exporting preset:", error);
+      toastr.error("Failed to export preset. Check console for details.");
+    }
+  });
 
-    // Close modal with Escape key
-    $modal.off('keydown').on('keydown', function (e) {
-      if (e.key === "Escape") {
-        $modal[0].close();
-      }
-    });
+  // Handle cancel button
+  $cancelBtn.off("click").on("click", () => {
+    $modal[0].close();
+  });
 
-    // Close when clicking on backdrop
-    $modal.off('click').on('click', function (e) {
-      if (e.target === this) {
-        $modal[0].close();
+  // Close modal with Escape key
+  $modal.off("keydown").on("keydown", function (e) {
+    if (e.key === "Escape") {
+      $modal[0].close();
+    }
+  });
+
+  // Close when clicking on backdrop
+  $modal.off("click").on("click", function (e) {
+    if (e.target === this) {
+      $modal[0].close();
+    }
+  });
+};
+
+// Function to handle preset import
+const handlePresetImport = (event, loadTemplate, refreshAllCards) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const content = e.target.result;
+      const preset = JSON.parse(content);
+
+      // Validate preset structure
+      if (!preset.htmlTemplate) {
+        throw new Error("Invalid preset file: Missing HTML template");
       }
-    });
+
+      // Apply HTML template, unescaping if needed
+      set_settings("customTemplateHtml", unescapeHtml(preset.htmlTemplate));
+
+      // Apply system prompt if included
+      if (preset.sysPrompt !== undefined) {
+        set_settings("datingSimPrompt", preset.sysPrompt);
+      }
+
+      // Apply custom fields if included
+      if (preset.customFields !== undefined) {
+        set_settings("customFields", preset.customFields);
+      }
+
+      // Apply extension settings if included
+      if (preset.extSettings) {
+        Object.keys(preset.extSettings).forEach((key) => {
+          set_settings(key, preset.extSettings[key]);
+        });
+      }
+
+      // Add to user presets
+      const userPresets = get_settings("userPresets") || [];
+      userPresets.push(preset);
+      set_settings("userPresets", userPresets);
+
+      // Reload template and refresh cards
+      await loadTemplate();
+      refreshAllCards();
+
+      // Repopulate template dropdown to include the new preset
+      await populateTemplateDropdown(get_settings);
+
+      toastr.success(
+        `Preset "${preset.templateName || "Unnamed"}" imported successfully!`
+      );
+    } catch (error) {
+      console.error(`[SST] [${MODULE_NAME}]`, "Error importing preset:", error);
+      toastr.error(`Failed to import preset: ${error.message}`);
+    }
   };
 
-  // Function to handle preset import
-  const handlePresetImport = (event, loadTemplate, refreshAllCards) => {
-    const file = event.target.files[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (e) => {
-      try {
-        const content = e.target.result;
-        const preset = JSON.parse(content);
-
-        // Validate preset structure
-        if (!preset.htmlTemplate) {
-          throw new Error("Invalid preset file: Missing HTML template");
-        }
-
-        // Apply HTML template, unescaping if needed
-        set_settings("customTemplateHtml", unescapeHtml(preset.htmlTemplate));
-
-        // Apply system prompt if included
-        if (preset.sysPrompt !== undefined) {
-          set_settings("datingSimPrompt", preset.sysPrompt);
-        }
-
-        // Apply custom fields if included
-        if (preset.customFields !== undefined) {
-          set_settings("customFields", preset.customFields);
-        }
-
-        // Apply extension settings if included
-        if (preset.extSettings) {
-          Object.keys(preset.extSettings).forEach(key => {
-            set_settings(key, preset.extSettings[key]);
-          });
-        }
-
-        // Add to user presets
-        const userPresets = get_settings("userPresets") || [];
-        userPresets.push(preset);
-        set_settings("userPresets", userPresets);
-
-        // Reload template and refresh cards
-        await loadTemplate();
-        refreshAllCards();
-
-        // Repopulate template dropdown to include the new preset
-        await populateTemplateDropdown(get_settings);
-
-        toastr.success(`Preset "${preset.templateName || 'Unnamed'}" imported successfully!`);
-      } catch (error) {
-        console.error(`[SST] [${MODULE_NAME}]`, "Error importing preset:", error);
-        toastr.error(`Failed to import preset: ${error.message}`);
-      }
-    };
-
-    reader.onerror = () => {
-      toastr.error("Failed to read preset file.");
-    };
-
-    reader.readAsText(file);
-    event.target.value = ""; // Reset input
+  reader.onerror = () => {
+    toastr.error("Failed to read preset file.");
   };
 
-  // Function to show the manage presets modal
-  const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
-    const $modal = $("#sst-manage-presets-modal");
-    const $presetsList = $modal.find("#userPresetsList");
-    const $closeBtn = $modal.find("#sst-manage-presets-close");
+  reader.readAsText(file);
+  event.target.value = ""; // Reset input
+};
 
-    // Populate the presets list
-    const userPresets = get_settings("userPresets") || [];
-    $presetsList.empty();
+// Function to show the manage presets modal
+const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
+  const $modal = $("#sst-manage-presets-modal");
+  const $presetsList = $modal.find("#userPresetsList");
+  const $closeBtn = $modal.find("#sst-manage-presets-close");
 
-    if (userPresets.length === 0) {
-      $presetsList.append("<p>No user presets found.</p>");
-    } else {
-      userPresets.forEach((preset, index) => {
-        const presetElement = $(`
+  // Populate the presets list
+  const userPresets = get_settings("userPresets") || [];
+  $presetsList.empty();
+
+  if (userPresets.length === 0) {
+    $presetsList.append("<p>No user presets found.</p>");
+  } else {
+    userPresets.forEach((preset, index) => {
+      const presetElement = $(`
           <div class="sst-preset-item" style="margin-bottom: 15px; padding: 10px; border: 1px solid #444; border-radius: 8px;">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <div>
-                <strong>${preset.templateName || `User Preset ${index + 1}`}</strong>
+                <strong>${
+                  preset.templateName || `User Preset ${index + 1}`
+                }</strong>
                 <div>by ${preset.templateAuthor || "Unknown"}</div>
               </div>
               <div>
@@ -754,83 +800,91 @@ const load_settings_html_manually = async () => {
             </div>
           </div>
         `);
-        $presetsList.append(presetElement);
-      });
+      $presetsList.append(presetElement);
+    });
 
-      // Add event listeners for apply buttons
-      $presetsList.find(".sst-apply-preset").on("click", async function() {
-        const index = $(this).data("index");
-        const preset = userPresets[index];
+    // Add event listeners for apply buttons
+    $presetsList.find(".sst-apply-preset").on("click", async function () {
+      const index = $(this).data("index");
+      const preset = userPresets[index];
 
-        if (preset) {
-          // Apply the preset
-          set_settings("customTemplateHtml", unescapeHtml(preset.htmlTemplate));
+      if (preset) {
+        // Apply the preset
+        set_settings("customTemplateHtml", unescapeHtml(preset.htmlTemplate));
 
-          if (preset.sysPrompt !== undefined) {
-            set_settings("datingSimPrompt", preset.sysPrompt);
-          }
-
-          if (preset.customFields !== undefined) {
-            set_settings("customFields", preset.customFields);
-          }
-
-          if (preset.extSettings) {
-            Object.keys(preset.extSettings).forEach(key => {
-              set_settings(key, preset.extSettings[key]);
-            });
-          }
-
-          // Reload template and refresh cards
-          await loadTemplate();
-          refreshAllCards();
-
-          toastr.success(`Preset "${preset.templateName || 'Unnamed'}" applied successfully!`);
-          $modal[0].close();
+        if (preset.sysPrompt !== undefined) {
+          set_settings("datingSimPrompt", preset.sysPrompt);
         }
-      });
 
-      // Add event listeners for delete buttons
-      $presetsList.find(".sst-delete-preset").on("click", function() {
-        const index = $(this).data("index");
-        
-        if (confirm(`Are you sure you want to delete the preset "${userPresets[index].templateName || `User Preset ${index + 1}`}"?`)) {
-          // Remove the preset
-          userPresets.splice(index, 1);
-          set_settings("userPresets", userPresets);
-
-          // Repopulate template dropdown
-          populateTemplateDropdown(get_settings);
-
-          // Show the modal again to refresh the list
-          showManagePresetsModal(loadTemplate, refreshAllCards);
-          
-          toastr.success("Preset deleted successfully!");
+        if (preset.customFields !== undefined) {
+          set_settings("customFields", preset.customFields);
         }
-      });
-    }
 
-    // Show modal
-    $modal[0].showModal();
+        if (preset.extSettings) {
+          Object.keys(preset.extSettings).forEach((key) => {
+            set_settings(key, preset.extSettings[key]);
+          });
+        }
 
-    // Handle close button
-    $closeBtn.off('click').on('click', () => {
+        // Reload template and refresh cards
+        await loadTemplate();
+        refreshAllCards();
+
+        toastr.success(
+          `Preset "${preset.templateName || "Unnamed"}" applied successfully!`
+        );
+        $modal[0].close();
+      }
+    });
+
+    // Add event listeners for delete buttons
+    $presetsList.find(".sst-delete-preset").on("click", function () {
+      const index = $(this).data("index");
+
+      if (
+        confirm(
+          `Are you sure you want to delete the preset "${
+            userPresets[index].templateName || `User Preset ${index + 1}`
+          }"?`
+        )
+      ) {
+        // Remove the preset
+        userPresets.splice(index, 1);
+        set_settings("userPresets", userPresets);
+
+        // Repopulate template dropdown
+        populateTemplateDropdown(get_settings);
+
+        // Show the modal again to refresh the list
+        showManagePresetsModal(loadTemplate, refreshAllCards);
+
+        toastr.success("Preset deleted successfully!");
+      }
+    });
+  }
+
+  // Show modal
+  $modal[0].showModal();
+
+  // Handle close button
+  $closeBtn.off("click").on("click", () => {
+    $modal[0].close();
+  });
+
+  // Close modal with Escape key
+  $modal.off("keydown").on("keydown", function (e) {
+    if (e.key === "Escape") {
       $modal[0].close();
-    });
+    }
+  });
 
-    // Close modal with Escape key
-    $modal.off('keydown').on('keydown', function (e) {
-      if (e.key === "Escape") {
-        $modal[0].close();
-      }
-    });
-
-    // Close when clicking on backdrop
-    $modal.off('click').on('click', function (e) {
-      if (e.target === this) {
-        $modal[0].close();
-      }
-    });
-  };
+  // Close when clicking on backdrop
+  $modal.off("click").on("click", function (e) {
+    if (e.target === this) {
+      $modal[0].close();
+    }
+  });
+};
 
 // Export functions and variables
 export {
@@ -851,5 +905,5 @@ export {
   escapeHtml,
   unescapeHtml,
   handlePresetExport,
-  handlePresetImport
+  handlePresetImport,
 };
