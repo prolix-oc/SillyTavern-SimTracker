@@ -589,17 +589,6 @@ const escapeHtml = (unsafe) => {
     .replace(/'/g, "&#039;");
 };
 
-// Helper function to unescape HTML
-const unescapeHtml = (safe) => {
-  if (typeof safe !== "string") return safe;
-  return safe
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#039;/g, "'");
-};
-
 // Function to handle preset export
 const handlePresetExport = (loadTemplate, refreshAllCards) => {
   // Get references to modal elements
@@ -903,7 +892,6 @@ export {
   initialize_settings,
   load_settings_html_manually,
   escapeHtml,
-  unescapeHtml,
   handlePresetExport,
   handlePresetImport,
 };
