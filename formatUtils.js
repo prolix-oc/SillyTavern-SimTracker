@@ -27,8 +27,7 @@ const parseYaml = (yamlContent) => {
   try {
     // This is a simplified YAML parser for our specific use case
     // A full implementation would use a library like js-yaml
-    const lines = yamlContent.trim().split('
-');
+    const lines = yamlContent.trim().split('');
     const result = {};
     let currentObject = result;
     const stack = [result];
