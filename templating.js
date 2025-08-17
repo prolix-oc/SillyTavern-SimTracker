@@ -135,7 +135,8 @@ async function populateTemplateDropdown(get_settings) {
         
         // Try to parse as JSON first
         try {
-          jsonData = JSON.parse(content);
+          // jQuery may automatically parse JSON responses, so we need to check if it's already an object
+          jsonData = typeof content === "string" ? JSON.parse(content) : content;
         } catch (jsonError) {
           // If JSON parsing fails, log the error and skip this template
           console.error(
