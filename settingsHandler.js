@@ -316,6 +316,9 @@ const initialize_settings_listeners = (
       set_settings("templateFile", selectedValue);
       await loadTemplate();
       refreshAllCards();
+      
+      // Refresh the UI to reflect the new settings
+      refresh_settings_ui();
     });
   }
 
