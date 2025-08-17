@@ -2,6 +2,7 @@
 
 const { extensionSettings, saveSettingsDebounced } = SillyTavern.getContext();
 import { sanitizeFieldKey } from "./utils.js";
+import { currentTemplatePosition } from "./templating.js";
 import { populateTemplateDropdown } from "./templating.js";
 
 const MODULE_NAME = "silly-sim-tracker";
@@ -571,22 +572,10 @@ const load_settings_html_manually = async () => {
     const $confirmBtn = $modal.find("#sst-export-preset-confirm");
     const $cancelBtn = $modal.find("#sst-export-preset-cancel");
 
-    // Pre-fill modal with current settings if available in template
-    const customTemplateHtml = get_settings("customTemplateHtml");
+    // Pre-fill modal with current settings
     let templateName = "My Template";
     let templateAuthor = "Anonymous";
-
-    // Try to extract metadata from custom template if it exists
-    if (customTemplateHtml) {
-      const nameRegex = /<!--\s*TEMPLATE NAME\s*:\s*(.*?)\s*-->/i;
-      const authorRegex = /<!--\s*AUTHOR\s*:\s*(.*?)\s*-->/i;
-
-      const nameMatch = customTemplateHtml.match(nameRegex);
-      const authorMatch = customTemplateHtml.match(authorRegex);
-
-      if (nameMatch && nameMatch[1]) templateName = nameMatch[1].trim();
-      if (authorMatch && authorMatch[1]) templateAuthor = authorMatch[1].trim();
-    }
+    let templatePosition = currentTemplatePosition || "BOTTOM";
 
     $templateName.val(templateName);
     $templateAuthor.val(templateAuthor);
@@ -600,7 +589,8 @@ const load_settings_html_manually = async () => {
         // Create preset object
         const preset = {
           templateName: $templateName.val(),
-          templateAuthor: $templateAuthor.val()
+          templateAuthor: $templateAuthor.val(),
+          templatePosition: templatePosition
         };
 
         // Add HTML template

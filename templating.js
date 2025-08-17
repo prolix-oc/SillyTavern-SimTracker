@@ -1,6 +1,9 @@
 // templating.js - Handlebar replacements and template parsing
 const MODULE_NAME = "silly-sim-tracker";
 
+// Module-level variable to store the current template position
+let currentTemplatePosition = "BOTTOM";
+
 // --- TEMPLATES ---
 const wrapperTemplate = `<div id="silly-sim-tracker-container" style="width:100%;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;display:block !important;visibility:visible !important;">{{{cardsHtml}}}</div>`;
 let compiledWrapperTemplate = Handlebars.compile(wrapperTemplate);
@@ -109,14 +112,12 @@ async function populateTemplateDropdown(get_settings) {
   ];
 
   const templateOptions = [];
-  const nameRegex = /<!--\s*TEMPLATE NAME\s*:\s*(.*?)\s*-->/;
-  const authorRegex = /<!--\s*AUTHOR\s*:\s*(.*?)\s*-->/;
 
   // Process default templates
   await Promise.all(
     defaultFiles.map(async (filename) => {
       const filePath = `${get_extension_directory()}/tracker-card-templates/${filename}`;
-      let friendlyName = filename.replace(".json", ".html"); // Default to filename as a fallback
+      let friendlyName = filename.replace(".json", ""); // Default to filename as a fallback
 
       try {
         const content = await $.get(filePath);
@@ -132,7 +133,7 @@ async function populateTemplateDropdown(get_settings) {
             jsonError
           );
           // If parsing fails, add it to the list with its filename so it's not missing
-          templateOptions.push({ filename, friendlyName: filename.replace(".json", ".html"), type: "default" });
+          templateOptions.push({ filename, friendlyName: filename.replace(".json", ""), type: "default" });
           return;
         }
 
@@ -152,7 +153,7 @@ async function populateTemplateDropdown(get_settings) {
           error
         );
         // If fetching fails, add it to the list with its filename so it's not missing
-        templateOptions.push({ filename, friendlyName: filename.replace(".json", ".html"), type: "default" });
+        templateOptions.push({ filename, friendlyName: filename.replace(".json", ""), type: "default" });
       }
     })
   );
@@ -242,12 +243,8 @@ const loadTemplate = async (get_settings, set_settings) => {
       const cardEndMarker = "<!-- CARD_TEMPLATE_END -->";
       let cardTemplate = "";
 
-      // Extract position metadata
-      const positionRegex = /<!--\s*POSITION\s*:\s*(.*?)\s*-->/i;
-      const positionMatch = customTemplateHtml.match(positionRegex);
-      const templatePosition = positionMatch
-        ? positionMatch[1].trim().toUpperCase()
-        : "BOTTOM"; // Default position
+      // Extract position metadata from the templatePosition setting or default to BOTTOM
+      const templatePosition = get_settings("templatePosition") || "BOTTOM";
 
       const startIndex = customTemplateHtml.indexOf(cardStartMarker);
       const endIndex = customTemplateHtml.indexOf(cardEndMarker);
@@ -282,8 +279,8 @@ const loadTemplate = async (get_settings, set_settings) => {
       }
 
       compiledCardTemplate = Handlebars.compile(cardTemplate);
-      // Store the template position in settings for use during rendering
-      set_settings("templatePosition", templatePosition);
+      // Store the template position in a module-level variable for use during rendering
+      currentTemplatePosition = templatePosition;
       console.log(`[SST] [${MODULE_NAME}]`,
         `Custom HTML template compiled successfully. Position: ${templatePosition}`
       );
@@ -312,12 +309,8 @@ const loadTemplate = async (get_settings, set_settings) => {
         if (presetData) {
           console.log(`[SST] [${MODULE_NAME}]`, `Loading template from user preset: ${templateFile}`);
           
-          // Extract position metadata
-          const positionRegex = /<!--\s*POSITION\s*:\s*(.*?)\s*-->/i;
-          const positionMatch = presetData.htmlTemplate.match(positionRegex);
-          const templatePosition = positionMatch
-            ? positionMatch[1].trim().toUpperCase()
-            : presetData.templatePosition || "BOTTOM";
+          // Extract position metadata from the preset data
+          const templatePosition = presetData.templatePosition || "BOTTOM";
           
           // Parse the template content
           const cardStartMarker = "<!-- CARD_TEMPLATE_START -->";
@@ -356,8 +349,8 @@ const loadTemplate = async (get_settings, set_settings) => {
           }
           
           compiledCardTemplate = Handlebars.compile(cardTemplate);
-          // Store the template position in settings for use during rendering
-          set_settings("templatePosition", templatePosition);
+          // Store the template position in a module-level variable for use during rendering
+          currentTemplatePosition = templatePosition;
           console.log(`[SST] [${MODULE_NAME}]`,
             `User preset '${templateFile}' compiled successfully. Position: ${templatePosition}`
           );
@@ -384,8 +377,8 @@ const loadTemplate = async (get_settings, set_settings) => {
         
         console.log(`[SST] [${MODULE_NAME}]`, `Loading template from default file: ${defaultPath}`);
 
-        // Extract position metadata
-        const templatePosition = extractTemplatePosition(jsonData.htmlTemplate);
+        // Extract position metadata from the JSON data
+        const templatePosition = jsonData.templatePosition || "BOTTOM";
 
         // Parse the template content
         const cardStartMarker = "<!-- CARD_TEMPLATE_START -->";
@@ -424,8 +417,8 @@ const loadTemplate = async (get_settings, set_settings) => {
         }
         
         compiledCardTemplate = Handlebars.compile(cardTemplate);
-        // Store the template position in settings for use during rendering
-        set_settings("templatePosition", templatePosition);
+        // Store the template position in a module-level variable for use during rendering
+        currentTemplatePosition = templatePosition;
         console.log(`[SST] [${MODULE_NAME}]`,
           `Default template '${templateFile}' compiled successfully. Position: ${templatePosition}`
         );
@@ -445,7 +438,8 @@ const loadTemplate = async (get_settings, set_settings) => {
         No custom template is loaded and the selected default template could not be found or parsed.
     </div>`;
   compiledCardTemplate = Handlebars.compile(fallbackTemplate);
-  set_settings("templatePosition", "BOTTOM"); // Default position for fallback
+  // Store the template position in a module-level variable for use during rendering
+  currentTemplatePosition = "BOTTOM";
 };
 
 // Export functions and variables
@@ -457,5 +451,6 @@ export {
   populateTemplateDropdown,
   handleCustomTemplateUpload,
   loadTemplate,
-  extractTemplatePosition
+  extractTemplatePosition,
+  currentTemplatePosition
 };

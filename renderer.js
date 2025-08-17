@@ -1,7 +1,7 @@
 // renderer.js - HTML card rendering code
 import { getContext } from "../../../extensions.js";
 import { messageFormatting } from "../../../../script.js";
-import { extractTemplatePosition } from "./templating.js";
+import { extractTemplatePosition, currentTemplatePosition } from "./templating.js";
 
 const MODULE_NAME = "silly-sim-tracker";
 const CONTAINER_ID = "silly-sim-tracker-container";
@@ -577,35 +577,8 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
           .join("");
       }
 
-      // Extract template position from the compiled template or settings
-      // First, try to get it from the template HTML
-      let templatePosition = "BOTTOM"; // default position
-      
-      // Try to extract position from the custom template HTML
-      const customTemplateHtml = get_settings("customTemplateHtml");
-      if (customTemplateHtml) {
-        templatePosition = extractTemplatePosition(customTemplateHtml);
-      }
-      
-      // If no position found in custom template, try to get it from the template file
-      if (templatePosition === "BOTTOM") {
-        // Try to extract position from the default template
-        const templateFile = get_settings("templateFile");
-        if (templateFile) {
-          // Load the template file and extract position
-          // This is a simplified approach - in practice, we'd need to load the actual template
-          // For now, we'll just check the filename for common patterns
-          if (templateFile.includes("above")) {
-            templatePosition = "ABOVE";
-          } else if (templateFile.includes("macro")) {
-            templatePosition = "MACRO";
-          } else if (templateFile.includes("left")) {
-            templatePosition = "LEFT";
-          } else if (templateFile.includes("right")) {
-            templatePosition = "RIGHT";
-          }
-        }
-      }
+      // Use the template position from the templating module
+      const templatePosition = currentTemplatePosition;
 
       // Handle different positions
       switch (templatePosition) {
@@ -873,35 +846,8 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
           .join("");
       }
 
-      // Extract template position from the compiled template or settings
-      // First, try to get it from the template HTML
-      let templatePosition = "BOTTOM"; // default position
-      
-      // Try to extract position from the custom template HTML
-      const customTemplateHtml = get_settings("customTemplateHtml");
-      if (customTemplateHtml) {
-        templatePosition = extractTemplatePosition(customTemplateHtml);
-      }
-      
-      // If no position found in custom template, try to get it from the template file
-      if (templatePosition === "BOTTOM") {
-        // Try to extract position from the default template
-        const templateFile = get_settings("templateFile");
-        if (templateFile) {
-          // Load the template file and extract position
-          // This is a simplified approach - in practice, we'd need to load the actual template
-          // For now, we'll just check the filename for common patterns
-          if (templateFile.includes("above")) {
-            templatePosition = "ABOVE";
-          } else if (templateFile.includes("macro")) {
-            templatePosition = "MACRO";
-          } else if (templateFile.includes("left")) {
-            templatePosition = "LEFT";
-          } else if (templateFile.includes("right")) {
-            templatePosition = "RIGHT";
-          }
-        }
-      }
+      // Use the template position from the templating module
+      const templatePosition = currentTemplatePosition;
 
       // Handle different positions
       switch (templatePosition) {

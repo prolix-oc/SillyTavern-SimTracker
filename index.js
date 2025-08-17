@@ -31,7 +31,8 @@ import {
   populateTemplateDropdown,
   handleCustomTemplateUpload,
   loadTemplate,
-  extractTemplatePosition
+  extractTemplatePosition,
+  currentTemplatePosition
 } from "./templating.js";
 
 import {
