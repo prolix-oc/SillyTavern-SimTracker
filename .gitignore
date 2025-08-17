@@ -9,10 +9,10 @@ QWEN.md
 *.md
 *.html
 *.css
+*.json
 !tracker-card-templates/*
 !settings.html
 !prompts/*.md
 !README.md
 !style.css
-*.json
 regex/*

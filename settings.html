@@ -53,22 +53,7 @@
         </div>
         <div class="description">
           Select a built-in template. This is used when no custom template is
-          loaded.
-        </div>
-
-        <div class="setting">
-          <label for="templatePosition">Template Position</label>
-          <select id="templatePosition" class="text_pole">
-            <option value="BOTTOM">Bottom (Below message)</option>
-            <option value="ABOVE">Above Message</option>
-            <option value="LEFT">Left Sidebar</option>
-            <option value="RIGHT">Right Sidebar</option>
-            <option value="MACRO">Macro Replacement</option>
-          </select>
-        </div>
-        <div class="description">
-          Select where the tracker card should be positioned relative to the message.
-          Templates can override this setting with a POSITION comment.
+          loaded. Templates define their own position.
         </div>
 
         <div class="setting">
@@ -193,16 +178,6 @@
       <div style="margin-bottom: 15px;">
         <label for="exportTemplateAuthor">Author:</label>
         <input type="text" id="exportTemplateAuthor" class="text_pole" style="width: 100%;" />
-      </div>
-      <div style="margin-bottom: 15px;">
-        <label for="exportTemplatePosition">Position:</label>
-        <select id="exportTemplatePosition" class="text_pole" style="width: 100%;">
-          <option value="BOTTOM">Bottom (Below message)</option>
-          <option value="ABOVE">Above Message</option>
-          <option value="LEFT">Left Sidebar</option>
-          <option value="RIGHT">Right Sidebar</option>
-          <option value="MACRO">Macro Replacement</option>
-        </select>
       </div>
       <div style="margin-bottom: 15px;">
         <label>

@@ -73,12 +73,11 @@ const default_settings = {
   defaultBgColor: "#6a5acd",
   showThoughtBubble: true,
   customTemplateHtml: "",
-  templateFile: "dating-card-template.html",
+  templateFile: "dating-card-template.json", // Changed to JSON file
   datingSimPrompt:
     "Default prompt could not be loaded. Please check file path.",
   customFields: [...defaultSimFields], // Clone the default fields
   hideSimBlocks: true, // New setting to hide sim blocks in message text
-  templatePosition: "BOTTOM", // New setting for template position
   userPresets: [] // New setting to store user presets
 };
 
@@ -108,6 +107,38 @@ const loadDefaultPromptFromFile = async () => {
     );
     console.error(error);
     return null; // Return null on failure
+  }
+};
+
+// Function to load the default JSON template
+const loadDefaultTemplate = async () => {
+  try {
+    const defaultTemplatePath = `${get_extension_directory()}/tracker-card-templates/dating-card-template.json`;
+    const defaultTemplate = await $.get(defaultTemplatePath);
+    const templateData = JSON.parse(defaultTemplate);
+    
+    // Apply the default template settings
+    set_settings("customTemplateHtml", templateData.htmlTemplate);
+    
+    if (templateData.sysPrompt !== undefined) {
+      set_settings("datingSimPrompt", templateData.sysPrompt);
+    }
+    
+    if (templateData.customFields !== undefined) {
+      set_settings("customFields", templateData.customFields);
+    }
+    
+    if (templateData.extSettings) {
+      Object.keys(templateData.extSettings).forEach(key => {
+        set_settings(key, templateData.extSettings[key]);
+      });
+    }
+    
+    console.log(`[SST] [${MODULE_NAME}]`, "Successfully loaded default JSON template");
+    return true;
+  } catch (error) {
+    console.log(`[SST] [${MODULE_NAME}]`, `Error loading default JSON template: ${error.message}`);
+    return false;
   }
 };
 
@@ -166,7 +197,6 @@ const initialize_settings_listeners = (loadTemplate, refreshAllCards, migrateAll
   bind_setting("#showThoughtBubble", "showThoughtBubble", "boolean");
   bind_setting("#hideSimBlocks", "hideSimBlocks", "boolean"); // New setting
   bind_setting("#datingSimPrompt", "datingSimPrompt", "textarea");
-  bind_setting("#templatePosition", "templatePosition", "text");
 
   // Listener for the default template dropdown
   const $templateSelect = $("#templateFile");
@@ -262,18 +292,21 @@ const initialize_settings_listeners = (loadTemplate, refreshAllCards, migrateAll
       // Special handling for userPresets to ensure we have an empty array
       set_settings("userPresets", []);
       
-      // Refresh the UI to reflect the changes
-      refresh_settings_ui();
-      
-      // Reload template and refresh all cards
-      loadTemplate().then(() => {
-        refreshAllCards();
+      // Auto-load the default JSON template
+      loadDefaultTemplate().then(() => {
+        // Refresh the UI to reflect the changes
+        refresh_settings_ui();
+        
+        // Reload template and refresh all cards
+        loadTemplate().then(() => {
+          refreshAllCards();
+        });
+        
+        // Repopulate template dropdown to remove any user presets
+        populateTemplateDropdown(get_settings);
+        
+        toastr.success("All settings have been reset to their default values.");
       });
-      
-      // Repopulate template dropdown to remove any user presets
-      populateTemplateDropdown(get_settings);
-      
-      toastr.success("All settings have been reset to their default values.");
     }
   });
 
@@ -462,6 +495,34 @@ const initialize_settings = async () => {
   if (!settings.userPresets) {
     settings.userPresets = [];
   }
+  
+  // For first-time users, auto-load the default JSON template
+  if (!extensionSettings[MODULE_NAME]) {
+    try {
+      const defaultTemplatePath = `${get_extension_directory()}/tracker-card-templates/dating-card-template.json`;
+      const defaultTemplate = await $.get(defaultTemplatePath);
+      const templateData = JSON.parse(defaultTemplate);
+      
+      // Apply the default template settings
+      settings.customTemplateHtml = templateData.htmlTemplate;
+      
+      if (templateData.sysPrompt !== undefined) {
+        settings.datingSimPrompt = templateData.sysPrompt;
+      }
+      
+      if (templateData.customFields !== undefined) {
+        settings.customFields = templateData.customFields;
+      }
+      
+      if (templateData.extSettings) {
+        Object.keys(templateData.extSettings).forEach(key => {
+          settings[key] = templateData.extSettings[key];
+        });
+      }
+    } catch (error) {
+      console.log(`[SST] [${MODULE_NAME}]`, `Error loading default JSON template: ${error.message}`);
+    }
+  }
 };
 
 const load_settings_html_manually = async () => {
@@ -504,7 +565,6 @@ const load_settings_html_manually = async () => {
     const $modal = $("#sst-export-preset-modal");
     const $templateName = $modal.find("#exportTemplateName");
     const $templateAuthor = $modal.find("#exportTemplateAuthor");
-    const $templatePosition = $modal.find("#exportTemplatePosition");
     const $includeSysPrompt = $modal.find("#exportIncludeSysPrompt");
     const $includeCustomFields = $modal.find("#exportIncludeCustomFields");
     const $includeSettings = $modal.find("#exportIncludeSettings");
@@ -515,26 +575,21 @@ const load_settings_html_manually = async () => {
     const customTemplateHtml = get_settings("customTemplateHtml");
     let templateName = "My Template";
     let templateAuthor = "Anonymous";
-    let templatePosition = get_settings("templatePosition") || "BOTTOM";
 
     // Try to extract metadata from custom template if it exists
     if (customTemplateHtml) {
       const nameRegex = /<!--\s*TEMPLATE NAME\s*:\s*(.*?)\s*-->/i;
       const authorRegex = /<!--\s*AUTHOR\s*:\s*(.*?)\s*-->/i;
-      const positionRegex = /<!--\s*POSITION\s*:\s*(.*?)\s*-->/i;
 
       const nameMatch = customTemplateHtml.match(nameRegex);
       const authorMatch = customTemplateHtml.match(authorRegex);
-      const positionMatch = customTemplateHtml.match(positionRegex);
 
       if (nameMatch && nameMatch[1]) templateName = nameMatch[1].trim();
       if (authorMatch && authorMatch[1]) templateAuthor = authorMatch[1].trim();
-      if (positionMatch && positionMatch[1]) templatePosition = positionMatch[1].trim().toUpperCase();
     }
 
     $templateName.val(templateName);
     $templateAuthor.val(templateAuthor);
-    $templatePosition.val(templatePosition);
 
     // Show modal
     $modal[0].showModal();
@@ -545,8 +600,7 @@ const load_settings_html_manually = async () => {
         // Create preset object
         const preset = {
           templateName: $templateName.val(),
-          templateAuthor: $templateAuthor.val(),
-          templatePosition: $templatePosition.val()
+          templateAuthor: $templateAuthor.val()
         };
 
         // Add HTML template
@@ -655,11 +709,6 @@ const load_settings_html_manually = async () => {
           });
         }
 
-        // Apply template metadata if available
-        if (preset.templatePosition) {
-          set_settings("templatePosition", preset.templatePosition);
-        }
-
         // Add to user presets
         const userPresets = get_settings("userPresets") || [];
         userPresets.push(preset);
@@ -739,10 +788,6 @@ const load_settings_html_manually = async () => {
             Object.keys(preset.extSettings).forEach(key => {
               set_settings(key, preset.extSettings[key]);
             });
-          }
-
-          if (preset.templatePosition) {
-            set_settings("templatePosition", preset.templatePosition);
           }
 
           // Reload template and refresh cards

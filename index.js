@@ -30,7 +30,8 @@ import {
   compiledCardTemplate,
   populateTemplateDropdown,
   handleCustomTemplateUpload,
-  loadTemplate
+  loadTemplate,
+  extractTemplatePosition
 } from "./templating.js";
 
 import {
@@ -286,16 +287,8 @@ ${exampleJson}
       if (!get_settings("isEnabled")) return "";
       log("Processed {{sim_tracker_positioned}} macro.");
 
-      // Get the template position from settings
-      const templatePosition = get_settings("templatePosition") || "BOTTOM";
-
-      // Only return replacement content for MACRO position
-      if (templatePosition === "MACRO") {
-        // This would be replaced with actual tracker content when rendering
-        return '<div id="sst-macro-placeholder" style="display: none;">SST_PLACEHOLDER</div>';
-      }
-
-      // For other positions, return empty string
+      // This macro is used for template positioning, but the position is now defined in the template itself
+      // We'll return an empty string as the position is handled during rendering
       return "";
     });
     log("Macros registered successfully.");

@@ -12,6 +12,7 @@
     width: 100%;
     position: relative;
     height: 100%;
+    pointer-events: none;
   }
 
   .sim-tracker-tabs {
@@ -26,6 +27,7 @@
     height: 100%;
     z-index: 10; /* Lower z-index so tabs are behind cards */
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    pointer-events: auto;
   }
 
   .sim-tracker-tab {
@@ -46,6 +48,7 @@
     margin: 0 8px; /* Add some horizontal spacing */
     transform: translateX(60px); /* Start hidden at the edge of the screen */
     z-index: 10; /* Lower z-index so tabs are behind cards */
+    pointer-events: auto;
   }
 
   .sim-tracker-tab.active {

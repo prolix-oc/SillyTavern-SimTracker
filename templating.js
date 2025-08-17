@@ -81,6 +81,15 @@ Handlebars.registerHelper("unless", function (conditional, options) {
   }
 });
 
+// Function to extract template position from HTML
+const extractTemplatePosition = (templateHtml) => {
+  if (!templateHtml) return "BOTTOM";
+  
+  const positionRegex = /<!--\s*POSITION\s*:\s*(.*?)\s*-->/i;
+  const positionMatch = templateHtml.match(positionRegex);
+  return positionMatch ? positionMatch[1].trim().toUpperCase() : "BOTTOM";
+};
+
 const get_extension_directory = () => {
   const index_path = new URL(import.meta.url).pathname;
   return index_path.substring(0, index_path.lastIndexOf("/"));
@@ -90,12 +99,13 @@ async function populateTemplateDropdown(get_settings) {
   console.log(`[SST] [${MODULE_NAME}]`, "Populating template dropdown with parsed friendly names...");
 
   const defaultFiles = [
-    "dating-card-template.html",
-    "dating-card-template-positioned.html",
-    "dating-card-template-sidebar.html",
-    "dating-card-template-sidebar-left.html",
-    "dating-card-template-sidebar-tabs.html",
-    "dating-card-template-sidebar-left-tabs.html",
+    "dating-card-template.json",
+    "dating-card-template-positioned.json",
+    "dating-card-template-sidebar.json",
+    "dating-card-template-sidebar-left.json",
+    "dating-card-template-sidebar-tabs.json",
+    "dating-card-template-sidebar-left-tabs.json",
+    "dating-card-template-macro.json"
   ];
 
   const templateOptions = [];
@@ -106,16 +116,14 @@ async function populateTemplateDropdown(get_settings) {
   await Promise.all(
     defaultFiles.map(async (filename) => {
       const filePath = `${get_extension_directory()}/tracker-card-templates/${filename}`;
-      let friendlyName = filename; // Default to filename as a fallback
+      let friendlyName = filename.replace(".json", ".html"); // Default to filename as a fallback
 
       try {
         const content = await $.get(filePath);
+        const jsonData = JSON.parse(content);
 
-        const nameMatch = content.match(nameRegex);
-        const authorMatch = content.match(authorRegex);
-
-        const templateName = nameMatch ? nameMatch[1].trim() : null;
-        const author = authorMatch ? authorMatch[1].trim() : null;
+        const templateName = jsonData.templateName || null;
+        const author = jsonData.templateAuthor || null;
 
         if (templateName && author) {
           friendlyName = `${templateName} - by ${author}`;
@@ -130,7 +138,7 @@ async function populateTemplateDropdown(get_settings) {
           error
         );
         // If fetching fails, add it to the list with its filename so it's not missing
-        templateOptions.push({ filename, friendlyName: filename, type: "default" });
+        templateOptions.push({ filename, friendlyName: filename.replace(".json", ".html"), type: "default" });
       }
     })
   );
@@ -139,12 +147,8 @@ async function populateTemplateDropdown(get_settings) {
   const userPresets = get_settings ? get_settings("userPresets") || [] : [];
   userPresets.forEach((preset, index) => {
     try {
-      // Parse the preset to extract metadata
-      const nameMatch = preset.htmlTemplate.match(nameRegex);
-      const authorMatch = preset.htmlTemplate.match(authorRegex);
-
-      const templateName = nameMatch ? nameMatch[1].trim() : preset.templateName || `User Preset ${index + 1}`;
-      const author = authorMatch ? authorMatch[1].trim() : preset.templateAuthor || "Unknown";
+      const templateName = preset.templateName || `User Preset ${index + 1}`;
+      const author = preset.templateAuthor || "Unknown";
 
       const friendlyName = `${templateName} - by ${author} (User Preset)`;
       const filename = `user-preset-${index}`; // Unique identifier for user presets
@@ -229,7 +233,7 @@ const loadTemplate = async (get_settings, set_settings) => {
       const positionMatch = customTemplateHtml.match(positionRegex);
       const templatePosition = positionMatch
         ? positionMatch[1].trim().toUpperCase()
-        : get_settings("templatePosition") || "BOTTOM"; // Use setting as fallback
+        : "BOTTOM"; // Default position
 
       const startIndex = customTemplateHtml.indexOf(cardStartMarker);
       const endIndex = customTemplateHtml.indexOf(cardEndMarker);
@@ -299,7 +303,7 @@ const loadTemplate = async (get_settings, set_settings) => {
           const positionMatch = presetData.htmlTemplate.match(positionRegex);
           const templatePosition = positionMatch
             ? positionMatch[1].trim().toUpperCase()
-            : presetData.templatePosition || get_settings("templatePosition") || "BOTTOM";
+            : presetData.templatePosition || "BOTTOM";
           
           // Parse the template content
           const cardStartMarker = "<!-- CARD_TEMPLATE_START -->";
@@ -351,31 +355,33 @@ const loadTemplate = async (get_settings, set_settings) => {
         );
       }
     } else {
-      // Handle default templates
+      // Handle default templates (JSON files)
       const defaultPath = `${get_extension_directory()}/tracker-card-templates/${templateFile}`;
       try {
         const templateContent = await $.get(defaultPath);
+        const jsonData = JSON.parse(templateContent);
         console.log(`[SST] [${MODULE_NAME}]`, `Loading template from default file: ${defaultPath}`);
 
         // Extract position metadata
         const positionRegex = /<!--\s*POSITION\s*:\s*(.*?)\s*-->/i;
-        const positionMatch = templateContent.match(positionRegex);
+        const positionMatch = jsonData.htmlTemplate.match(positionRegex);
         const templatePosition = positionMatch
           ? positionMatch[1].trim().toUpperCase()
-          : get_settings("templatePosition") || "BOTTOM"; // Use setting as fallback
+          : jsonData.templatePosition || "BOTTOM"; // Use setting as fallback
 
-        // Re-run the same parsing logic for the file content
+        // Parse the template content
         const cardStartMarker = "<!-- CARD_TEMPLATE_START -->";
         const cardEndMarker = "<!-- CARD_TEMPLATE_END -->";
         let cardTemplate = "";
-        const startIndex = templateContent.indexOf(cardStartMarker);
-        const endIndex = templateContent.indexOf(cardEndMarker);
+        const startIndex = jsonData.htmlTemplate.indexOf(cardStartMarker);
+        const endIndex = jsonData.htmlTemplate.indexOf(cardEndMarker);
+        
         if (startIndex !== -1 && endIndex !== -1) {
-          cardTemplate = templateContent
+          cardTemplate = jsonData.htmlTemplate
             .substring(startIndex + cardStartMarker.length, endIndex)
             .trim();
         } else {
-          let cleanedResponse = templateContent
+          let cleanedResponse = jsonData.htmlTemplate
             .replace(/<!--[\s\S]*?-->/g, "")
             .trim();
           const templateVarRegex = /\{\{[^}]+\}\}/;
@@ -398,6 +404,7 @@ const loadTemplate = async (get_settings, set_settings) => {
             );
           }
         }
+        
         compiledCardTemplate = Handlebars.compile(cardTemplate);
         // Store the template position in settings for use during rendering
         set_settings("templatePosition", templatePosition);
@@ -431,5 +438,6 @@ export {
   get_extension_directory,
   populateTemplateDropdown,
   handleCustomTemplateUpload,
-  loadTemplate
+  loadTemplate,
+  extractTemplatePosition
 };
