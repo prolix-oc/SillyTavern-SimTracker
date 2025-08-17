@@ -204,19 +204,22 @@ async function populateTemplateDropdown(get_settings) {
 
   $select.empty();
   templateOptions.forEach((option) => {
-    $select.append(
-      $("<option>", {
-        value: option.filename,
-        text: option.friendlyName,
-        "data-type": option.type, // Store type as data attribute
-        "data-preset": option.presetData ? JSON.stringify(option.presetData) : undefined // Store preset data as data attribute
-      })
-    );
+    console.log(`[SST] [${MODULE_NAME}]`, `Adding option to dropdown:`, option);
+    const $option = $("<option>", {
+      value: option.filename,
+      text: option.friendlyName,
+      "data-type": option.type, // Store type as data attribute
+      "data-preset": option.presetData ? JSON.stringify(option.presetData) : undefined // Store preset data as data attribute
+    });
+    console.log(`[SST] [${MODULE_NAME}]`, `Created option element:`, $option);
+    $select.append($option);
   });
 
   // Restore the user's selection
   $select.val(currentSelection);
   console.log(`[SST] [${MODULE_NAME}]`, "Template dropdown populated with friendly names.");
+  console.log(`[SST] [${MODULE_NAME}]`, "Current selection:", currentSelection);
+  console.log(`[SST] [${MODULE_NAME}]`, "Dropdown options:", $select.find("option").map(function() { return { value: $(this).val(), text: $(this).text() }; }).get());
 }
 
 function handleCustomTemplateUpload(event, set_settings, loadTemplate, refreshAllCards) {

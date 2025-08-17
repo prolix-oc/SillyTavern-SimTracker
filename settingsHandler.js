@@ -88,7 +88,9 @@ const settings_ui_map = {};
 
 const get_settings = (key) => settings[key] ?? default_settings[key];
 const set_settings = (key, value) => {
+  console.log(`[SST] [${MODULE_NAME}]`, `Setting ${key} to:`, value);
   settings[key] = value;
+  console.log(`[SST] [${MODULE_NAME}]`, `Settings after update:`, settings);
   saveSettingsDebounced();
 };
 
@@ -158,8 +160,10 @@ const loadDefaultTemplate = async () => {
 // --- SETTINGS MANAGEMENT ---
 
 const refresh_settings_ui = () => {
+  console.log(`[SST] [${MODULE_NAME}]`, "Refreshing settings UI with values:", settings);
   for (const [key, [element, type]] of Object.entries(settings_ui_map)) {
     const value = get_settings(key);
+    console.log(`[SST] [${MODULE_NAME}]`, `Setting UI element ${key} to value:`, value);
     switch (type) {
       case "boolean":
         element.prop("checked", value);
