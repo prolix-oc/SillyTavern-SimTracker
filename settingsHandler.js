@@ -349,21 +349,21 @@ const initialize_settings_listeners = (
     }
   });
 
-  // Listener for preset export button
+  // Handle preset export
   $("#exportPresetBtn").on("click", () => {
     handlePresetExport(loadTemplate, refreshAllCards);
   });
 
-  // Listener for preset import button
+  // Handle preset import
   $("#importPresetBtn").on("click", () => {
-    $("#presetImportInput").click(); // Trigger the hidden file input
+    $("#presetImportInput").click();
   });
-
+  
   $("#presetImportInput").on("change", (event) => {
     handlePresetImport(event, loadTemplate, refreshAllCards);
   });
 
-  // Listener for manage presets button
+  // Handle manage presets
   $("#managePresetsBtn").on("click", () => {
     showManagePresetsModal(loadTemplate, refreshAllCards);
   });
