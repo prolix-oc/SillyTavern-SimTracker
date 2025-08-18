@@ -574,27 +574,27 @@ const renderTracker = async (mesId, get_settings, compiledWrapperTemplate, compi
 
 const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString) => {
   try {
-    if (!get_settings("isEnabled")) return lastSimJsonString;
+    if (!get_settings("isEnabled")) return;
 
     const context = getContext();
     const message = context.chat[mesId];
 
     if (!message) {
       console.log(`[SST] [${MODULE_NAME}]`, `Error: Could not find message with ID ${mesId}. Aborting render.`);
-      return lastSimJsonString;
+      return;
     }
 
     const messageElement = document.querySelector(
       `div[mesid="${mesId}"] .mes_text`
     );
-    if (!messageElement) return lastSimJsonString;
+    if (!messageElement) return;
 
     const identifier = get_settings("codeBlockIdentifier");
     let displayMessage = message.mes;
 
     // Hide sim blocks if the setting is enabled
     if (get_settings("hideSimBlocks")) {
-      const hideRegex = new RegExp("```" + identifier + "[\\\\s\\\\S]*?```", "gm");
+      const hideRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
       displayMessage = displayMessage.replace(
         hideRegex,
         (match) => `<span style="display: none !important;">${match}</span>`
@@ -612,7 +612,7 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
 
     // Parse the sim data from the original message content (not the hidden version)
     const dataMatch = message.mes.match(
-      new RegExp("```" + identifier + "[\\\\s\\\\S]*?```", "m")
+      new RegExp("```" + identifier + "[\\s\\S]*?```", "m")
     );
 
     if (dataMatch && dataMatch[0]) {
@@ -652,12 +652,12 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
         );
         const errorHtml = `<div style="color: red; font-family: monospace;">[SillySimTracker] Error: Invalid tracker data format in code block.</div>`;
         messageElement.insertAdjacentHTML("beforeend", errorHtml);
-        return lastSimJsonString;
+        return;
       }
 
       if (typeof jsonData !== "object" || jsonData === null) {
         console.log(`[SST] [${MODULE_NAME}]`, `Parsed data in message ID ${mesId} is not a valid object.`);
-        return lastSimJsonString;
+        return;
       }
       // Handle both old and new JSON formats
       let worldData, characterList;
@@ -688,7 +688,7 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
       const currentDate = worldData.current_date || "Unknown Date";
       const currentTime = worldData.current_time || "Unknown Date";
 
-      if (!characterList.length) return lastSimJsonString;
+      if (!characterList.length) return;
 
       // For tabbed templates, we need to pass all characters to the template
       const isTabbedTemplate = get_settings("templateFile").includes("tabs");
