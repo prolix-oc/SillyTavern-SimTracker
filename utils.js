@@ -62,7 +62,10 @@ const get_extension_directory = () => {
 
 // Function to update lastSimJsonString when a message is swiped
 // Function to filter sim blocks in prompt (keep only last 3)
-const updateLastSimStatsOnRegenerateOrSwipe = (currentMesId = null, get_settings) => {
+const updateLastSimStatsOnRegenerateOrSwipe = (
+  currentMesId = null,
+  get_settings
+) => {
   try {
     const context = getContext();
     if (!context || !context.chat) {
@@ -81,18 +84,15 @@ const updateLastSimStatsOnRegenerateOrSwipe = (currentMesId = null, get_settings
 
       // Check if this message contains sim data
       const identifier = get_settings("codeBlockIdentifier");
-      const simRegex = new RegExp(
-        "```" + identifier + "[\\\\s\\\\S]*?```",
-        "m"
-      );
+      const simRegex = new RegExp(+"```" + identifier + "[\\s\\S]*?```", "m");
       const match = message.mes.match(simRegex);
 
       if (match) {
         // Extract content from the match
-        
         const fullContent = match[0];
-        const content = fullContent          .replace(/```/g, "")
-          .replace(new RegExp(`^${identifier}\\\\s*`), "")
+        const content = fullContent
+          .replace(/```/g, "")
+          .replace(new RegExp(`^${identifier}\\s*`), "")
           .trim();
 
         // Update the lastSimJsonString with the found message's sim data
@@ -223,7 +223,7 @@ const migrateAllSimData = async (get_settings) => {
               .replace(/```/g, "")
               .replace(new RegExp(`^${identifier}\\s*`), "")
               .trim();
-            
+
             // Parse the content (handles both JSON and YAML)
             const jsonData = parseTrackerData(content);
 
@@ -237,7 +237,11 @@ const migrateAllSimData = async (get_settings) => {
 
             // Convert back to the user's preferred format
             const format = get_settings("trackerFormat") || "json";
-            const migratedCodeBlock = generateTrackerBlock(migratedData, format, identifier);
+            const migratedCodeBlock = generateTrackerBlock(
+              migratedData,
+              format,
+              identifier
+            );
 
             // Replace in message
             updatedMessage = updatedMessage.replace(match, migratedCodeBlock);
@@ -288,5 +292,5 @@ export {
   updateLastSimStatsOnRegenerateOrSwipe,
   filterSimBlocksInPrompt,
   migrateJsonFormat,
-  migrateAllSimData
+  migrateAllSimData,
 };
