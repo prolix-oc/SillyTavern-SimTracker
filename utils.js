@@ -86,7 +86,7 @@ const updateLastSimStatsOnRegenerateOrSwipe = (
 
       // Check if this message contains sim data
       const identifier = get_settings("codeBlockIdentifier");
-      const simRegex = new RegExp(+"```" + identifier + "[\\s\\S]*?```", "m");
+      const simRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "m");
       const match = message.mes.match(simRegex);
 
       if (match) {
