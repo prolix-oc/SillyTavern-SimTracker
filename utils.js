@@ -75,7 +75,9 @@ const updateLastSimStatsOnRegenerateOrSwipe = (
 
     // Look for the most recent character message with sim data
     // We iterate backwards from the end of the chat to find the most recent valid message
-    for (let i = context.chat.length - 1; i >= 0; i--) {
+    const startIndex =
+      currentMesId !== null ? currentMesId - 1 : context.chat.length - 1;
+    for (let i = startIndex; i >= 0; i--) {
       const message = context.chat[i];
       if (!message || !message.mes) continue;
 
