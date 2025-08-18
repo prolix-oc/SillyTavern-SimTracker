@@ -471,6 +471,7 @@ const renderTracker = async (mesId, get_settings, compiledWrapperTemplate, compi
     // Wrap cards in container
     const wrappedContent = compiledWrapperTemplate({
       cards: renderedCards,
+      cardsHtml: renderedCards,  // For backward compatibility
       worldData: templateData.worldData,
     });
 
@@ -565,7 +566,7 @@ const renderTracker = async (mesId, get_settings, compiledWrapperTemplate, compi
     }
   } catch (error) {
     // Clear the flag on error
-    isGenerationInProgress = false;
+    setGenerationInProgress(false);
     console.log(`[SST] [${MODULE_NAME}]`,
       `A critical error occurred in renderTracker for message ID ${mesId}. Please check the console. Error: ${error.stack}`
     );
@@ -574,20 +575,25 @@ const renderTracker = async (mesId, get_settings, compiledWrapperTemplate, compi
 
 const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString) => {
   try {
-    if (!get_settings("isEnabled")) return;
+    if (!get_settings("isEnabled")) return lastSimJsonString;
 
     const context = getContext();
+    if (!context || !context.chat || mesId >= context.chat.length) {
+      console.log(`[SST] [${MODULE_NAME}]`, "Invalid context or message ID for tracker rendering");
+      return lastSimJsonString;
+    }
+
     const message = context.chat[mesId];
 
     if (!message) {
       console.log(`[SST] [${MODULE_NAME}]`, `Error: Could not find message with ID ${mesId}. Aborting render.`);
-      return;
+      return lastSimJsonString;
     }
 
     const messageElement = document.querySelector(
       `div[mesid="${mesId}"] .mes_text`
     );
-    if (!messageElement) return;
+    if (!messageElement) return lastSimJsonString;
 
     const identifier = get_settings("codeBlockIdentifier");
     let displayMessage = message.mes;
@@ -652,12 +658,12 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
         );
         const errorHtml = `<div style="color: red; font-family: monospace;">[SillySimTracker] Error: Invalid tracker data format in code block.</div>`;
         messageElement.insertAdjacentHTML("beforeend", errorHtml);
-        return;
+        return lastSimJsonString;
       }
 
       if (typeof jsonData !== "object" || jsonData === null) {
         console.log(`[SST] [${MODULE_NAME}]`, `Parsed data in message ID ${mesId} is not a valid object.`);
-        return;
+        return lastSimJsonString;
       }
       // Handle both old and new JSON formats
       let worldData, characterList;
@@ -688,10 +694,10 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
       const currentDate = worldData.current_date || "Unknown Date";
       const currentTime = worldData.current_time || "Unknown Date";
 
-      if (!characterList.length) return;
+      if (!characterList.length) return lastSimJsonString;
 
       // For tabbed templates, we need to pass all characters to the template
-      const isTabbedTemplate = get_settings("templateFile").includes("tabs");
+      const isTabbedTemplate = get_settings("templateFile") && get_settings("templateFile").includes("tabs");
 
       let cardsHtml = "";
       if (isTabbedTemplate) {
@@ -791,6 +797,12 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
         : (templateDefinedPosition || "BOTTOM");
 
       // Handle different positions
+      const wrapperTemplateData = { 
+        cards: cardsHtml, 
+        cardsHtml: cardsHtml,  // For backward compatibility
+        worldData: worldData 
+      };
+      
       switch (effectivePosition) {
         case "ABOVE":
           // Insert above the message content (inside the message block)
@@ -800,24 +812,24 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
           if (reasoningElement) {
             // Insert above reasoning details if they exist
             const finalHtml =
-              compiledWrapperTemplate({ cardsHtml }) +
+              compiledWrapperTemplate(wrapperTemplateData) +
               `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
             reasoningElement.insertAdjacentHTML("beforebegin", finalHtml);
           } else {
             // If no reasoning details, insert at the beginning of the message
             const finalHtml =
-              compiledWrapperTemplate({ cardsHtml }) +
+              compiledWrapperTemplate(wrapperTemplateData) +
               `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
             messageElement.insertAdjacentHTML("afterbegin", finalHtml);
           }
           break;
         case "LEFT":
           // Update the global left sidebar with the latest data
-          updateLeftSidebar(compiledWrapperTemplate({ cardsHtml }));
+          updateLeftSidebar(compiledWrapperTemplate(wrapperTemplateData));
           break;
         case "RIGHT":
           // Update the global right sidebar with the latest data
-          updateRightSidebar(compiledWrapperTemplate({ cardsHtml }));
+          updateRightSidebar(compiledWrapperTemplate(wrapperTemplateData));
           break;
         case "MACRO":
           // For MACRO position, replace the placeholder in the message
@@ -825,7 +837,7 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
             "#sst-macro-placeholder"
           );
           if (placeholder) {
-            const finalHtml = compiledWrapperTemplate({ cardsHtml });
+            const finalHtml = compiledWrapperTemplate(wrapperTemplateData);
             placeholder.insertAdjacentHTML("beforebegin", finalHtml);
             placeholder.remove();
           }
@@ -835,7 +847,7 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
           // Add a horizontal divider before the cards
           const finalHtml =
             `<hr style="margin-top: 15px; margin-bottom: 20px;">` +
-            compiledWrapperTemplate({ cardsHtml });
+            compiledWrapperTemplate(wrapperTemplateData);
           messageElement.insertAdjacentHTML("beforeend", finalHtml);
           break;
       }
@@ -875,6 +887,7 @@ const refreshAllCards = (
     const mesId = messageElement.getAttribute("mesid");
     if (mesId) {
       // Call the existing render function for each visible message
+      // Note: We're not updating lastSimJsonString here as it's handled by the caller
       renderTrackerWithoutSim(
         parseInt(mesId, 10),
         get_settings,

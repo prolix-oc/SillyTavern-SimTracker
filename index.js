@@ -112,12 +112,7 @@ jQuery(async () => {
     const wrappedRefreshAllCards = () => refreshAllCards(
       get_settings, 
       CONTAINER_ID, 
-      (mesId) => {
-        const updatedLastSimJsonString = renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
-        if (updatedLastSimJsonString !== undefined) {
-          lastSimJsonString = updatedLastSimJsonString;
-        }
-      },
+      renderTrackerWithoutSim,
       compiledWrapperTemplate,
       compiledCardTemplate,
       getReactionEmoji,
@@ -511,19 +506,25 @@ characters:
       // Clear generation in progress flag when message is rendered
       setGenerationInProgress(false);
       const updatedLastSimJsonString = renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
-      if (updatedLastSimJsonString !== undefined) {
+      if (updatedLastSimJsonString !== undefined && updatedLastSimJsonString !== lastSimJsonString) {
         lastSimJsonString = updatedLastSimJsonString;
       }
     });
     
-    eventSource.on(event_types.CHAT_CHANGED, wrappedRefreshAllCards);
-    eventSource.on(event_types.MORE_MESSAGES_LOADED, wrappedRefreshAllCards);
-    eventSource.on(event_types.MESSAGE_UPDATED, wrappedRefreshAllCards);
+    eventSource.on(event_types.CHAT_CHANGED, () => {
+      refreshAllCards(get_settings, CONTAINER_ID, renderTrackerWithoutSim, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+    });
+    eventSource.on(event_types.MORE_MESSAGES_LOADED, () => {
+      refreshAllCards(get_settings, CONTAINER_ID, renderTrackerWithoutSim, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+    });
+    eventSource.on(event_types.MESSAGE_UPDATED, () => {
+      refreshAllCards(get_settings, CONTAINER_ID, renderTrackerWithoutSim, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+    });
     
     eventSource.on(event_types.MESSAGE_EDITED, (mesId) => {
       log(`Message ${mesId} was edited. Re-rendering tracker card.`);
       const updatedLastSimJsonString = renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
-      if (updatedLastSimJsonString !== undefined) {
+      if (updatedLastSimJsonString !== undefined && updatedLastSimJsonString !== lastSimJsonString) {
         lastSimJsonString = updatedLastSimJsonString;
       }
     });
@@ -538,7 +539,7 @@ characters:
       }
       // Re-render the tracker for the swiped message
       const updatedLastSimJsonString = renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
-      if (updatedLastSimJsonString !== undefined) {
+      if (updatedLastSimJsonString !== undefined && updatedLastSimJsonString !== lastSimJsonString) {
         lastSimJsonString = updatedLastSimJsonString;
       }
     });
@@ -570,7 +571,7 @@ characters:
       });
     });
 
-    wrappedRefreshAllCards();
+    refreshAllCards(get_settings, CONTAINER_ID, renderTrackerWithoutSim, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
     log(`${MODULE_NAME} has been successfully loaded.`);
   } catch (error) {
     console.error(
