@@ -65,7 +65,6 @@ import {
   updateLastSimStatsOnRegenerateOrSwipe,
   filterSimBlocksInPrompt,
   migrateAllSimData,
-  parseTrackerData
 } from "./utils.js";
 
 import {
