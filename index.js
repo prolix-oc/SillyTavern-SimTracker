@@ -1,14 +1,24 @@
-import { getContext, extension_settings } from "../../../extensions.js";
-import {
+import { 
+  getContext, 
+  extension_settings, 
   saveSettingsDebounced,
+  eventSource,
+  event_types
+} from "../../../extensions.js";
+import { 
   messageFormatting,
   Generate,
+  saveSettingsDebounced as saveSettingsDebouncedMain 
 } from "../../../../script.js";
-import { MacrosParser } from "../../../macros.js";
-import { SlashCommand } from "../../../slash-commands/SlashCommand.js";
-import { SlashCommandParser } from "../../../slash-commands/SlashCommandParser.js";
+import { 
+  MacrosParser 
+} from "../../../macros.js";
+import { 
+  SlashCommandParser,
+  SlashCommand
+} from "../../../slash-commands/SlashCommandParser.js";
 
-// Import from our new modules
+// Import from our modules
 import {
   renderTracker,
   renderTrackerWithoutSim,
@@ -31,7 +41,6 @@ import {
   populateTemplateDropdown,
   handleCustomTemplateUpload,
   loadTemplate,
-  extractTemplatePosition,
   currentTemplatePosition
 } from "./templating.js";
 
@@ -55,7 +64,8 @@ import {
   getInactiveReasonEmoji,
   updateLastSimStatsOnRegenerateOrSwipe,
   filterSimBlocksInPrompt,
-  migrateAllSimData
+  migrateAllSimData,
+  parseTrackerData
 } from "./utils.js";
 
 import {
@@ -134,85 +144,178 @@ jQuery(async () => {
     log("Settings panel listeners initialized.");
     await wrappedLoadTemplate();
 
+    // Function to validate if a sim block is complete and valid
+const isValidSimBlock = (content, identifier) => {
+  try {
+    // Check if content exists and is not empty
+    if (!content || content.trim() === "") {
+      return false;
+    }
+    
+    // Remove the identifier and any leading/trailing whitespace
+    let cleanContent = content.trim();
+    if (cleanContent.startsWith(identifier)) {
+      cleanContent = cleanContent.substring(identifier.length).trim();
+    }
+    
+    // Check if it looks like a complete block (starts and ends properly)
+    const trimmedContent = cleanContent.trim();
+    
+    // For JSON format
+    if ((trimmedContent.startsWith("{") && trimmedContent.endsWith("}")) || 
+        (trimmedContent.startsWith("[") && trimmedContent.endsWith("]"))) {
+      // Try to parse JSON to validate completeness
+      const parsed = JSON.parse(trimmedContent);
+      // Additional validation - check if it has the expected structure
+      if (typeof parsed === 'object' && parsed !== null) {
+        // For modern format, check if it has worldData and characters
+        if (parsed.worldData !== undefined && parsed.characters !== undefined) {
+          return Array.isArray(parsed.characters);
+        }
+        // For legacy format, check if it has at least one character-like property
+        const keys = Object.keys(parsed);
+        return keys.length > 0;
+      }
+      return false;
+    }
+    
+    // For YAML format (simpler validation)
+    // Check if it has some key-value structure or array structure
+    if (trimmedContent.includes(":") || trimmedContent.startsWith("-")) {
+      // Try to parse YAML to validate completeness
+      const parsed = parseTrackerData(trimmedContent);
+      // Additional validation - check if it has the expected structure
+      if (typeof parsed === 'object' && parsed !== null) {
+        // For modern format, check if it has worldData and characters
+        if (parsed.worldData !== undefined && parsed.characters !== undefined) {
+          return Array.isArray(parsed.characters);
+        }
+        // For legacy format, check if it has at least one character-like property
+        const keys = Object.keys(parsed);
+        return keys.length > 0;
+      }
+      return false;
+    }
+    
+    // If we can't determine the format but it's not empty, assume it might be valid
+    // This is a fallback for cases where we can't easily validate
+    return trimmedContent.length > 0;
+  } catch (error) {
+    // If parsing fails, it's not a valid complete block
+    log(`Sim block validation failed: ${error.message}`);
+    return false;
+  }
+};
     // Set up MutationObserver to hide sim code blocks as they stream in
-    log("Setting up MutationObserver for in-flight sim block hiding...");
-    const observer = new MutationObserver((mutations) => {
-      // Only process if the extension is enabled, hiding is turned on, and generation is in progress
-      if (
-        !get_settings("isEnabled") ||
-        !get_settings("hideSimBlocks") ||
-        !getGenerationInProgress()
-      )
-        return;
+  log("Setting up MutationObserver for in-flight sim block hiding...");
+  const observer = new MutationObserver((mutations) => {
+    // Only process if the extension is enabled and hiding is turned on
+    if (!get_settings("isEnabled") || !get_settings("hideSimBlocks")) return;
 
-      mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          // Check if the added node is a pre element or contains pre elements
-          if (node.nodeType === Node.ELEMENT_NODE) {
-            const preElements =
-              node.tagName === "PRE" ? [node] : node.querySelectorAll("pre");
-            preElements.forEach((pre) => {
-              // Check if this pre element is within a mes_text div and contains sim data
-              if (pre.closest(".mes_text")) {
-                // Check if this is a sim code block
-                const codeElement = pre.querySelector("code");
-                if (codeElement) {
-                  const identifier = get_settings("codeBlockIdentifier");
-                  const classList = codeElement.classList;
-                  // Check if any class matches our identifier (like language-sim)
-                  const isSimBlock =
-                    Array.from(classList).some((cls) =>
-                      cls.includes(identifier)
-                    ) || codeElement.textContent.trim().startsWith(identifier);
+    mutations.forEach((mutation) => {
+      mutation.addedNodes.forEach((node) => {
+        // Check if the added node is a pre element or contains pre elements
+        if (node.nodeType === Node.ELEMENT_NODE) {
+          const preElements =
+            node.tagName === "PRE" ? [node] : node.querySelectorAll("pre");
+          preElements.forEach((pre) => {
+            // Check if this pre element is within a mes_text div and contains sim data
+            if (pre.closest(".mes_text")) {
+              // Check if this is a sim code block
+              const codeElement = pre.querySelector("code");
+              if (codeElement) {
+                const identifier = get_settings("codeBlockIdentifier");
+                const classList = codeElement.classList;
+                // Check if any class matches our identifier (like language-sim)
+                const isSimBlock =
+                  Array.from(classList).some((cls) =>
+                    cls.includes(identifier)
+                  ) || codeElement.textContent.trim().startsWith(identifier);
 
-                  if (isSimBlock) {
-                    log(`Hiding in-flight code block in mes_text`);
+                if (isSimBlock) {
+                  // Extract the content
+                  const content = codeElement.textContent.trim();
+                  
+                  // Validate if this is a complete, valid sim block
+                  if (isValidSimBlock(content, identifier)) {
+                    log(`Found complete sim block, processing...`);
+                    
+                    // Hide the code block
                     pre.style.display = "none";
-
-                    // Add "Preparing new tracker cards..." text with pulsing animation
+                    
+                    // Get the message element
                     const mesText = pre.closest(".mes_text");
-                    if (mesText && !mesTextsWithPreparingText.has(mesText)) {
-                      // Mark this mesText as having preparing text
-                      mesTextsWithPreparingText.add(mesText);
+                    if (mesText) {
+                      // Get the message ID
+                      const messageElement = mesText.closest("[mesid]");
+                      if (messageElement) {
+                        const mesId = parseInt(messageElement.getAttribute("mesid"), 10);
+                        if (!isNaN(mesId)) {
+                          // Trigger tracker rendering for this message
+                          log(`Rendering tracker for message ID ${mesId}`);
+                          renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+                        }
+                      }
+                    }
+                    
+                    // Remove any preparing text for this message
+                    const preparingText = mesText.parentNode.querySelector(".sst-preparing-text");
+                    if (preparingText) {
+                      preparingText.remove();
+                      mesTextsWithPreparingText.delete(mesText);
+                    }
+                  } else {
+                    // If it's an incomplete block and we're in generation mode, show preparing text
+                    if (getGenerationInProgress()) {
+                      log(`Hiding in-flight code block in mes_text`);
+                      pre.style.display = "none";
 
-                      const preparingText = document.createElement("div");
-                      preparingText.className = "sst-preparing-text";
-                      preparingText.textContent =
-                        "Preparing new tracker cards...";
-                      preparingText.style.cssText = `
-                                            color: #4a3a9d; /* Darker blue */
-                                            font-style: italic;
-                                            margin: 10px 0;
-                                            animation: sst-pulse 1.5s infinite;
-                                        `;
-                      // Insert after mesText instead of appending to it
-                      mesText.parentNode.insertBefore(
-                        preparingText,
-                        mesText.nextSibling
-                      );
+                      // Add "Preparing new tracker cards..." text with pulsing animation
+                      const mesText = pre.closest(".mes_text");
+                      if (mesText && !mesTextsWithPreparingText.has(mesText)) {
+                        // Mark this mesText as having preparing text
+                        mesTextsWithPreparingText.add(mesText);
 
-                      // Add the pulse animation to the document if not already present
-                      if (!document.getElementById("sst-pulse-animation")) {
-                        const style = document.createElement("style");
-                        style.id = "sst-pulse-animation";
-                        style.textContent = `
-                                                @keyframes sst-pulse {
-                                                    0% { opacity: 0.5; }
-                                                    50% { opacity: 1; }
-                                                    100% { opacity: 0.5; }
-                                                }
-                                            `;
-                        document.head.appendChild(style);
+                        const preparingText = document.createElement("div");
+                        preparingText.className = "sst-preparing-text";
+                        preparingText.textContent =
+                          "Preparing new tracker cards...";
+                        preparingText.style.cssText = `
+                          color: #4a3a9d; /* Darker blue */
+                          font-style: italic;
+                          margin: 10px 0;
+                          animation: sst-pulse 1.5s infinite;
+                        `;
+                        // Insert after mesText instead of appending to it
+                        mesText.parentNode.insertBefore(
+                          preparingText,
+                          mesText.nextSibling
+                        );
+
+                        // Add the pulse animation to the document if not already present
+                        if (!document.getElementById("sst-pulse-animation")) {
+                          const style = document.createElement("style");
+                          style.id = "sst-pulse-animation";
+                          style.textContent = `
+                            @keyframes sst-pulse {
+                              0% { opacity: 0.5; }
+                              50% { opacity: 1; }
+                              100% { opacity: 0.5; }
+                            }
+                          `;
+                          document.head.appendChild(style);
+                        }
                       }
                     }
                   }
                 }
               }
-            });
-          }
-        });
+            }
+          });
+        }
       });
     });
+  });
 
     // Start observing for changes in the document
     observer.observe(document.body, {
@@ -510,10 +613,8 @@ characters:
     eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (mesId) => {
       // Clear generation in progress flag when message is rendered
       setGenerationInProgress(false);
-      const updatedLastSimJsonString = renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
-      if (updatedLastSimJsonString !== undefined) {
-        lastSimJsonString = updatedLastSimJsonString;
-      }
+      // The MutationObserver will handle rendering when it detects complete sim blocks
+      // We don't need to trigger rendering directly here anymore
     });
     
     eventSource.on(event_types.CHAT_CHANGED, wrappedRefreshAllCards);
@@ -521,26 +622,19 @@ characters:
     eventSource.on(event_types.MESSAGE_UPDATED, wrappedRefreshAllCards);
     
     eventSource.on(event_types.MESSAGE_EDITED, (mesId) => {
-      log(`Message ${mesId} was edited. Re-rendering tracker card.`);
-      const updatedLastSimJsonString = renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
-      if (updatedLastSimJsonString !== undefined) {
-        lastSimJsonString = updatedLastSimJsonString;
-      }
+      log(`Message ${mesId} was edited.`);
+      // The MutationObserver will handle re-rendering when it detects the updated content
     });
     
     eventSource.on(event_types.MESSAGE_SWIPE, (mesId) => {
       log(
-        `Message swipe detected for message ID ${mesId}. Updating last_sim_stats macro and re-rendering tracker.`
+        `Message swipe detected for message ID ${mesId}. Updating last_sim_stats macro.`
       );
       const updatedStats = updateLastSimStatsOnRegenerateOrSwipe(mesId, get_settings);
       if (updatedStats) {
         lastSimJsonString = updatedStats;
       }
-      // Re-render the tracker for the swiped message
-      const updatedLastSimJsonString = renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
-      if (updatedLastSimJsonString !== undefined) {
-        lastSimJsonString = updatedLastSimJsonString;
-      }
+      // The MutationObserver will handle re-rendering when it detects the updated content
     });
 
     // Listen for generation ended event to update sidebars
