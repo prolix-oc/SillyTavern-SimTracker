@@ -853,8 +853,9 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
       }
     }
     
-    // Return the updated lastSimJsonString so the caller can update the global variable
-    return updatedLastSimJsonString;
+    // If we get here, it means there was no sim data in the message
+    // Return the original lastSimJsonString
+    return lastSimJsonString;
   } catch (error) {
     console.log(`[SST] [${MODULE_NAME}]`,
       `A critical error occurred in renderTrackerWithoutSim for message ID ${mesId}. Please check the console. Error: ${error.stack}`
