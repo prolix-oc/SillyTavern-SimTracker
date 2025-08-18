@@ -630,7 +630,8 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
         .trim();
 
       // Update lastSimJsonString
-      lastSimJsonString = jsonContent;
+      // We'll return this value so the caller can update the global variable
+      const updatedLastSimJsonString = jsonContent;
 
       // Remove any preparing text
       const preparingText = messageElement.parentNode.querySelector(".sst-preparing-text");
@@ -839,10 +840,15 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
           break;
       }
     }
+    
+    // Return the updated lastSimJsonString so the caller can update the global variable
+    return updatedLastSimJsonString;
   } catch (error) {
     console.log(`[SST] [${MODULE_NAME}]`,
       `A critical error occurred in renderTrackerWithoutSim for message ID ${mesId}. Please check the console. Error: ${error.stack}`
     );
+    // Return the original lastSimJsonString if there was an error
+    return lastSimJsonString;
   }
 };
 

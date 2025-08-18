@@ -112,7 +112,12 @@ jQuery(async () => {
     const wrappedRefreshAllCards = () => refreshAllCards(
       get_settings, 
       CONTAINER_ID, 
-      (mesId) => renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString),
+      (mesId) => {
+        const updatedLastSimJsonString = renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+        if (updatedLastSimJsonString !== undefined) {
+          lastSimJsonString = updatedLastSimJsonString;
+        }
+      },
       compiledWrapperTemplate,
       compiledCardTemplate,
       getReactionEmoji,
@@ -505,7 +510,10 @@ characters:
     eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, (mesId) => {
       // Clear generation in progress flag when message is rendered
       setGenerationInProgress(false);
-      renderTracker(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+      const updatedLastSimJsonString = renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+      if (updatedLastSimJsonString !== undefined) {
+        lastSimJsonString = updatedLastSimJsonString;
+      }
     });
     
     eventSource.on(event_types.CHAT_CHANGED, wrappedRefreshAllCards);
@@ -514,16 +522,24 @@ characters:
     
     eventSource.on(event_types.MESSAGE_EDITED, (mesId) => {
       log(`Message ${mesId} was edited. Re-rendering tracker card.`);
-      renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+      const updatedLastSimJsonString = renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+      if (updatedLastSimJsonString !== undefined) {
+        lastSimJsonString = updatedLastSimJsonString;
+      }
     });
     
     eventSource.on(event_types.MESSAGE_SWIPE, (mesId) => {
       log(
-        `Message swipe detected for message ID ${mesId}. Updating last_sim_stats macro.`
+        `Message swipe detected for message ID ${mesId}. Updating last_sim_stats macro and re-rendering tracker.`
       );
       const updatedStats = updateLastSimStatsOnRegenerateOrSwipe(mesId, get_settings);
       if (updatedStats) {
         lastSimJsonString = updatedStats;
+      }
+      // Re-render the tracker for the swiped message
+      const updatedLastSimJsonString = renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+      if (updatedLastSimJsonString !== undefined) {
+        lastSimJsonString = updatedLastSimJsonString;
       }
     });
 
