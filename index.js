@@ -1,16 +1,7 @@
 import { 
-  getContext, 
-  extension_settings, 
-  saveSettingsDebounced,
-} from "../../../extensions.js";
-import { 
   messageFormatting,
   Generate,
-  saveSettingsDebounced as saveSettingsDebouncedMain 
 } from "../../../../script.js";
-
-const { registerMacro } = SillyTavern.getContext();
-
 
 // Import from our modules
 import {
