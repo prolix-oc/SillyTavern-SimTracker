@@ -8,13 +8,9 @@ import {
   Generate,
   saveSettingsDebounced as saveSettingsDebouncedMain 
 } from "../../../../script.js";
-import { 
-  MacrosParser 
-} from "../../../macros.js";
-import { 
-  SlashCommandParser,
-  SlashCommand
-} from "../../../slash-commands/SlashCommandParser.js";
+
+const { registerMacro } = SillyTavern.getContext();
+
 
 // Import from our modules
 import {
@@ -324,13 +320,13 @@ const isValidSimBlock = (content, identifier) => {
     log("MutationObserver set up for in-flight sim block hiding.");
 
     log("Registering macros...");
-    MacrosParser.registerMacro("sim_tracker", () => {
+    registerMacro("sim_tracker", () => {
       if (!get_settings("isEnabled")) return "";
       log("Processed {{sim_tracker}} macro.");
       return get_settings("datingSimPrompt");
     });
 
-    MacrosParser.registerMacro("last_sim_stats", () => {
+    registerMacro("last_sim_stats", () => {
       if (!get_settings("isEnabled")) return "";
       log("Processed {{last_sim_stats}} macro.");
       return lastSimJsonString || "{}";
@@ -400,7 +396,7 @@ const isValidSimBlock = (content, identifier) => {
       })
     );
 
-    MacrosParser.registerMacro("sim_format", () => {
+    registerMacro("sim_format", () => {
       if (!get_settings("isEnabled")) return "";
       const fields = get_settings("customFields") || [];
       const format = get_settings("trackerFormat") || "json";
@@ -461,7 +457,7 @@ ${exampleJson}
     });
 
     // Register a new macro for positionable tracker replacement
-    MacrosParser.registerMacro("sim_tracker_positioned", () => {
+    registerMacro("sim_tracker_positioned", () => {
       if (!get_settings("isEnabled")) return "";
       log("Processed {{sim_tracker_positioned}} macro.");
 
