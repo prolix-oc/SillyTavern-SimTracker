@@ -88,7 +88,12 @@ const updateLastSimStatsOnRegenerateOrSwipe = (currentMesId = null, get_settings
       const match = message.mes.match(simRegex);
 
       if (match) {
-        // Extract content from the match\n        const fullContent = match[0];\n        const content = fullContent\n          .replace(/```/g, \"\")\n          .replace(new RegExp(`^${identifier}\\\\s*`), \"\")\n          .trim();
+        // Extract content from the match
+        
+        const fullContent = match[0];
+        const content = fullContent          .replace(/```/g, "")
+          .replace(new RegExp(`^${identifier}\\\\s*`), "")
+          .trim();
 
         // Update the lastSimJsonString with the found message's sim data
         return content;
