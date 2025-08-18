@@ -574,7 +574,7 @@ const renderTracker = async (mesId, get_settings, compiledWrapperTemplate, compi
 };
 
 const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString) => {
-    try {
+  try {
     if (!get_settings("isEnabled")) return lastSimJsonString;
 
     const context = getContext();
@@ -600,7 +600,7 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
 
     // Hide sim blocks if the setting is enabled
     if (get_settings("hideSimBlocks")) {
-      const hideRegex = new RegExp("```" + identifier + "[\\\\s\\\\S]*?```", "gm");
+      const hideRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
       displayMessage = displayMessage.replace(
         hideRegex,
         (match) => `<span style="display: none !important;">${match}</span>`
@@ -618,7 +618,7 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
 
     // Parse the sim data from the original message content (not the hidden version)
     const dataMatch = message.mes.match(
-      new RegExp("```" + identifier + "[\\\\s\\\\S]*?```", "m")
+      new RegExp("```" + identifier + "[\\s\\S]*?```", "m")
     );
 
     if (dataMatch && dataMatch[0]) {
@@ -632,7 +632,7 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
 
       const jsonContent = dataMatch[0]
         .replace(/```/g, "")
-        .replace(new RegExp(`^${identifier}\\\\s*`), "")
+        .replace(new RegExp(`^${identifier}\s*`), "")
         .trim();
 
       // Update lastSimJsonString
@@ -851,13 +851,10 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
           messageElement.insertAdjacentHTML("beforeend", finalHtml);
           break;
       }
-      
-      // Return the updated lastSimJsonString so the caller can update the global variable
-      return updatedLastSimJsonString;
     }
     
-    // Return the original lastSimJsonString if there was no data
-    return lastSimJsonString;
+    // Return the updated lastSimJsonString so the caller can update the global variable
+    return updatedLastSimJsonString;
   } catch (error) {
     console.log(`[SST] [${MODULE_NAME}]`,
       `A critical error occurred in renderTrackerWithoutSim for message ID ${mesId}. Please check the console. Error: ${error.stack}`
