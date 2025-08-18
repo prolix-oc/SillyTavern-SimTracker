@@ -2,8 +2,6 @@ import {
   getContext, 
   extension_settings, 
   saveSettingsDebounced,
-  eventSource,
-  event_types
 } from "../../../extensions.js";
 import { 
   messageFormatting,
@@ -73,6 +71,7 @@ import {
 } from "./formatUtils.js";
 
 const MODULE_NAME = "silly-sim-tracker";
+const context = SillyTavern.getContext();
 
 let lastSimJsonString = "";
 // Keep track of when we're expecting code blocks to be generated
@@ -482,7 +481,6 @@ ${exampleJson}
           }
 
           try {
-            const context = getContext();
             if (!context || !context.chat || context.chat.length === 0) {
               return "No chat history found.";
             }
@@ -596,7 +594,6 @@ characters:
       })
     );
 
-    const context = getContext();
     const { eventSource, event_types } = context;
 
     // Set generation in progress flag when generation starts
