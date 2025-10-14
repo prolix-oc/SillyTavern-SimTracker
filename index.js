@@ -127,9 +127,6 @@ jQuery(async () => {
     // Set up MutationObserver to hide sim code blocks as they stream in
     log("Setting up MutationObserver for in-flight sim block hiding...");
     
-    // Debounce timer to avoid processing too frequently
-    let processingTimeout = null;
-    
     const observer = new MutationObserver((mutations) => {
       // Only process if the extension is enabled, hiding is turned on, and generation is in progress
       if (
@@ -139,22 +136,32 @@ jQuery(async () => {
       )
         return;
 
-      // Clear existing timeout
-      if (processingTimeout) {
-        clearTimeout(processingTimeout);
-      }
-
-      // Debounce the processing to avoid excessive calls during rapid streaming
-      processingTimeout = setTimeout(() => {
-        const identifier = get_settings("codeBlockIdentifier");
-        const escapedIdentifier = identifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-        
-        // Find all mes_text elements in the chat
-        const mesTextElements = document.querySelectorAll("#chat .mes_text");
-        
-        mesTextElements.forEach((mesText) => {
-          // Look for any pre elements that might contain sim data
-          const preElements = mesText.querySelectorAll("pre");
+      const identifier = get_settings("codeBlockIdentifier");
+      const escapedIdentifier = identifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      
+      // Process each mutation immediately for faster response
+      mutations.forEach((mutation) => {
+        // Check added nodes
+        mutation.addedNodes.forEach((node) => {
+          if (node.nodeType !== Node.ELEMENT_NODE) return;
+          
+          // Find the mes_text parent to determine if this is in a message currently being generated
+          const mesText = node.closest ? node.closest(".mes_text") : null;
+          if (!mesText) return;
+          
+          // Only process messages that don't already have tracker cards (i.e., currently streaming)
+          const parentMes = mesText.closest(".mes");
+          if (!parentMes) return;
+          
+          // Check if this message already has tracker cards rendered
+          const hasTrackerCards = parentMes.querySelector(`#${CONTAINER_ID}`);
+          if (hasTrackerCards) {
+            // This is an old message, don't add preparing text
+            return;
+          }
+          
+          // Get all pre elements from this node
+          const preElements = node.tagName === "PRE" ? [node] : node.querySelectorAll("pre");
           
           preElements.forEach((pre) => {
             // Skip if already hidden
@@ -181,6 +188,7 @@ jQuery(async () => {
               pre.style.display = "none";
               
               // Add "Preparing new tracker cards..." text with pulsing animation
+              // Only if this mesText doesn't already have preparing text
               if (!mesTextsWithPreparingText.has(mesText)) {
                 // Mark this mesText as having preparing text
                 mesTextsWithPreparingText.add(mesText);
@@ -218,7 +226,68 @@ jQuery(async () => {
             }
           });
         });
-      }, 50); // 50ms debounce - fast enough to catch streaming but not too aggressive
+        
+        // Also check for character data changes (text content updates during streaming)
+        if (mutation.type === 'characterData' && mutation.target.parentElement) {
+          const pre = mutation.target.parentElement.closest('pre');
+          if (!pre) return;
+          
+          const mesText = pre.closest(".mes_text");
+          if (!mesText) return;
+          
+          // Only process messages that don't already have tracker cards
+          const parentMes = mesText.closest(".mes");
+          if (!parentMes) return;
+          
+          const hasTrackerCards = parentMes.querySelector(`#${CONTAINER_ID}`);
+          if (hasTrackerCards) return;
+          
+          // Skip if already hidden
+          if (pre.style.display === "none") return;
+          
+          const preText = pre.textContent || pre.innerText || "";
+          const codeBlockPattern = new RegExp(`\`\`\`\\s*${escapedIdentifier}`, 'i');
+          const isSimBlock = codeBlockPattern.test(preText) || 
+                            preText.trim().toLowerCase().startsWith(identifier.toLowerCase());
+          
+          if (isSimBlock) {
+            log(`Hiding in-flight sim code block (text change)`);
+            pre.style.display = "none";
+            
+            if (!mesTextsWithPreparingText.has(mesText)) {
+              mesTextsWithPreparingText.add(mesText);
+              
+              const preparingText = document.createElement("div");
+              preparingText.className = "sst-preparing-text";
+              preparingText.textContent = "Preparing new tracker cards...";
+              preparingText.style.cssText = `
+                color: #4a3a9d;
+                font-style: italic;
+                margin: 10px 0;
+                animation: sst-pulse 1.5s infinite;
+              `;
+              
+              mesText.parentNode.insertBefore(
+                preparingText,
+                mesText.nextSibling
+              );
+              
+              if (!document.getElementById("sst-pulse-animation")) {
+                const style = document.createElement("style");
+                style.id = "sst-pulse-animation";
+                style.textContent = `
+                  @keyframes sst-pulse {
+                    0% { opacity: 0.5; }
+                    50% { opacity: 1; }
+                    100% { opacity: 0.5; }
+                  }
+                `;
+                document.head.appendChild(style);
+              }
+            }
+          }
+        }
+      });
     });
 
     // Start observing for changes in the chat area with more comprehensive options
