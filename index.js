@@ -16,9 +16,12 @@ import {
   updateLeftSidebar,
   updateRightSidebar,
   removeGlobalSidebars,
+  attachTabEventListeners,
   isGenerationInProgress,
   pendingLeftSidebarContent,
   pendingRightSidebarContent,
+  getPendingLeftSidebarContent,
+  getPendingRightSidebarContent,
   mesTextsWithPreparingText,
   setGenerationInProgress,
   getGenerationInProgress,
@@ -525,15 +528,27 @@ characters:
       setGenerationInProgress(false);
 
       // Update left sidebar if there's pending content
-      if (pendingLeftSidebarContent) {
-        updateLeftSidebar(pendingLeftSidebarContent);
-        // Note: pendingLeftSidebarContent is managed within renderer module
+      const leftContent = getPendingLeftSidebarContent();
+      if (leftContent) {
+        log("Applying pending left sidebar content after generation ended");
+        updateLeftSidebar(leftContent);
+        // Re-attach event listeners after updating
+        const leftSidebarElement = document.querySelector("#sst-sidebar-left-content");
+        if (leftSidebarElement) {
+          attachTabEventListeners(leftSidebarElement);
+        }
       }
 
       // Update right sidebar if there's pending content
-      if (pendingRightSidebarContent) {
-        updateRightSidebar(pendingRightSidebarContent);
-        // Note: pendingRightSidebarContent is managed within renderer module
+      const rightContent = getPendingRightSidebarContent();
+      if (rightContent) {
+        log("Applying pending right sidebar content after generation ended");
+        updateRightSidebar(rightContent);
+        // Re-attach event listeners after updating
+        const rightSidebarElement = document.querySelector("#sst-sidebar-right-content");
+        if (rightSidebarElement) {
+          attachTabEventListeners(rightSidebarElement);
+        }
       }
 
       // Clear any remaining preparing text when generation ends

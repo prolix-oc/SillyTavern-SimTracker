@@ -433,9 +433,6 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
     }
 
     if (match) {
-      // Set flag to indicate we're processing a message with sim data
-      isGenerationInProgress = true;
-
       // Extract content from the match
       const fullContent = match[0];
       const content = fullContent
@@ -987,6 +984,19 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
   }
 };
 
+// Helper function to get and clear pending sidebar content
+const getPendingLeftSidebarContent = () => {
+  const content = pendingLeftSidebarContent;
+  pendingLeftSidebarContent = null;
+  return content;
+};
+
+const getPendingRightSidebarContent = () => {
+  const content = pendingRightSidebarContent;
+  pendingRightSidebarContent = null;
+  return content;
+};
+
 // Export functions
 export {
   updateLeftSidebar,
@@ -1000,6 +1010,8 @@ export {
   isGenerationInProgress,
   pendingLeftSidebarContent,
   pendingRightSidebarContent,
+  getPendingLeftSidebarContent,
+  getPendingRightSidebarContent,
   setGenerationInProgress,
   getGenerationInProgress,
   CONTAINER_ID
