@@ -932,14 +932,6 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
 const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) => {
   console.log(`[SST] [${MODULE_NAME}]`, "Refreshing all tracker cards on screen.");
 
-  // First, remove all existing tracker containers to prevent duplicates
-  document.querySelectorAll(`#${CONTAINER_ID}`).forEach((container) => {
-    container.remove();
-  });
-
-  // Also remove the global sidebars since they'll be recreated if needed
-  removeGlobalSidebars();
-
   // Get all message divs currently in the chat DOM
   const visibleMessages = document.querySelectorAll("div#chat .mes");
   
@@ -970,11 +962,19 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
     }
     
     // Only render the last message with sim data for positioned templates
+    // This will update the sidebar in place if it already exists
     if (lastMessageWithSim !== null) {
       renderTrackerWithoutSim(lastMessageWithSim);
+    } else {
+      // If no message with sim data found, remove the sidebars
+      removeGlobalSidebars();
     }
   } else {
-    // For non-positioned templates (ABOVE, BOTTOM, MACRO), render all messages
+    // For non-positioned templates (ABOVE, BOTTOM, MACRO), remove old containers and render all messages
+    document.querySelectorAll(`#${CONTAINER_ID}`).forEach((container) => {
+      container.remove();
+    });
+    
     visibleMessages.forEach((messageElement) => {
       const mesId = messageElement.getAttribute("mesid");
       if (mesId) {
