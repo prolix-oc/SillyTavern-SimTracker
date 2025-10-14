@@ -172,7 +172,7 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    z-index: 20;
+    z-index: 1000;
     pointer-events: auto;
 }
 
