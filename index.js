@@ -156,7 +156,7 @@ jQuery(async () => {
           // Check if this message already has tracker cards rendered
           const hasTrackerCards = parentMes.querySelector(`#${CONTAINER_ID}`);
           if (hasTrackerCards) {
-            // This is an old message, don't add preparing text
+            // This is an old message, don't process it
             return;
           }
           
@@ -164,129 +164,81 @@ jQuery(async () => {
           const preElements = node.tagName === "PRE" ? [node] : node.querySelectorAll("pre");
           
           preElements.forEach((pre) => {
-            // Skip if already hidden
-            if (pre.style.display === "none") return;
-            
-            // Get the text content of the pre element
-            const preText = pre.textContent || pre.innerText || "";
-            
-            // Check if this looks like a sim codeblock by searching for the identifier
-            // This catches it even if the markdown rendering hasn't completed yet
-            const codeBlockPattern = new RegExp(`\`\`\`\\s*${escapedIdentifier}`, 'i');
-            const isSimBlock = codeBlockPattern.test(preText) || 
-                              preText.trim().toLowerCase().startsWith(identifier.toLowerCase());
-            
-            // Also check for the code element's class (for fully rendered blocks)
-            const codeElement = pre.querySelector("code");
-            const hasSimClass = codeElement && 
-                               Array.from(codeElement.classList).some((cls) =>
-                                 cls.toLowerCase().includes(identifier.toLowerCase())
-                               );
-            
-            if (isSimBlock || hasSimClass) {
-              log(`Hiding in-flight sim code block`);
+            // Pre-emptively hide all pre elements during generation
+            // We'll show them later if they're not sim blocks
+            if (pre.style.display !== "none") {
               pre.style.display = "none";
+              pre.setAttribute("data-sst-hidden", "true");
+            }
+            
+            // Use a short timeout to check if this is a sim block after rendering settles
+            setTimeout(() => {
+              // Get the code element to check for sim class
+              const codeElement = pre.querySelector("code");
+              const hasSimClass = codeElement && 
+                                 Array.from(codeElement.classList).some((cls) =>
+                                   cls.toLowerCase().includes(identifier.toLowerCase())
+                                 );
               
-              // Add "Preparing new tracker cards..." text with pulsing animation
-              // Only if this mesText doesn't already have preparing text
-              if (!mesTextsWithPreparingText.has(mesText)) {
-                // Mark this mesText as having preparing text
-                mesTextsWithPreparingText.add(mesText);
+              // Also check text content for sim identifier
+              const preText = pre.textContent || pre.innerText || "";
+              const codeBlockPattern = new RegExp(`\`\`\`\\s*${escapedIdentifier}`, 'i');
+              const hasSimContent = codeBlockPattern.test(preText) || 
+                                   preText.trim().toLowerCase().startsWith(identifier.toLowerCase());
+              
+              const isSimBlock = hasSimClass || hasSimContent;
+              
+              if (isSimBlock) {
+                // This is a sim block, keep it hidden
+                log(`Confirmed sim code block, keeping hidden`);
+                pre.removeAttribute("data-sst-hidden");
                 
-                const preparingText = document.createElement("div");
-                preparingText.className = "sst-preparing-text";
-                preparingText.textContent = "Preparing new tracker cards...";
-                preparingText.style.cssText = `
-                  color: #4a3a9d;
-                  font-style: italic;
-                  margin: 10px 0;
-                  animation: sst-pulse 1.5s infinite;
-                `;
-                
-                // Insert after mesText instead of appending to it
-                mesText.parentNode.insertBefore(
-                  preparingText,
-                  mesText.nextSibling
-                );
-                
-                // Add the pulse animation to the document if not already present
-                if (!document.getElementById("sst-pulse-animation")) {
-                  const style = document.createElement("style");
-                  style.id = "sst-pulse-animation";
-                  style.textContent = `
-                    @keyframes sst-pulse {
-                      0% { opacity: 0.5; }
-                      50% { opacity: 1; }
-                      100% { opacity: 0.5; }
-                    }
+                // Add "Preparing new tracker cards..." text with pulsing animation
+                // Only if this mesText doesn't already have preparing text
+                if (!mesTextsWithPreparingText.has(mesText)) {
+                  // Mark this mesText as having preparing text
+                  mesTextsWithPreparingText.add(mesText);
+                  
+                  const preparingText = document.createElement("div");
+                  preparingText.className = "sst-preparing-text";
+                  preparingText.textContent = "Preparing new tracker cards...";
+                  preparingText.style.cssText = `
+                    color: #4a3a9d;
+                    font-style: italic;
+                    margin: 10px 0;
+                    animation: sst-pulse 1.5s infinite;
                   `;
-                  document.head.appendChild(style);
+                  
+                  // Insert after mesText instead of appending to it
+                  mesText.parentNode.insertBefore(
+                    preparingText,
+                    mesText.nextSibling
+                  );
+                  
+                  // Add the pulse animation to the document if not already present
+                  if (!document.getElementById("sst-pulse-animation")) {
+                    const style = document.createElement("style");
+                    style.id = "sst-pulse-animation";
+                    style.textContent = `
+                      @keyframes sst-pulse {
+                        0% { opacity: 0.5; }
+                        50% { opacity: 1; }
+                        100% { opacity: 0.5; }
+                      }
+                    `;
+                    document.head.appendChild(style);
+                  }
+                }
+              } else {
+                // Not a sim block, show it
+                if (pre.getAttribute("data-sst-hidden") === "true") {
+                  pre.style.display = "";
+                  pre.removeAttribute("data-sst-hidden");
                 }
               }
-            }
+            }, 10); // 10ms delay to let rendering settle
           });
         });
-        
-        // Also check for character data changes (text content updates during streaming)
-        if (mutation.type === 'characterData' && mutation.target.parentElement) {
-          const pre = mutation.target.parentElement.closest('pre');
-          if (!pre) return;
-          
-          const mesText = pre.closest(".mes_text");
-          if (!mesText) return;
-          
-          // Only process messages that don't already have tracker cards
-          const parentMes = mesText.closest(".mes");
-          if (!parentMes) return;
-          
-          const hasTrackerCards = parentMes.querySelector(`#${CONTAINER_ID}`);
-          if (hasTrackerCards) return;
-          
-          // Skip if already hidden
-          if (pre.style.display === "none") return;
-          
-          const preText = pre.textContent || pre.innerText || "";
-          const codeBlockPattern = new RegExp(`\`\`\`\\s*${escapedIdentifier}`, 'i');
-          const isSimBlock = codeBlockPattern.test(preText) || 
-                            preText.trim().toLowerCase().startsWith(identifier.toLowerCase());
-          
-          if (isSimBlock) {
-            log(`Hiding in-flight sim code block (text change)`);
-            pre.style.display = "none";
-            
-            if (!mesTextsWithPreparingText.has(mesText)) {
-              mesTextsWithPreparingText.add(mesText);
-              
-              const preparingText = document.createElement("div");
-              preparingText.className = "sst-preparing-text";
-              preparingText.textContent = "Preparing new tracker cards...";
-              preparingText.style.cssText = `
-                color: #4a3a9d;
-                font-style: italic;
-                margin: 10px 0;
-                animation: sst-pulse 1.5s infinite;
-              `;
-              
-              mesText.parentNode.insertBefore(
-                preparingText,
-                mesText.nextSibling
-              );
-              
-              if (!document.getElementById("sst-pulse-animation")) {
-                const style = document.createElement("style");
-                style.id = "sst-pulse-animation";
-                style.textContent = `
-                  @keyframes sst-pulse {
-                    0% { opacity: 0.5; }
-                    50% { opacity: 1; }
-                    100% { opacity: 0.5; }
-                  }
-                `;
-                document.head.appendChild(style);
-              }
-            }
-          }
-        }
       });
     });
 
