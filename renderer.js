@@ -1112,22 +1112,25 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
   removeGlobalSidebars();
   
   if (templatePosition === "LEFT" || templatePosition === "RIGHT") {
-    // Find the last message with sim data by iterating backwards
+    // Find the last message with sim data by checking the context.chat array directly
+    // This is more reliable than checking DOM, especially during chat switching
+    const context = getContext();
+    const chat = context.chat;
+    
     let lastMessageWithSim = null;
-    for (let i = visibleMessages.length - 1; i >= 0; i--) {
-      const messageElement = visibleMessages[i];
-      const mesId = messageElement.getAttribute("mesid");
-      if (mesId) {
-        const context = getContext();
-        const message = context.chat[parseInt(mesId, 10)];
+    
+    if (chat && Array.isArray(chat)) {
+      // Iterate backwards through the chat to find the most recent message with sim data
+      for (let i = chat.length - 1; i >= 0; i--) {
+        const message = chat[i];
         if (message) {
           const identifier = get_settings("codeBlockIdentifier");
           const dataMatch = message.mes.match(
             new RegExp("```" + identifier + "[\\s\\S]*?```", "m")
           );
           if (dataMatch && dataMatch[0]) {
-            lastMessageWithSim = parseInt(mesId, 10);
-            console.log(`[SST] [${MODULE_NAME}]`, `Found sim data in message ${lastMessageWithSim}`);
+            lastMessageWithSim = i;
+            console.log(`[SST] [${MODULE_NAME}]`, `Found sim data in context.chat[${i}]`);
             break;
           }
         }
@@ -1141,7 +1144,7 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
       renderTrackerWithoutSim(lastMessageWithSim);
     } else {
       // If no message with sim data found, sidebars were already removed above
-      console.log(`[SST] [${MODULE_NAME}]`, "No sim data found, sidebars removed");
+      console.log(`[SST] [${MODULE_NAME}]`, "No sim data found in chat, sidebars removed");
     }
   } else {
     // For non-positioned templates (TOP, BOTTOM, MACRO), render all messages
