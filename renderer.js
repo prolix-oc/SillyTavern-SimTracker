@@ -923,12 +923,16 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
       try {
         // Use our new universal parser that can handle both JSON and YAML
         jsonData = parseTrackerData(jsonContent);
+        console.log(`[SST] [${MODULE_NAME}]`, `Successfully parsed tracker data for message ${mesId}`);
       } catch (parseError) {
         console.log(`[SST] [${MODULE_NAME}]`,
           `Failed to parse tracker data in message ID ${mesId}. Error: ${parseError.message}`
         );
-        const errorHtml = `<div style="color: red; font-family: monospace;">[SillySimTracker] Error: Invalid tracker data format in code block.</div>`;
-        messageElement.insertAdjacentHTML("beforeend", errorHtml);
+        // Only show error in message element if it exists
+        if (messageElement) {
+          const errorHtml = `<div style="color: red; font-family: monospace;">[SillySimTracker] Error: Invalid tracker data format in code block.</div>`;
+          messageElement.insertAdjacentHTML("beforeend", errorHtml);
+        }
         return;
       }
 
@@ -1062,6 +1066,7 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
       }
 
       // Handle different positions
+      console.log(`[SST] [${MODULE_NAME}]`, `Rendering tracker for position: ${templatePosition}, mesId: ${mesId}`);
       switch (templatePosition) {
         case "TOP":
           // Insert above the message content (inside the message block)
@@ -1086,10 +1091,12 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
           break;
         case "LEFT":
           // Update the global left sidebar with the latest data
+          console.log(`[SST] [${MODULE_NAME}]`, `Calling updateLeftSidebar for mesId ${mesId}`);
           updateLeftSidebar(compiledWrapperTemplate({ cardsHtml }));
           break;
         case "RIGHT":
           // Update the global right sidebar with the latest data
+          console.log(`[SST] [${MODULE_NAME}]`, `Calling updateRightSidebar for mesId ${mesId}`);
           updateRightSidebar(compiledWrapperTemplate({ cardsHtml }));
           break;
         case "MACRO":
