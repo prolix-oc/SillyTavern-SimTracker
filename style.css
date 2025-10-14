@@ -172,7 +172,7 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    z-index: 1000;
+    z-index: 20;
     pointer-events: auto;
 }
 
@@ -219,6 +219,7 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     gap: 20px !important;
     width: 100% !important;
     box-sizing: border-box !important;
+    pointer-events: auto !important;
 }
 
 .sim-tracker-card {
