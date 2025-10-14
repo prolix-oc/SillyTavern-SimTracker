@@ -126,6 +126,10 @@ jQuery(async () => {
 
     // Set up MutationObserver to hide sim code blocks as they stream in
     log("Setting up MutationObserver for in-flight sim block hiding...");
+    
+    // Debounce timer to avoid processing too frequently
+    let processingTimeout = null;
+    
     const observer = new MutationObserver((mutations) => {
       // Only process if the extension is enabled, hiding is turned on, and generation is in progress
       if (
@@ -135,80 +139,106 @@ jQuery(async () => {
       )
         return;
 
-      mutations.forEach((mutation) => {
-        mutation.addedNodes.forEach((node) => {
-          // Check if the added node is a pre element or contains pre elements
-          if (node.nodeType === Node.ELEMENT_NODE) {
-            const preElements =
-              node.tagName === "PRE" ? [node] : node.querySelectorAll("pre");
-            preElements.forEach((pre) => {
-              // Check if this pre element is within a mes_text div and contains sim data
-              if (pre.closest(".mes_text")) {
-                // Check if this is a sim code block
-                const codeElement = pre.querySelector("code");
-                if (codeElement) {
-                  const identifier = get_settings("codeBlockIdentifier");
-                  const classList = codeElement.classList;
-                  // Check if any class matches our identifier (like language-sim)
-                  const isSimBlock =
-                    Array.from(classList).some((cls) =>
-                      cls.includes(identifier)
-                    ) || codeElement.textContent.trim().startsWith(identifier);
+      // Clear existing timeout
+      if (processingTimeout) {
+        clearTimeout(processingTimeout);
+      }
 
-                  if (isSimBlock) {
-                    log(`Hiding in-flight code block in mes_text`);
-                    pre.style.display = "none";
-
-                    // Add "Preparing new tracker cards..." text with pulsing animation
-                    const mesText = pre.closest(".mes_text");
-                    if (mesText && !mesTextsWithPreparingText.has(mesText)) {
-                      // Mark this mesText as having preparing text
-                      mesTextsWithPreparingText.add(mesText);
-
-                      const preparingText = document.createElement("div");
-                      preparingText.className = "sst-preparing-text";
-                      preparingText.textContent =
-                        "Preparing new tracker cards...";
-                      preparingText.style.cssText = `
-                                            color: #4a3a9d; /* Darker blue */
-                                            font-style: italic;
-                                            margin: 10px 0;
-                                            animation: sst-pulse 1.5s infinite;
-                                        `;
-                      // Insert after mesText instead of appending to it
-                      mesText.parentNode.insertBefore(
-                        preparingText,
-                        mesText.nextSibling
-                      );
-
-                      // Add the pulse animation to the document if not already present
-                      if (!document.getElementById("sst-pulse-animation")) {
-                        const style = document.createElement("style");
-                        style.id = "sst-pulse-animation";
-                        style.textContent = `
-                                                @keyframes sst-pulse {
-                                                    0% { opacity: 0.5; }
-                                                    50% { opacity: 1; }
-                                                    100% { opacity: 0.5; }
-                                                }
-                                            `;
-                        document.head.appendChild(style);
-                      }
+      // Debounce the processing to avoid excessive calls during rapid streaming
+      processingTimeout = setTimeout(() => {
+        const identifier = get_settings("codeBlockIdentifier");
+        const escapedIdentifier = identifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        
+        // Find all mes_text elements in the chat
+        const mesTextElements = document.querySelectorAll("#chat .mes_text");
+        
+        mesTextElements.forEach((mesText) => {
+          // Look for any pre elements that might contain sim data
+          const preElements = mesText.querySelectorAll("pre");
+          
+          preElements.forEach((pre) => {
+            // Skip if already hidden
+            if (pre.style.display === "none") return;
+            
+            // Get the text content of the pre element
+            const preText = pre.textContent || pre.innerText || "";
+            
+            // Check if this looks like a sim codeblock by searching for the identifier
+            // This catches it even if the markdown rendering hasn't completed yet
+            const codeBlockPattern = new RegExp(`\`\`\`\\s*${escapedIdentifier}`, 'i');
+            const isSimBlock = codeBlockPattern.test(preText) || 
+                              preText.trim().toLowerCase().startsWith(identifier.toLowerCase());
+            
+            // Also check for the code element's class (for fully rendered blocks)
+            const codeElement = pre.querySelector("code");
+            const hasSimClass = codeElement && 
+                               Array.from(codeElement.classList).some((cls) =>
+                                 cls.toLowerCase().includes(identifier.toLowerCase())
+                               );
+            
+            if (isSimBlock || hasSimClass) {
+              log(`Hiding in-flight sim code block`);
+              pre.style.display = "none";
+              
+              // Add "Preparing new tracker cards..." text with pulsing animation
+              if (!mesTextsWithPreparingText.has(mesText)) {
+                // Mark this mesText as having preparing text
+                mesTextsWithPreparingText.add(mesText);
+                
+                const preparingText = document.createElement("div");
+                preparingText.className = "sst-preparing-text";
+                preparingText.textContent = "Preparing new tracker cards...";
+                preparingText.style.cssText = `
+                  color: #4a3a9d;
+                  font-style: italic;
+                  margin: 10px 0;
+                  animation: sst-pulse 1.5s infinite;
+                `;
+                
+                // Insert after mesText instead of appending to it
+                mesText.parentNode.insertBefore(
+                  preparingText,
+                  mesText.nextSibling
+                );
+                
+                // Add the pulse animation to the document if not already present
+                if (!document.getElementById("sst-pulse-animation")) {
+                  const style = document.createElement("style");
+                  style.id = "sst-pulse-animation";
+                  style.textContent = `
+                    @keyframes sst-pulse {
+                      0% { opacity: 0.5; }
+                      50% { opacity: 1; }
+                      100% { opacity: 0.5; }
                     }
-                  }
+                  `;
+                  document.head.appendChild(style);
                 }
               }
-            });
-          }
+            }
+          });
         });
-      });
+      }, 50); // 50ms debounce - fast enough to catch streaming but not too aggressive
     });
 
-    // Start observing for changes in the document
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true,
-    });
+    // Start observing for changes in the chat area with more comprehensive options
+    const chatElement = document.getElementById("chat");
+    if (chatElement) {
+      observer.observe(chatElement, {
+        childList: true,
+        subtree: true,
+        characterData: true, // Watch for text content changes
+        characterDataOldValue: false
+      });
+    } else {
+      // Fallback to body if chat element not found yet
+      observer.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true,
+        characterDataOldValue: false
+      });
+    }
 
     log("MutationObserver set up for in-flight sim block hiding.");
 
