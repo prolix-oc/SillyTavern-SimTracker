@@ -503,7 +503,13 @@ characters:
       renderTracker(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
     });
     
-    eventSource.on(event_types.CHAT_CHANGED, wrappedRefreshAllCards);
+    eventSource.on(event_types.CHAT_CHANGED, () => {
+      log("Chat changed, refreshing all cards and updating sidebars");
+      // First remove any existing sidebars from the previous chat
+      removeGlobalSidebars();
+      // Then refresh all cards for the new chat
+      wrappedRefreshAllCards();
+    });
     eventSource.on(event_types.MORE_MESSAGES_LOADED, wrappedRefreshAllCards);
     eventSource.on(event_types.MESSAGE_UPDATED, wrappedRefreshAllCards);
     
