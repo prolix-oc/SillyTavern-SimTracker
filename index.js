@@ -391,16 +391,6 @@ ${exampleJson}
 \`\`\``;
       }
     });
-
-    // Register a new macro for positionable tracker replacement
-    MacrosParser.registerMacro("sim_tracker_positioned", () => {
-      if (!get_settings("isEnabled")) return "";
-      log("Processed {{sim_tracker_positioned}} macro.");
-
-      // This macro is used for template positioning, but the position is now defined in the template itself
-      // We'll return an empty string as the position is handled during rendering
-      return "";
-    });
     log("Macros registered successfully.");
 
     // Register the slash command for adding sim data to messages
