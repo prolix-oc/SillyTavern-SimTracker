@@ -31,6 +31,7 @@ function updateLeftSidebar(content) {
   // If generation is in progress, store the content for later
   if (isGenerationInProgress) {
     pendingLeftSidebarContent = content;
+    console.log(`[SST] [${MODULE_NAME}]`, "Generation in progress, storing left sidebar content for later");
     return;
   }
 
@@ -39,11 +40,17 @@ function updateLeftSidebar(content) {
 
   // If we don't have a global sidebar yet, create it
   if (!globalLeftSidebar) {
+    console.log(`[SST] [${MODULE_NAME}]`, "Creating new left sidebar");
     // Find the sheld container
     const sheld = document.getElementById("sheld");
     console.log(`[SST] [${MODULE_NAME}]`, "Found sheld element:", sheld);
     if (!sheld) {
-      console.warn("[SST] Could not find sheld container for sidebar");
+      console.warn("[SST] Could not find sheld container for sidebar - will retry with setTimeout");
+      // Retry after a short delay to allow DOM to be ready
+      setTimeout(() => {
+        console.log(`[SST] [${MODULE_NAME}]`, "Retrying left sidebar creation after delay");
+        updateLeftSidebar(content);
+      }, 100);
       return;
     }
 
@@ -141,6 +148,7 @@ function updateRightSidebar(content) {
   // If generation is in progress, store the content for later
   if (isGenerationInProgress) {
     pendingRightSidebarContent = content;
+    console.log(`[SST] [${MODULE_NAME}]`, "Generation in progress, storing right sidebar content for later");
     return;
   }
 
@@ -149,10 +157,16 @@ function updateRightSidebar(content) {
 
   // If we don't have a global sidebar yet, create it
   if (!globalRightSidebar) {
+    console.log(`[SST] [${MODULE_NAME}]`, "Creating new right sidebar");
     // Find the sheld container
     const sheld = document.getElementById("sheld");
     if (!sheld) {
-      console.warn("[SST] Could not find sheld container for sidebar");
+      console.warn("[SST] Could not find sheld container for sidebar - will retry with setTimeout");
+      // Retry after a short delay to allow DOM to be ready
+      setTimeout(() => {
+        console.log(`[SST] [${MODULE_NAME}]`, "Retrying right sidebar creation after delay");
+        updateRightSidebar(content);
+      }, 100);
       return;
     }
 
