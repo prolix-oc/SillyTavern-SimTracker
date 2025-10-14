@@ -44,6 +44,7 @@ import {
   initialize_settings,
   initialize_settings_listeners,
   load_settings_html_manually,
+  refresh_settings_ui,
   defaultSimFields,
   handlePresetExport,
   handlePresetImport,
@@ -122,6 +123,13 @@ jQuery(async () => {
     
     initialize_settings_listeners(wrappedLoadTemplate, wrappedRefreshAllCards, wrappedMigrateAllSimData, wrappedHandleCustomTemplateUpload, wrappedHandlePresetExport, wrappedHandlePresetImport, wrappedShowManagePresetsModal);
     log("Settings panel listeners initialized.");
+    
+    // Wait for SillyTavern's debounced settings to be fully applied
+    // Then refresh the UI to populate it with saved values
+    await new Promise(resolve => setTimeout(resolve, 100));
+    refresh_settings_ui();
+    log("Settings UI refreshed with saved values.");
+    
     await wrappedLoadTemplate();
 
     // Set up MutationObserver to hide sim code blocks (both during streaming and in history)
