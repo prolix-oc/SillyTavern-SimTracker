@@ -173,6 +173,7 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     flex-direction: column;
     justify-content: center;
     z-index: 20;
+    pointer-events: auto;
 }
 
 #sst-global-sidebar-left .sim-tracker-tabs {
