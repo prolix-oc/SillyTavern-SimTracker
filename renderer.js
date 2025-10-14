@@ -1088,6 +1088,15 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
   
   console.log(`[SST] [${MODULE_NAME}]`, `Template position: ${templatePosition}`);
   
+  // Always remove old containers first to ensure clean slate when template changes
+  document.querySelectorAll(`#${CONTAINER_ID}`).forEach((container) => {
+    container.remove();
+  });
+  
+  // Remove existing sidebars when template position changes
+  // This ensures sidebars are destroyed when switching to/from positioned templates
+  removeGlobalSidebars();
+  
   if (templatePosition === "LEFT" || templatePosition === "RIGHT") {
     // Find the last message with sim data by iterating backwards
     let lastMessageWithSim = null;
@@ -1112,21 +1121,16 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
     }
     
     // Only render the last message with sim data for positioned templates
-    // This will update the sidebar in place if it already exists
+    // This will create new sidebars at the correct position
     if (lastMessageWithSim !== null) {
       console.log(`[SST] [${MODULE_NAME}]`, `Rendering sidebar for message ${lastMessageWithSim}`);
       renderTrackerWithoutSim(lastMessageWithSim);
     } else {
-      // If no message with sim data found, remove the sidebars
-      console.log(`[SST] [${MODULE_NAME}]`, "No sim data found, removing sidebars");
-      removeGlobalSidebars();
+      // If no message with sim data found, sidebars were already removed above
+      console.log(`[SST] [${MODULE_NAME}]`, "No sim data found, sidebars removed");
     }
   } else {
-    // For non-positioned templates (ABOVE, BOTTOM, MACRO), remove old containers and render all messages
-    document.querySelectorAll(`#${CONTAINER_ID}`).forEach((container) => {
-      container.remove();
-    });
-    
+    // For non-positioned templates (ABOVE, BOTTOM, MACRO), render all messages
     visibleMessages.forEach((messageElement) => {
       const mesId = messageElement.getAttribute("mesid");
       if (mesId) {
