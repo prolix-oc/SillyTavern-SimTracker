@@ -124,79 +124,65 @@ jQuery(async () => {
     log("Settings panel listeners initialized.");
     await wrappedLoadTemplate();
 
-    // Set up MutationObserver to hide sim code blocks as they stream in
-    log("Setting up MutationObserver for in-flight sim block hiding...");
+    // Set up MutationObserver to hide sim code blocks (both during streaming and in history)
+    log("Setting up MutationObserver for sim block hiding...");
+    
+    const hideSimBlocks = () => {
+      if (!get_settings("isEnabled") || !get_settings("hideSimBlocks")) return;
+      
+      const identifier = get_settings("codeBlockIdentifier");
+      
+      // Find all code elements with the sim class pattern
+      const simCodeElements = document.querySelectorAll(`#chat code[class*="${identifier}"]`);
+      
+      simCodeElements.forEach((codeElement) => {
+        // Find the parent pre element
+        const pre = codeElement.closest("pre");
+        if (pre && pre.style.display !== "none") {
+          log(`Hiding sim code block (class-based detection)`);
+          pre.style.display = "none";
+        }
+      });
+    };
     
     const observer = new MutationObserver((mutations) => {
-      // Only process if the extension is enabled, hiding is turned on, and generation is in progress
-      if (
-        !get_settings("isEnabled") ||
-        !get_settings("hideSimBlocks") ||
-        !getGenerationInProgress()
-      )
-        return;
+      if (!get_settings("isEnabled") || !get_settings("hideSimBlocks")) return;
 
       const identifier = get_settings("codeBlockIdentifier");
-      const escapedIdentifier = identifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const isGenerating = getGenerationInProgress();
       
-      // Process each mutation immediately for faster response
       mutations.forEach((mutation) => {
-        // Check added nodes
         mutation.addedNodes.forEach((node) => {
           if (node.nodeType !== Node.ELEMENT_NODE) return;
           
-          // Find the mes_text parent to determine if this is in a message currently being generated
-          const mesText = node.closest ? node.closest(".mes_text") : null;
-          if (!mesText) return;
-          
-          // Only process messages that don't already have tracker cards (i.e., currently streaming)
-          const parentMes = mesText.closest(".mes");
-          if (!parentMes) return;
-          
-          // Check if this message already has tracker cards rendered
-          const hasTrackerCards = parentMes.querySelector(`#${CONTAINER_ID}`);
-          if (hasTrackerCards) {
-            // This is an old message, don't process it
-            return;
+          // Check if this node is or contains a code element with sim class
+          let codeElements = [];
+          if (node.tagName === "CODE" && node.className.includes(identifier)) {
+            codeElements = [node];
+          } else {
+            codeElements = Array.from(node.querySelectorAll(`code[class*="${identifier}"]`));
           }
           
-          // Get all pre elements from this node
-          const preElements = node.tagName === "PRE" ? [node] : node.querySelectorAll("pre");
-          
-          preElements.forEach((pre) => {
-            // Pre-emptively hide all pre elements during generation
-            // We'll show them later if they're not sim blocks
+          codeElements.forEach((codeElement) => {
+            const pre = codeElement.closest("pre");
+            if (!pre) return;
+            
+            // Hide the pre element
             if (pre.style.display !== "none") {
+              log(`Hiding sim code block`);
               pre.style.display = "none";
-              pre.setAttribute("data-sst-hidden", "true");
             }
             
-            // Use a short timeout to check if this is a sim block after rendering settles
-            setTimeout(() => {
-              // Get the code element to check for sim class
-              const codeElement = pre.querySelector("code");
-              const hasSimClass = codeElement && 
-                                 Array.from(codeElement.classList).some((cls) =>
-                                   cls.toLowerCase().includes(identifier.toLowerCase())
-                                 );
-              
-              // Also check text content for sim identifier
-              const preText = pre.textContent || pre.innerText || "";
-              const codeBlockPattern = new RegExp(`\`\`\`\\s*${escapedIdentifier}`, 'i');
-              const hasSimContent = codeBlockPattern.test(preText) || 
-                                   preText.trim().toLowerCase().startsWith(identifier.toLowerCase());
-              
-              const isSimBlock = hasSimClass || hasSimContent;
-              
-              if (isSimBlock) {
-                // This is a sim block, keep it hidden
-                log(`Confirmed sim code block, keeping hidden`);
-                pre.removeAttribute("data-sst-hidden");
+            // Only show "Preparing" text if we're actively generating
+            if (isGenerating) {
+              const mesText = pre.closest(".mes_text");
+              if (mesText && !mesTextsWithPreparingText.has(mesText)) {
+                // Check if this message already has tracker cards
+                const parentMes = mesText.closest(".mes");
+                const hasTrackerCards = parentMes && parentMes.querySelector(`#${CONTAINER_ID}`);
                 
-                // Add "Preparing new tracker cards..." text with pulsing animation
-                // Only if this mesText doesn't already have preparing text
-                if (!mesTextsWithPreparingText.has(mesText)) {
-                  // Mark this mesText as having preparing text
+                // Only show preparing text for messages without tracker cards (actively streaming)
+                if (!hasTrackerCards) {
                   mesTextsWithPreparingText.add(mesText);
                   
                   const preparingText = document.createElement("div");
@@ -209,13 +195,11 @@ jQuery(async () => {
                     animation: sst-pulse 1.5s infinite;
                   `;
                   
-                  // Insert after mesText instead of appending to it
                   mesText.parentNode.insertBefore(
                     preparingText,
                     mesText.nextSibling
                   );
                   
-                  // Add the pulse animation to the document if not already present
                   if (!document.getElementById("sst-pulse-animation")) {
                     const style = document.createElement("style");
                     style.id = "sst-pulse-animation";
@@ -229,35 +213,35 @@ jQuery(async () => {
                     document.head.appendChild(style);
                   }
                 }
-              } else {
-                // Not a sim block, show it
-                if (pre.getAttribute("data-sst-hidden") === "true") {
-                  pre.style.display = "";
-                  pre.removeAttribute("data-sst-hidden");
-                }
               }
-            }, 10); // 10ms delay to let rendering settle
+            }
           });
         });
       });
+      
+      // Also run a sweep to catch any that might have been missed
+      hideSimBlocks();
     });
 
-    // Start observing for changes in the chat area with more comprehensive options
+    // Start observing the chat area
     const chatElement = document.getElementById("chat");
     if (chatElement) {
       observer.observe(chatElement, {
         childList: true,
         subtree: true,
-        characterData: true, // Watch for text content changes
-        characterDataOldValue: false
+        attributes: true,
+        attributeFilter: ['class']
       });
+      
+      // Initial sweep to hide any existing sim blocks
+      hideSimBlocks();
     } else {
       // Fallback to body if chat element not found yet
       observer.observe(document.body, {
         childList: true,
         subtree: true,
-        characterData: true,
-        characterDataOldValue: false
+        attributes: true,
+        attributeFilter: ['class']
       });
     }
 
