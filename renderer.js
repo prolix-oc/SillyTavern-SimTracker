@@ -276,18 +276,50 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml) {
     return;
   }
   
+  // Build a map of states for each card/tab pair
+  // We need to check BOTH card and tab to determine the correct synchronized state
+  const cardTabStates = [];
+  
+  existingCards.forEach((existingCard, index) => {
+    const existingTab = existingTabs[index];
+    
+    // Get states from both card and tab
+    const cardActive = existingCard.classList.contains('active');
+    const cardSlidingIn = existingCard.classList.contains('sliding-in');
+    const cardSlidingOut = existingCard.classList.contains('sliding-out');
+    const cardHidden = existingCard.classList.contains('tab-hidden');
+    
+    const tabActive = existingTab ? existingTab.classList.contains('active') : false;
+    const tabSlidingIn = existingTab ? existingTab.classList.contains('sliding-in') : false;
+    const tabSlidingOut = existingTab ? existingTab.classList.contains('sliding-out') : false;
+    const tabHidden = existingTab ? existingTab.classList.contains('tab-hidden') : false;
+    
+    // Determine the synchronized state based on priority:
+    // 1. If either is animating, preserve animation state
+    // 2. If either is active (and not animating), both should be active
+    // 3. Otherwise, both should be hidden
+    let state = 'hidden';
+    
+    if (cardSlidingIn || tabSlidingIn) {
+      state = 'sliding-in';
+    } else if (cardSlidingOut || tabSlidingOut) {
+      state = 'sliding-out';
+    } else if (cardActive || tabActive) {
+      state = 'active';
+    } else if (cardHidden || tabHidden) {
+      state = 'hidden';
+    }
+    
+    cardTabStates[index] = state;
+    
+    console.log(`[SST] [${MODULE_NAME}]`, `Card/Tab ${index} synchronized state: ${state} (card was: active=${cardActive}, sliding-in=${cardSlidingIn}, sliding-out=${cardSlidingOut}, hidden=${cardHidden}; tab was: active=${tabActive}, sliding-in=${tabSlidingIn}, sliding-out=${tabSlidingOut}, hidden=${tabHidden})`);
+  });
+  
   // Update each card's content without destroying it
   newCards.forEach((newCard, index) => {
     if (existingCards[index]) {
       const existingCard = existingCards[index];
-      
-      // Preserve active/animation states BEFORE any changes
-      const wasActive = existingCard.classList.contains('active');
-      const wasSlidingIn = existingCard.classList.contains('sliding-in');
-      const wasSlidingOut = existingCard.classList.contains('sliding-out');
-      const wasHidden = existingCard.classList.contains('tab-hidden');
-      
-      console.log(`[SST] [${MODULE_NAME}]`, `Card ${index} state - wasActive: ${wasActive}, wasSlidingIn: ${wasSlidingIn}, wasSlidingOut: ${wasSlidingOut}, wasHidden: ${wasHidden}`);
+      const state = cardTabStates[index];
       
       // Always update the entire card content to ensure data changes
       // Clear existing content
@@ -310,46 +342,30 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml) {
       // Start with new card's base classes (this includes narrative-inactive if applicable)
       existingCard.className = newCard.className;
       
-      // Re-apply preserved states with proper priority:
-      // 1. If currently sliding, preserve that state (animation in progress)
-      // 2. If was active, keep it active and visible
-      // 3. If was hidden (tab closed), keep it hidden
-      
-      if (wasSlidingIn || wasSlidingOut) {
-        // Animation is in progress - preserve the animation state
-        if (wasSlidingIn) {
-          existingCard.classList.add('sliding-in');
-          existingCard.classList.remove('tab-hidden', 'sliding-out');
-        } else if (wasSlidingOut) {
-          existingCard.classList.add('sliding-out');
-          existingCard.classList.remove('active', 'sliding-in');
-          // Don't add tab-hidden yet - it will be added when animation completes
-        }
-      } else if (wasActive) {
-        // Card was visible and not animating - keep it visible
+      // Apply synchronized state
+      if (state === 'sliding-in') {
+        existingCard.classList.add('sliding-in');
+        existingCard.classList.remove('tab-hidden', 'sliding-out', 'active');
+      } else if (state === 'sliding-out') {
+        existingCard.classList.add('sliding-out');
+        existingCard.classList.remove('active', 'sliding-in', 'tab-hidden');
+      } else if (state === 'active') {
         existingCard.classList.add('active');
         existingCard.classList.remove('tab-hidden', 'sliding-in', 'sliding-out');
-      } else if (wasHidden) {
-        // Card was hidden (tab closed) - keep it hidden
+      } else if (state === 'hidden') {
         existingCard.classList.add('tab-hidden');
         existingCard.classList.remove('active', 'sliding-in', 'sliding-out');
       }
-      // If none of the above, leave with just base classes (first-time render)
       
       console.log(`[SST] [${MODULE_NAME}]`, `Card ${index} final classes:`, existingCard.className);
     }
   });
   
-  // Update tabs similarly
+  // Update tabs with synchronized state
   newTabs.forEach((newTab, index) => {
     if (existingTabs[index]) {
       const existingTab = existingTabs[index];
-      const wasActive = existingTab.classList.contains('active');
-      const wasSlidingIn = existingTab.classList.contains('sliding-in');
-      const wasSlidingOut = existingTab.classList.contains('sliding-out');
-      const wasHidden = existingTab.classList.contains('tab-hidden');
-      
-      console.log(`[SST] [${MODULE_NAME}]`, `Tab ${index} state - wasActive: ${wasActive}, wasSlidingIn: ${wasSlidingIn}, wasSlidingOut: ${wasSlidingOut}, wasHidden: ${wasHidden}`);
+      const state = cardTabStates[index];
       
       // Update tab content and attributes
       existingTab.innerHTML = newTab.innerHTML;
@@ -364,19 +380,17 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml) {
       // Start with new tab's base classes
       existingTab.className = newTab.className;
       
-      // Re-apply preserved states matching the card logic
-      if (wasSlidingIn || wasSlidingOut) {
-        if (wasSlidingIn) {
-          existingTab.classList.add('sliding-in');
-          existingTab.classList.remove('tab-hidden', 'sliding-out');
-        } else if (wasSlidingOut) {
-          existingTab.classList.add('sliding-out');
-          existingTab.classList.remove('active', 'sliding-in');
-        }
-      } else if (wasActive) {
+      // Apply synchronized state (same logic as card)
+      if (state === 'sliding-in') {
+        existingTab.classList.add('sliding-in');
+        existingTab.classList.remove('tab-hidden', 'sliding-out', 'active');
+      } else if (state === 'sliding-out') {
+        existingTab.classList.add('sliding-out');
+        existingTab.classList.remove('active', 'sliding-in', 'tab-hidden');
+      } else if (state === 'active') {
         existingTab.classList.add('active');
         existingTab.classList.remove('tab-hidden', 'sliding-in', 'sliding-out');
-      } else if (wasHidden) {
+      } else if (state === 'hidden') {
         existingTab.classList.add('tab-hidden');
         existingTab.classList.remove('active', 'sliding-in', 'sliding-out');
       }
