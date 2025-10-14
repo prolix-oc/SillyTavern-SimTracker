@@ -65,7 +65,6 @@ function updateLeftSidebar(content) {
           bottom: 0 !important;
           width: auto !important;
           height: 100% !important;
-          z-index: 999 !important;
           box-sizing: border-box !important;
           margin: 0 !important;
           padding: 10px !important;
@@ -78,6 +77,7 @@ function updateLeftSidebar(content) {
           align-items: flex-start !important;
           visibility: visible !important;
           overflow: visible !important;
+          pointer-events: none !important;
       `;
     console.log(`[SST] [${MODULE_NAME}]`, "Created verticalContainer");
 
@@ -181,7 +181,6 @@ function updateRightSidebar(content) {
           bottom: 0 !important;
           width: auto !important;
           height: 100% !important;
-          z-index: 999 !important;
           box-sizing: border-box !important;
           margin: 0 !important;
           padding: 10px !important;
@@ -194,6 +193,7 @@ function updateRightSidebar(content) {
           align-items: flex-end !important;
           visibility: visible !important;
           overflow: visible !important;
+          pointer-events: none !important;
       `;
     console.log(`[SST] [${MODULE_NAME}]`, "Created verticalContainer");
 
