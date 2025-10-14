@@ -945,13 +945,46 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
 
   // Get all message divs currently in the chat DOM
   const visibleMessages = document.querySelectorAll("div#chat .mes");
-  visibleMessages.forEach((messageElement) => {
-    const mesId = messageElement.getAttribute("mesid");
-    if (mesId) {
-      // Call the existing render function for each visible message
-      renderTrackerWithoutSim(parseInt(mesId, 10));
+  
+  // For positioned templates (LEFT/RIGHT), we only want to show the most recent sim data
+  // So we need to find the last message with sim data first
+  const templatePosition = currentTemplatePosition;
+  
+  if (templatePosition === "LEFT" || templatePosition === "RIGHT") {
+    // Find the last message with sim data by iterating backwards
+    let lastMessageWithSim = null;
+    for (let i = visibleMessages.length - 1; i >= 0; i--) {
+      const messageElement = visibleMessages[i];
+      const mesId = messageElement.getAttribute("mesid");
+      if (mesId) {
+        const context = getContext();
+        const message = context.chat[parseInt(mesId, 10)];
+        if (message) {
+          const identifier = get_settings("codeBlockIdentifier");
+          const dataMatch = message.mes.match(
+            new RegExp("```" + identifier + "[\\s\\S]*?```", "m")
+          );
+          if (dataMatch && dataMatch[0]) {
+            lastMessageWithSim = parseInt(mesId, 10);
+            break;
+          }
+        }
+      }
     }
-  });
+    
+    // Only render the last message with sim data for positioned templates
+    if (lastMessageWithSim !== null) {
+      renderTrackerWithoutSim(lastMessageWithSim);
+    }
+  } else {
+    // For non-positioned templates (ABOVE, BOTTOM, MACRO), render all messages
+    visibleMessages.forEach((messageElement) => {
+      const mesId = messageElement.getAttribute("mesid");
+      if (mesId) {
+        renderTrackerWithoutSim(parseInt(mesId, 10));
+      }
+    });
+  }
 };
 
 // Export functions
