@@ -310,11 +310,22 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml) {
       // Update class: start with new card's base classes, then re-apply animation states
       existingCard.className = newCard.className;
       
-      // Re-apply preserved animation states
-      if (wasActive) existingCard.classList.add('active');
+      // Re-apply preserved states intelligently:
+      // - If card was active (visible), keep it active and NOT hidden
+      // - If card was hidden and not active, keep it hidden
+      // - Preserve sliding animation states only if they were in progress
+      if (wasActive) {
+        existingCard.classList.add('active');
+        // If it was active, make sure it's NOT hidden
+        existingCard.classList.remove('tab-hidden');
+      } else if (wasHidden) {
+        // Only add tab-hidden if it wasn't active
+        existingCard.classList.add('tab-hidden');
+      }
+      
+      // Only preserve sliding states if they were actually in progress
       if (wasSlidingIn) existingCard.classList.add('sliding-in');
       if (wasSlidingOut) existingCard.classList.add('sliding-out');
-      if (wasHidden) existingCard.classList.add('tab-hidden');
       
       console.log(`[SST] [${MODULE_NAME}]`, `Card ${index} final classes:`, existingCard.className);
     }
