@@ -124,12 +124,12 @@ function updateLeftSidebar(content) {
 
     return verticalContainer;
   } else {
-    // Update existing sidebar content without re-attaching event listeners
+    // Update existing sidebar content without destroying DOM structure
     const leftSidebar = globalLeftSidebar.querySelector(
       "#sst-sidebar-left-content"
     );
     if (leftSidebar) {
-      leftSidebar.innerHTML = content;
+      updateSidebarContentInPlace(leftSidebar, content);
       // Restore scroll position after updating the sidebar
       window.scrollTo(0, scrollY);
     }
@@ -229,16 +229,98 @@ function updateRightSidebar(content) {
 
     return verticalContainer;
   } else {
-    // Update existing sidebar content without re-attaching event listeners
+    // Update existing sidebar content without destroying DOM structure
     const rightSidebar = globalRightSidebar.querySelector(
       "#sst-sidebar-right-content"
     );
     if (rightSidebar) {
-      rightSidebar.innerHTML = content;
+      updateSidebarContentInPlace(rightSidebar, content);
       // Restore scroll position after updating the sidebar
       window.scrollTo(0, scrollY);
     }
   }
+}
+
+// Helper function to update sidebar content without destroying DOM
+function updateSidebarContentInPlace(existingSidebar, newContentHtml) {
+  // Create temporary container to parse new content
+  const tempDiv = document.createElement('div');
+  tempDiv.innerHTML = newContentHtml;
+  
+  const existingContainer = existingSidebar.querySelector('#' + CONTAINER_ID);
+  const newContainer = tempDiv.querySelector('#' + CONTAINER_ID);
+  
+  if (!existingContainer || !newContainer) {
+    // Fallback to innerHTML if structure doesn't match
+    existingSidebar.innerHTML = newContentHtml;
+    attachTabEventListeners(existingSidebar);
+    return;
+  }
+  
+  // Get all cards and tabs
+  const existingCards = existingContainer.querySelectorAll('.sim-tracker-card');
+  const newCards = newContainer.querySelectorAll('.sim-tracker-card');
+  const existingTabs = existingContainer.querySelectorAll('.sim-tracker-tab');
+  const newTabs = newContainer.querySelectorAll('.sim-tracker-tab');
+  
+  // Update each card's content without destroying it
+  newCards.forEach((newCard, index) => {
+    if (existingCards[index]) {
+      const existingCard = existingCards[index];
+      
+      // Preserve active/animation states
+      const wasActive = existingCard.classList.contains('active');
+      const wasSlidingIn = existingCard.classList.contains('sliding-in');
+      const wasSlidingOut = existingCard.classList.contains('sliding-out');
+      const wasHidden = existingCard.classList.contains('tab-hidden');
+      
+      // Update inner content without destroying wrapper
+      const existingInner = existingCard.querySelector('.sim-tracker-card-inner');
+      const newInner = newCard.querySelector('.sim-tracker-card-inner');
+      
+      if (existingInner && newInner) {
+        existingInner.innerHTML = newInner.innerHTML;
+      } else {
+        // Update entire card content but preserve wrapper
+        Array.from(existingCard.children).forEach(child => child.remove());
+        Array.from(newCard.children).forEach(child => {
+          existingCard.appendChild(child.cloneNode(true));
+        });
+      }
+      
+      // Update classes but preserve animation states
+      existingCard.className = newCard.className;
+      if (wasActive) existingCard.classList.add('active');
+      if (wasSlidingIn) existingCard.classList.add('sliding-in');
+      if (wasSlidingOut) existingCard.classList.add('sliding-out');
+      if (wasHidden) existingCard.classList.add('tab-hidden');
+      
+      // Update attributes
+      Array.from(newCard.attributes).forEach(attr => {
+        if (attr.name !== 'class') {
+          existingCard.setAttribute(attr.name, attr.value);
+        }
+      });
+    }
+  });
+  
+  // Update tabs similarly
+  newTabs.forEach((newTab, index) => {
+    if (existingTabs[index]) {
+      const existingTab = existingTabs[index];
+      const wasActive = existingTab.classList.contains('active');
+      
+      existingTab.innerHTML = newTab.innerHTML;
+      existingTab.className = newTab.className;
+      if (wasActive) existingTab.classList.add('active');
+      
+      Array.from(newTab.attributes).forEach(attr => {
+        if (attr.name !== 'class') {
+          existingTab.setAttribute(attr.name, attr.value);
+        }
+      });
+    }
+  });
 }
 
 // Helper function to remove global sidebars
