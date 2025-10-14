@@ -243,6 +243,8 @@ function updateRightSidebar(content) {
 
 // Helper function to update sidebar content without destroying DOM
 function updateSidebarContentInPlace(existingSidebar, newContentHtml) {
+  console.log(`[SST] [${MODULE_NAME}]`, "Updating sidebar content in place");
+  
   // Create temporary container to parse new content
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = newContentHtml;
@@ -252,6 +254,7 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml) {
   
   if (!existingContainer || !newContainer) {
     // Fallback to innerHTML if structure doesn't match
+    console.log(`[SST] [${MODULE_NAME}]`, "Container structure mismatch, using innerHTML fallback");
     existingSidebar.innerHTML = newContentHtml;
     attachTabEventListeners(existingSidebar);
     return;
@@ -262,6 +265,16 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml) {
   const newCards = newContainer.querySelectorAll('.sim-tracker-card');
   const existingTabs = existingContainer.querySelectorAll('.sim-tracker-tab');
   const newTabs = newContainer.querySelectorAll('.sim-tracker-tab');
+  
+  console.log(`[SST] [${MODULE_NAME}]`, `Updating ${newCards.length} cards and ${newTabs.length} tabs`);
+  
+  // Check if the number of cards changed - if so, need to rebuild
+  if (existingCards.length !== newCards.length || existingTabs.length !== newTabs.length) {
+    console.log(`[SST] [${MODULE_NAME}]`, "Card/tab count changed, rebuilding sidebar");
+    existingSidebar.innerHTML = newContentHtml;
+    attachTabEventListeners(existingSidebar);
+    return;
+  }
   
   // Update each card's content without destroying it
   newCards.forEach((newCard, index) => {
@@ -274,33 +287,29 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml) {
       const wasSlidingOut = existingCard.classList.contains('sliding-out');
       const wasHidden = existingCard.classList.contains('tab-hidden');
       
-      // Update inner content without destroying wrapper
-      const existingInner = existingCard.querySelector('.sim-tracker-card-inner');
-      const newInner = newCard.querySelector('.sim-tracker-card-inner');
+      console.log(`[SST] [${MODULE_NAME}]`, `Updating card ${index}, wasActive: ${wasActive}`);
       
-      if (existingInner && newInner) {
-        existingInner.innerHTML = newInner.innerHTML;
-      } else {
-        // Update entire card content but preserve wrapper
-        Array.from(existingCard.children).forEach(child => child.remove());
-        Array.from(newCard.children).forEach(child => {
-          existingCard.appendChild(child.cloneNode(true));
-        });
+      // Always update the entire card content to ensure data changes
+      // Clear existing content
+      while (existingCard.firstChild) {
+        existingCard.removeChild(existingCard.firstChild);
       }
       
-      // Update classes but preserve animation states
-      existingCard.className = newCard.className;
+      // Clone all children from new card
+      Array.from(newCard.children).forEach(child => {
+        existingCard.appendChild(child.cloneNode(true));
+      });
+      
+      // Update all attributes from new card
+      Array.from(newCard.attributes).forEach(attr => {
+        existingCard.setAttribute(attr.name, attr.value);
+      });
+      
+      // Re-apply preserved animation states
       if (wasActive) existingCard.classList.add('active');
       if (wasSlidingIn) existingCard.classList.add('sliding-in');
       if (wasSlidingOut) existingCard.classList.add('sliding-out');
       if (wasHidden) existingCard.classList.add('tab-hidden');
-      
-      // Update attributes
-      Array.from(newCard.attributes).forEach(attr => {
-        if (attr.name !== 'class') {
-          existingCard.setAttribute(attr.name, attr.value);
-        }
-      });
     }
   });
   
@@ -310,17 +319,22 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml) {
       const existingTab = existingTabs[index];
       const wasActive = existingTab.classList.contains('active');
       
-      existingTab.innerHTML = newTab.innerHTML;
-      existingTab.className = newTab.className;
-      if (wasActive) existingTab.classList.add('active');
+      console.log(`[SST] [${MODULE_NAME}]`, `Updating tab ${index}, wasActive: ${wasActive}`);
       
+      // Update tab content and attributes
+      existingTab.innerHTML = newTab.innerHTML;
+      
+      // Update all attributes
       Array.from(newTab.attributes).forEach(attr => {
-        if (attr.name !== 'class') {
-          existingTab.setAttribute(attr.name, attr.value);
-        }
+        existingTab.setAttribute(attr.name, attr.value);
       });
+      
+      // Re-apply active state
+      if (wasActive) existingTab.classList.add('active');
     }
   });
+  
+  console.log(`[SST] [${MODULE_NAME}]`, "Sidebar content update complete");
 }
 
 // Helper function to remove global sidebars
