@@ -34,7 +34,7 @@
     width: 60px;
     height: 60px;
     border-radius: 8px;
-    box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
     position: relative;
     backdrop-filter: blur(10px);
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
@@ -46,11 +46,7 @@
     border: 1px solid rgba(255, 255, 255, 0.05);
     flex-shrink: 0;
     margin: 0 8px; /* Add some horizontal spacing */
-    transform: translateX(-60px);
-    transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      filter 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-      box-shadow 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    will-change: transform, filter, box-shadow;
+    transform: translateX(-60px); /* Start hidden at the edge of the screen */
     z-index: 10; /* Lower z-index so tabs are behind cards */
     pointer-events: auto;
   }
@@ -110,10 +106,6 @@
     opacity: 0;
     visibility: hidden;
     z-index: 5;
-  }
-
-  .sim-tracker-card.tab-hidden {
-    display: none;
   }
 
   .sim-tracker-card.inactive {
