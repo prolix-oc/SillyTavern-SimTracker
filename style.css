@@ -162,29 +162,6 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     align-items: flex-end !important;
 }
 
-/* Ensure proper positioning for tabbed templates */
-#sst-global-sidebar-left .sim-tracker-tabs,
-#sst-global-sidebar-right .sim-tracker-tabs {
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    z-index: 20;
-    pointer-events: auto;
-}
-
-#sst-global-sidebar-left .sim-tracker-tabs {
-    left: 0;
-    right: auto;
-}
-
-#sst-global-sidebar-right .sim-tracker-tabs {
-    right: 0;
-    left: auto;
-}
 
 #sst-global-sidebar-left #silly-sim-tracker-container,
 #sst-global-sidebar-right #silly-sim-tracker-container {
@@ -288,15 +265,13 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 
 /* Tabbed interface styles */
 .sim-tracker-tabs {
-    position: absolute;
     width: auto;
     height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    z-index: 10; /* Lower z-index so tabs are behind cards */
     transition: all 0.3s ease-in-out;
-    pointer-events: auto;
+    pointer-events: none;
 }
 
 .sim-tracker-tab {
@@ -304,18 +279,19 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     cursor: pointer;
     position: relative;
     flex-shrink: 0;
-    margin: 0 8px;
-    z-index: 10; /* Lower z-index so tabs are behind cards */
     pointer-events: auto;
 }
 
 .sim-tracker-tab.active {
     filter: brightness(1.3) !important;
-    z-index: 20 !important; /* Higher z-index for active tab */
 }
 
 .sim-tracker-tab:hover {
     filter: brightness(1.2) !important;
+}
+
+.sim-tracker-cards-wrapper {
+    pointer-events: none;
 }
 
 .sim-tracker-card {
@@ -323,26 +299,22 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     position: absolute !important;
     opacity: 0;
     visibility: hidden;
-    z-index: 5;
     pointer-events: auto;
 }
 
 .sim-tracker-card.active {
     opacity: 1;
     visibility: visible;
-    z-index: 30; /* Much higher z-index for active card to cover all tabs */
 }
 
 .sim-tracker-card.sliding-in {
     opacity: 1;
     visibility: visible;
-    z-index: 30; /* Much higher z-index for active card to cover all tabs */
 }
 
 .sim-tracker-card.sliding-out {
     opacity: 0;
     visibility: hidden;
-    z-index: 5;
 }
 
 .sim-tracker-card.tab-hidden {

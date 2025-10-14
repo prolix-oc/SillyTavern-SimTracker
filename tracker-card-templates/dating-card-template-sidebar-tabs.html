@@ -6,28 +6,34 @@
 <style>
   /* The actual template styling */
   .sim-tracker-container {
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
     width: 100%;
     position: relative;
     height: 100%;
     pointer-events: none;
   }
 
+  /* Both tabs and cards exist in the same grid cell, naturally layered */
+  .sim-tracker-tabs,
+  .sim-tracker-cards-wrapper {
+    grid-column: 1;
+    grid-row: 1;
+    position: relative;
+    height: 100%;
+    width: 100%;
+  }
+
   .sim-tracker-tabs {
     display: flex;
     flex-direction: column;
     gap: 12px;
-    position: absolute;
-    right: 0; /* Position tabs at the edge of the screen */
-    top: 0;
-    bottom: 0;
     justify-content: center;
-    height: 100%;
-    z-index: 10; /* Lower z-index so tabs are behind cards */
+    align-items: flex-end;
+    padding-right: 0;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    pointer-events: auto;
+    pointer-events: none;
   }
 
   .sim-tracker-tab {
@@ -35,7 +41,6 @@
     height: 60px;
     border-radius: 8px;
     box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
-    position: relative;
     backdrop-filter: blur(10px);
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
     cursor: pointer;
@@ -45,15 +50,13 @@
     background: linear-gradient(145deg, #2c2c2c, #1a1a1a);
     border: 1px solid rgba(255, 255, 255, 0.05);
     flex-shrink: 0;
-    margin: 0 8px; /* Add some horizontal spacing */
-    transform: translateX(60px); /* Start hidden at the edge of the screen */
-    z-index: 10; /* Lower z-index so tabs are behind cards */
+    margin-right: 8px;
+    transform: translateX(60px);
     pointer-events: auto;
   }
 
   .sim-tracker-tab.active {
-    transform: translateX(-270px); /* Animate to aligned position (card width) */
-    z-index: 20; /* Higher z-index for active tab */
+    transform: translateX(-270px);
   }
 
   .tab-initials {
@@ -68,6 +71,13 @@
     font-size: 18px;
   }
 
+  .sim-tracker-cards-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    pointer-events: none;
+  }
+
   .sim-tracker-card {
     background: linear-gradient(145deg, #2c2c2c, #1a1a1a);
     border-radius: 18px;
@@ -75,46 +85,41 @@
     width: 270px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     position: absolute;
+    right: 0;
     backdrop-filter: blur(10px);
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    right: 0;
-    top: 50%;
-    transform: translateY(-50%) translateX(100%);
+    transform: translateX(100%);
     opacity: 0;
     visibility: hidden;
-    z-index: 5; /* Lower z-index for inactive cards */
     border: 1px solid rgba(255, 255, 255, 0.05);
-    overflow: hidden; /* Prevent overlay from spilling over */
+    overflow: hidden;
+    pointer-events: auto;
   }
 
   .sim-tracker-card.active {
-    transform: translateY(-50%) translateX(0);
+    transform: translateX(0);
     opacity: 1;
     visibility: visible;
-    z-index: 30; /* Much higher z-index for active card to cover all tabs */
   }
 
   .sim-tracker-card.sliding-in {
-    transform: translateY(-50%) translateX(0);
+    transform: translateX(0);
     opacity: 1;
     visibility: visible;
-    z-index: 30; /* Much higher z-index for active card to cover all tabs */
   }
 
   .sim-tracker-card.sliding-out {
-    transform: translateY(-50%) translateX(300px);
+    transform: translateX(300px);
     opacity: 0;
     visibility: hidden;
-    z-index: 5;
   }
 
   .sim-tracker-card.inactive {
-    opacity: 1; /* Reset opacity since we're using overlay */
-    z-index: 25; /* Higher z-index for inactive cards to prevent tab overlap */
+    opacity: 1;
   }
 
   .sim-tracker-card.inactive.active {
-    z-index: 30; /* Even higher for active inactive cards */
+    opacity: 1;
   }
 
   .character-header {
@@ -244,12 +249,13 @@
     {{/each}}
   </div>
 
-  {{#each characters}}
-  <div
-    class="sim-tracker-card {{#if stats.inactive}}narrative-inactive{{/if}}"
-    data-character="{{@index}}"
-    style="background: linear-gradient(145deg, {{adjustColorBrightness bgColor 70}} 0%, {{adjustColorBrightness darkerBgColor 60}} 50%, {{adjustColorBrightness darkerBgColor 50}} 100%);"
-  >
+  <div class="sim-tracker-cards-wrapper">
+    {{#each characters}}
+    <div
+      class="sim-tracker-card {{#if stats.inactive}}narrative-inactive{{/if}}"
+      data-character="{{@index}}"
+      style="background: linear-gradient(145deg, {{adjustColorBrightness bgColor 70}} 0%, {{adjustColorBrightness darkerBgColor 60}} 50%, {{adjustColorBrightness darkerBgColor 50}} 100%);"
+    >
     <!-- Overlay for inactive characters -->
     <div class="narrative-inactive-overlay"></div>
     
@@ -352,8 +358,9 @@
       </div>
     </div>
     {{/if}}
+    </div>
+    {{/each}}
   </div>
-  {{/each}}
 </div>
 <!-- CARD_TEMPLATE_END -->
 
