@@ -1021,6 +1021,8 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
   // So we need to find the last message with sim data first
   const templatePosition = currentTemplatePosition;
   
+  console.log(`[SST] [${MODULE_NAME}]`, `Template position: ${templatePosition}`);
+  
   if (templatePosition === "LEFT" || templatePosition === "RIGHT") {
     // Find the last message with sim data by iterating backwards
     let lastMessageWithSim = null;
@@ -1037,6 +1039,7 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
           );
           if (dataMatch && dataMatch[0]) {
             lastMessageWithSim = parseInt(mesId, 10);
+            console.log(`[SST] [${MODULE_NAME}]`, `Found sim data in message ${lastMessageWithSim}`);
             break;
           }
         }
@@ -1046,9 +1049,11 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
     // Only render the last message with sim data for positioned templates
     // This will update the sidebar in place if it already exists
     if (lastMessageWithSim !== null) {
+      console.log(`[SST] [${MODULE_NAME}]`, `Rendering sidebar for message ${lastMessageWithSim}`);
       renderTrackerWithoutSim(lastMessageWithSim);
     } else {
       // If no message with sim data found, remove the sidebars
+      console.log(`[SST] [${MODULE_NAME}]`, "No sim data found, removing sidebars");
       removeGlobalSidebars();
     }
   } else {
