@@ -831,31 +831,43 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
       return;
     }
 
+    // Use the template position from the templating module
+    const templatePosition = currentTemplatePosition;
+    
     const messageElement = document.querySelector(
       `div[mesid="${mesId}"] .mes_text`
     );
-    if (!messageElement) return;
+    
+    // For non-positioned templates, we need the message element in DOM
+    // For positioned templates (LEFT/RIGHT), we can proceed without it
+    if (!messageElement && templatePosition !== "LEFT" && templatePosition !== "RIGHT") {
+      console.log(`[SST] [${MODULE_NAME}]`, `Message element not found in DOM for mesId ${mesId}, skipping render for non-positioned template`);
+      return;
+    }
 
     const identifier = get_settings("codeBlockIdentifier");
     let displayMessage = message.mes;
 
-    // Hide sim blocks if the setting is enabled
-    if (get_settings("hideSimBlocks")) {
-      const hideRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
-      displayMessage = displayMessage.replace(
-        hideRegex,
-        (match) => `<span style="display: none !important;">${match}</span>`
+    // Only format and display message content if we have a message element
+    if (messageElement) {
+      // Hide sim blocks if the setting is enabled
+      if (get_settings("hideSimBlocks")) {
+        const hideRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
+        displayMessage = displayMessage.replace(
+          hideRegex,
+          (match) => `<span style="display: none !important;">${match}</span>`
+        );
+      }
+
+      // Format and display the message content (without the tracker UI)
+      messageElement.innerHTML = messageFormatting(
+        displayMessage,
+        message.name,
+        message.is_system,
+        message.is_user,
+        mesId
       );
     }
-
-    // Format and display the message content (without the tracker UI)
-    messageElement.innerHTML = messageFormatting(
-      displayMessage,
-      message.name,
-      message.is_system,
-      message.is_user,
-      mesId
-    );
 
     // Parse the sim data from the original message content (not the hidden version)
     const dataMatch = message.mes.match(
@@ -864,11 +876,14 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
 
     if (dataMatch && dataMatch[0]) {
       // Remove the container if it already exists to prevent duplication on re-renders
-      const existingContainer = messageElement.querySelector(
-        `#${CONTAINER_ID}`
-      );
-      if (existingContainer) {
-        existingContainer.remove();
+      // Only do this if we have a message element (for non-positioned templates)
+      if (messageElement) {
+        const existingContainer = messageElement.querySelector(
+          `#${CONTAINER_ID}`
+        );
+        if (existingContainer) {
+          existingContainer.remove();
+        }
       }
 
       const jsonContent = dataMatch[0]
@@ -879,12 +894,14 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
       // Update lastSimJsonString
       lastSimJsonString = jsonContent;
 
-      // Remove any preparing text
-      const preparingText = messageElement.parentNode.querySelector(".sst-preparing-text");
-      if (preparingText) {
-        preparingText.remove();
-        // Remove this mesText from the set since it no longer has preparing text
-        mesTextsWithPreparingText.delete(messageElement);
+      // Remove any preparing text (only if messageElement exists)
+      if (messageElement) {
+        const preparingText = messageElement.parentNode.querySelector(".sst-preparing-text");
+        if (preparingText) {
+          preparingText.remove();
+          // Remove this mesText from the set since it no longer has preparing text
+          mesTextsWithPreparingText.delete(messageElement);
+        }
       }
 
       let jsonData;
@@ -1030,28 +1047,27 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
           .join("");
       }
 
-      // Use the template position from the templating module
-      const templatePosition = currentTemplatePosition;
-
       // Handle different positions
       switch (templatePosition) {
         case "TOP":
           // Insert above the message content (inside the message block)
-          const reasoningElement = messageElement.querySelector(
-            ".mes_reasoning_details"
-          );
-          if (reasoningElement) {
-            // Insert above reasoning details if they exist
-            const finalHtml =
-              compiledWrapperTemplate({ cardsHtml }) +
-              `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
-            reasoningElement.insertAdjacentHTML("beforebegin", finalHtml);
-          } else {
-            // If no reasoning details, insert at the beginning of the message
-            const finalHtml =
-              compiledWrapperTemplate({ cardsHtml }) +
-              `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
-            messageElement.insertAdjacentHTML("afterbegin", finalHtml);
+          if (messageElement) {
+            const reasoningElement = messageElement.querySelector(
+              ".mes_reasoning_details"
+            );
+            if (reasoningElement) {
+              // Insert above reasoning details if they exist
+              const finalHtml =
+                compiledWrapperTemplate({ cardsHtml }) +
+                `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
+              reasoningElement.insertAdjacentHTML("beforebegin", finalHtml);
+            } else {
+              // If no reasoning details, insert at the beginning of the message
+              const finalHtml =
+                compiledWrapperTemplate({ cardsHtml }) +
+                `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
+              messageElement.insertAdjacentHTML("afterbegin", finalHtml);
+            }
           }
           break;
         case "LEFT":
@@ -1064,22 +1080,26 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
           break;
         case "MACRO":
           // For MACRO position, replace the placeholder in the message
-          const placeholder = messageElement.querySelector(
-            "#sst-macro-placeholder"
-          );
-          if (placeholder) {
-            const finalHtml = compiledWrapperTemplate({ cardsHtml });
-            placeholder.insertAdjacentHTML("beforebegin", finalHtml);
-            placeholder.remove();
+          if (messageElement) {
+            const placeholder = messageElement.querySelector(
+              "#sst-macro-placeholder"
+            );
+            if (placeholder) {
+              const finalHtml = compiledWrapperTemplate({ cardsHtml });
+              placeholder.insertAdjacentHTML("beforebegin", finalHtml);
+              placeholder.remove();
+            }
           }
           break;
         case "BOTTOM":
         default:
           // Add a horizontal divider before the cards
-          const finalHtml =
-            `<hr style="margin-top: 15px; margin-bottom: 20px;">` +
-            compiledWrapperTemplate({ cardsHtml });
-          messageElement.insertAdjacentHTML("beforeend", finalHtml);
+          if (messageElement) {
+            const finalHtml =
+              `<hr style="margin-top: 15px; margin-bottom: 20px;">` +
+              compiledWrapperTemplate({ cardsHtml });
+            messageElement.insertAdjacentHTML("beforeend", finalHtml);
+          }
           break;
       }
     }
