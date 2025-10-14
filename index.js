@@ -538,6 +538,8 @@ characters:
     
     eventSource.on(event_types.CHAT_CHANGED, () => {
       log("Chat changed, refreshing all cards and updating sidebars");
+      // Clear generation flag since we're switching chats
+      setGenerationInProgress(false);
       // Just refresh all cards - this will update sidebars with new chat data
       // The refreshAllCards function will find the latest sim data in the new chat
       wrappedRefreshAllCards();
