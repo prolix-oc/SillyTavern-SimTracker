@@ -281,13 +281,13 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml) {
     if (existingCards[index]) {
       const existingCard = existingCards[index];
       
-      // Preserve active/animation states
+      // Preserve active/animation states BEFORE any changes
       const wasActive = existingCard.classList.contains('active');
       const wasSlidingIn = existingCard.classList.contains('sliding-in');
       const wasSlidingOut = existingCard.classList.contains('sliding-out');
       const wasHidden = existingCard.classList.contains('tab-hidden');
       
-      console.log(`[SST] [${MODULE_NAME}]`, `Updating card ${index}, wasActive: ${wasActive}`);
+      console.log(`[SST] [${MODULE_NAME}]`, `Updating card ${index}, wasActive: ${wasActive}, wasSlidingOut: ${wasSlidingOut}, wasHidden: ${wasHidden}`);
       
       // Always update the entire card content to ensure data changes
       // Clear existing content
@@ -300,16 +300,23 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml) {
         existingCard.appendChild(child.cloneNode(true));
       });
       
-      // Update all attributes from new card
+      // Update attributes EXCEPT class (we'll handle class separately)
       Array.from(newCard.attributes).forEach(attr => {
-        existingCard.setAttribute(attr.name, attr.value);
+        if (attr.name !== 'class') {
+          existingCard.setAttribute(attr.name, attr.value);
+        }
       });
+      
+      // Update class: start with new card's base classes, then re-apply animation states
+      existingCard.className = newCard.className;
       
       // Re-apply preserved animation states
       if (wasActive) existingCard.classList.add('active');
       if (wasSlidingIn) existingCard.classList.add('sliding-in');
       if (wasSlidingOut) existingCard.classList.add('sliding-out');
       if (wasHidden) existingCard.classList.add('tab-hidden');
+      
+      console.log(`[SST] [${MODULE_NAME}]`, `Card ${index} final classes:`, existingCard.className);
     }
   });
   
