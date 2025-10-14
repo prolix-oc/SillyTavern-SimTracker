@@ -940,6 +940,9 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
     container.remove();
   });
 
+  // Also remove the global sidebars since they'll be recreated if needed
+  removeGlobalSidebars();
+
   // Get all message divs currently in the chat DOM
   const visibleMessages = document.querySelectorAll("div#chat .mes");
   visibleMessages.forEach((messageElement) => {
