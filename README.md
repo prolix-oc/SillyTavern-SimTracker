@@ -154,7 +154,7 @@ These defaults provide a solid foundation for most dating sim scenarios, but can
 
 Templates can define their preferred position using HTML comments. The positioning options are:
 
-- **ABOVE**: Display the tracker above the message content (inside the message block)
+- **TOP**: Display the tracker above the message content (inside the message block)
 - **BOTTOM**: Display the tracker below the message content (default)
 - **LEFT**: Display the tracker in a fixed sidebar on the left side of the screen
 - **RIGHT**: Display the tracker in a fixed sidebar on the right side of the screen
@@ -171,7 +171,7 @@ The LEFT and RIGHT positioning options now use a vertically-stretched container 
 
 ### Positioning Examples
 
-1. **ABOVE Positioning**: The tracker will appear at the top of the message block, above the reasoning details.
+1. **TOP Positioning**: The tracker will appear at the top of the message block, above the reasoning details.
 2. **MACRO Positioning**: The tracker will replace the `{{sim_tracker_positioned}}` macro wherever it appears in your message.
 
 These positioning options give you fine-grained control over where your tracker cards appear in relation to your messages.

@@ -762,7 +762,7 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
 
       // Handle different positions
       switch (templatePosition) {
-        case "ABOVE":
+        case "TOP":
           // Insert above the message content (inside the message block)
           const reasoningElement = messageElement.querySelector(
             ".mes_reasoning_details"
@@ -1035,7 +1035,7 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
 
       // Handle different positions
       switch (templatePosition) {
-        case "ABOVE":
+        case "TOP":
           // Insert above the message content (inside the message block)
           const reasoningElement = messageElement.querySelector(
             ".mes_reasoning_details"
@@ -1144,7 +1144,7 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
       console.log(`[SST] [${MODULE_NAME}]`, "No sim data found, sidebars removed");
     }
   } else {
-    // For non-positioned templates (ABOVE, BOTTOM, MACRO), render all messages
+    // For non-positioned templates (TOP, BOTTOM, MACRO), render all messages
     visibleMessages.forEach((messageElement) => {
       const mesId = messageElement.getAttribute("mesid");
       if (mesId) {
