@@ -217,7 +217,8 @@ const initialize_settings_listeners = (
   handleCustomTemplateUpload,
   handlePresetExport,
   handlePresetImport,
-  showManagePresetsModal
+  showManagePresetsModal,
+  setGenerationInProgress
 ) => {
   console.log(`[SST] [${MODULE_NAME}]`, "Binding settings UI elements...");
 
@@ -316,6 +317,8 @@ const initialize_settings_listeners = (
       }
 
       set_settings("templateFile", selectedValue);
+      // Clear generation flag when changing templates
+      setGenerationInProgress(false);
       await loadTemplate();
       refreshAllCards();
       
