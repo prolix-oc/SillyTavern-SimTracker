@@ -34,6 +34,9 @@ function updateLeftSidebar(content) {
     return;
   }
 
+  // Store current scroll position before making changes
+  const scrollY = window.scrollY || window.pageYOffset;
+
   // If we don't have a global sidebar yet, create it
   if (!globalLeftSidebar) {
     // Find the sheld container
@@ -116,6 +119,9 @@ function updateLeftSidebar(content) {
     // Debug: Log the final container
     console.log(`[SST] [${MODULE_NAME}]`, "Created left sidebar container:", verticalContainer);
 
+    // Restore scroll position after creating the sidebar
+    window.scrollTo(0, scrollY);
+
     return verticalContainer;
   } else {
     // Update existing sidebar content without re-attaching event listeners
@@ -124,6 +130,8 @@ function updateLeftSidebar(content) {
     );
     if (leftSidebar) {
       leftSidebar.innerHTML = content;
+      // Restore scroll position after updating the sidebar
+      window.scrollTo(0, scrollY);
     }
   }
 }
@@ -135,6 +143,9 @@ function updateRightSidebar(content) {
     pendingRightSidebarContent = content;
     return;
   }
+
+  // Store current scroll position before making changes
+  const scrollY = window.scrollY || window.pageYOffset;
 
   // If we don't have a global sidebar yet, create it
   if (!globalRightSidebar) {
@@ -213,6 +224,9 @@ function updateRightSidebar(content) {
     // Add event listeners for tabs (only once when creating)
     attachTabEventListeners(rightSidebar);
 
+    // Restore scroll position after creating the sidebar
+    window.scrollTo(0, scrollY);
+
     return verticalContainer;
   } else {
     // Update existing sidebar content without re-attaching event listeners
@@ -221,6 +235,8 @@ function updateRightSidebar(content) {
     );
     if (rightSidebar) {
       rightSidebar.innerHTML = content;
+      // Restore scroll position after updating the sidebar
+      window.scrollTo(0, scrollY);
     }
   }
 }
