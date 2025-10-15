@@ -173,6 +173,7 @@ div[mesid] .mes_text #silly-sim-tracker-container {
   box-sizing: border-box !important;
   display: block !important;
   visibility: visible !important;
+  pointer-events: none !important;
 }
 
 #sst-sidebar-left-content,
@@ -274,7 +275,7 @@ div[mesid] .mes_text #silly-sim-tracker-container {
   flex-direction: column;
   justify-content: center;
   transition: all 0.3s ease-in-out;
-  pointer-events: none;
+  pointer-events: none !important;
 }
 
 .sim-tracker-tab {
@@ -327,7 +328,7 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 #sst-global-sidebar-left .sim-tracker-tabs {
   left: 0;
   right: auto;
-  pointer-events: none;
+  pointer-events: none !important;
 }
 
 #sst-global-sidebar-left .sim-tracker-tab {
@@ -350,7 +351,7 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 #sst-global-sidebar-right .sim-tracker-tabs {
   right: 0;
   left: auto;
-  pointer-events: none;
+  pointer-events: none !important;
 }
 
 #sst-global-sidebar-right .sim-tracker-tab {
