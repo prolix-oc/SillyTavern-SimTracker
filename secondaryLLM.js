@@ -37,6 +37,7 @@ async function sendRawCompletionRequest({
   endpoint = null,
   apiKey = null,
   extra = {},
+  streaming = true,
 }) {
   let url = getCurrentCompletionEndpoint();
   let headers = getRequestHeaders();
@@ -46,7 +47,7 @@ async function sendRawCompletionRequest({
     model,
     temperature,
     chat_completion_source: api,
-    stream: true, // Enable streaming
+    stream: streaming, // Use streaming parameter
     ...extra,
   };
 
@@ -62,7 +63,7 @@ async function sendRawCompletionRequest({
       model,
       messages: [{ role: "user", content: prompt }],
       temperature,
-      stream: true, // Enable streaming
+      stream: streaming, // Use streaming parameter
       ...extra,
     };
   } else if (api === "custom" && model) {
@@ -73,6 +74,7 @@ async function sendRawCompletionRequest({
 
   console.log(`[SST] [${MODULE_NAME}]`, "Request URL:", url);
   console.log(`[SST] [${MODULE_NAME}]`, "Request body:", JSON.stringify(body, null, 2));
+  console.log(`[SST] [${MODULE_NAME}]`, `Streaming: ${streaming ? "enabled" : "disabled"}`);
   
   const res = await fetch(url + '/chat/completions', {
     method: "POST",
@@ -87,84 +89,112 @@ async function sendRawCompletionRequest({
     throw new Error(`LLM request failed: ${res.status} ${res.statusText} - ${errorText}`);
   }
 
-  // Handle streaming response
-  const reader = res.body.getReader();
-  const decoder = new TextDecoder("utf-8");
-  let buffer = "";
-  let fullText = "";
+  // Handle response based on streaming mode
+  if (streaming) {
+    // Handle streaming response
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder("utf-8");
+    let buffer = "";
+    let fullText = "";
 
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      
-      if (done) {
-        break;
-      }
-
-      // Decode the chunk and add to buffer
-      buffer += decoder.decode(value, { stream: true });
-      
-      // Process complete lines from the buffer
-      const lines = buffer.split('\n');
-      // Keep the last incomplete line in the buffer
-      buffer = lines.pop() || "";
-      
-      for (const line of lines) {
-        const trimmedLine = line.trim();
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
         
-        // Skip empty lines and comments
-        if (!trimmedLine || trimmedLine.startsWith(':')) {
-          continue;
+        if (done) {
+          break;
         }
+
+        // Decode the chunk and add to buffer
+        buffer += decoder.decode(value, { stream: true });
         
-        // SSE format: "data: {...}"
-        if (trimmedLine.startsWith('data: ')) {
-          const data = trimmedLine.slice(6); // Remove "data: " prefix
+        // Process complete lines from the buffer
+        const lines = buffer.split('\n');
+        // Keep the last incomplete line in the buffer
+        buffer = lines.pop() || "";
+        
+        for (const line of lines) {
+          const trimmedLine = line.trim();
           
-          // Check for stream end marker
-          if (data === '[DONE]') {
+          // Skip empty lines and comments
+          if (!trimmedLine || trimmedLine.startsWith(':')) {
             continue;
           }
           
-          try {
-            const parsed = JSON.parse(data);
+          // SSE format: "data: {...}"
+          if (trimmedLine.startsWith('data: ')) {
+            const data = trimmedLine.slice(6); // Remove "data: " prefix
             
-            // Extract content from the delta
-            let content = "";
-            
-            // OpenAI-style streaming format
-            if (parsed.choices?.[0]?.delta?.content) {
-              content = parsed.choices[0].delta.content;
-            }
-            // Alternative format - direct content in delta
-            else if (parsed.delta?.content) {
-              content = parsed.delta.content;
-            }
-            // Claude-style format
-            else if (parsed.delta?.text) {
-              content = parsed.delta.text;
-            }
-            // Some APIs might use 'text' directly
-            else if (parsed.choices?.[0]?.text) {
-              content = parsed.choices[0].text;
+            // Check for stream end marker
+            if (data === '[DONE]') {
+              continue;
             }
             
-            if (content) {
-              fullText += content;
+            try {
+              const parsed = JSON.parse(data);
+              
+              // Extract content from the delta
+              let content = "";
+              
+              // OpenAI-style streaming format
+              if (parsed.choices?.[0]?.delta?.content) {
+                content = parsed.choices[0].delta.content;
+              }
+              // Alternative format - direct content in delta
+              else if (parsed.delta?.content) {
+                content = parsed.delta.content;
+              }
+              // Claude-style format
+              else if (parsed.delta?.text) {
+                content = parsed.delta.text;
+              }
+              // Some APIs might use 'text' directly
+              else if (parsed.choices?.[0]?.text) {
+                content = parsed.choices[0].text;
+              }
+              
+              if (content) {
+                fullText += content;
+              }
+            } catch (parseError) {
+              console.warn(`[SST] [${MODULE_NAME}]`, "Failed to parse SSE data:", data, parseError);
             }
-          } catch (parseError) {
-            console.warn(`[SST] [${MODULE_NAME}]`, "Failed to parse SSE data:", data, parseError);
           }
         }
       }
+    } finally {
+      reader.releaseLock();
     }
-  } finally {
-    reader.releaseLock();
+
+    console.log(`[SST] [${MODULE_NAME}]`, "Received complete response from streaming");
+    return { text: fullText, full: { choices: [{ message: { content: fullText } }] } };
+  } else {
+    // Handle non-streaming response
+    const data = await res.json();
+    console.log(`[SST] [${MODULE_NAME}]`, "Received complete response (non-streaming)");
+
+    let text = "";
+
+    // Handle different response formats
+    if (data.choices?.[0]?.message?.content) {
+      text = data.choices[0].message.content;
+    } else if (data.completion) {
+      text = data.completion;
+    } else if (data.choices?.[0]?.text) {
+      text = data.choices[0].text;
+    } else if (data.content && Array.isArray(data.content)) {
+      // Handle Claude's structured format
+      const textBlock = data.content.find(
+        (block) =>
+          block && typeof block === "object" && block.type === "text" && block.text
+      );
+      text = textBlock?.text || "";
+    } else if (typeof data.content === "string") {
+      text = data.content;
+    }
+
+    return { text, full: data };
   }
-
-  console.log(`[SST] [${MODULE_NAME}]`, "Received complete response from streaming");
-
-  return { text: fullText, full: { choices: [{ message: { content: fullText } }] } };
 }
 
 /**
@@ -321,6 +351,9 @@ async function generateTrackerWithSecondaryLLM(get_settings) {
   try {
     console.log(`[SST] [${MODULE_NAME}]`, "Sending request to secondary LLM...");
     
+    // Get streaming setting
+    const streaming = get_settings("secondaryLLMStreaming") !== false; // Default to true if not set
+    
     // Build extra parameters
     const extra = {};
     if (top_p < 1) {
@@ -335,6 +368,7 @@ async function generateTrackerWithSecondaryLLM(get_settings) {
       endpoint: endpoint,
       apiKey: apiKey,
       extra: extra,
+      streaming: streaming,
     });
 
     if (!response.text) {
