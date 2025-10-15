@@ -741,8 +741,17 @@ characters:
       if (updatedStats) {
         lastSimJsonString = updatedStats;
       }
-      // Re-render the tracker for the swiped message
-      renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+      
+      // For sidebar templates (LEFT/RIGHT), we need to refresh all cards to update the sidebar
+      // For other templates, we can just re-render the specific message
+      const templatePosition = currentTemplatePosition;
+      if (templatePosition === "LEFT" || templatePosition === "RIGHT") {
+        log(`Refreshing all cards for sidebar template after swipe`);
+        wrappedRefreshAllCards();
+      } else {
+        // Re-render the tracker for the swiped message
+        renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+      }
     });
 
     // Listen for generation ended event to update sidebars and trigger secondary LLM
