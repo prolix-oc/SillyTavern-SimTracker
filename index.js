@@ -193,8 +193,12 @@ jQuery(async () => {
                 const parentMes = mesText.closest(".mes");
                 const hasTrackerCards = parentMes && parentMes.querySelector(`#${CONTAINER_ID}`);
                 
-                // Only show preparing text for messages without tracker cards (actively streaming)
-                if (!hasTrackerCards) {
+                // Get the message ID to check if this is the actively generating message
+                const mesId = parentMes ? parentMes.getAttribute("mesid") : null;
+                const isLastMessage = mesId !== null && lastRenderedMessageId !== null && parseInt(mesId) === lastRenderedMessageId;
+                
+                // Only show preparing text for the actively generating message without tracker cards
+                if (!hasTrackerCards && isLastMessage) {
                   mesTextsWithPreparingText.add(mesText);
                   
                   const preparingText = document.createElement("div");
