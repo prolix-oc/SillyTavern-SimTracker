@@ -156,16 +156,6 @@ div[mesid] .mes_text #silly-sim-tracker-container {
   z-index: 100 !important;
 }
 
-#sst-global-sidebar-left {
-  left: 0 !important;
-  align-items: flex-start !important;
-}
-
-#sst-global-sidebar-right {
-  right: 0 !important;
-  align-items: flex-end !important;
-}
-
 #sst-global-sidebar-left #silly-sim-tracker-container,
 #sst-global-sidebar-right #silly-sim-tracker-container {
   width: 100% !important;
