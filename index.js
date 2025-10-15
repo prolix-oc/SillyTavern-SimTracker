@@ -543,7 +543,8 @@ characters:
       const context = getContext();
       const message = context.chat[mesId];
       
-      if (useSecondaryLLM && message && !message.is_user && !message.is_system) {
+      // Only proceed if we have a valid character message with actual content
+      if (useSecondaryLLM && message && !message.is_user && !message.is_system && message.mes && message.mes.trim().length > 0) {
         // Check if the message already has a sim block
         const identifier = get_settings("codeBlockIdentifier");
         const simRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "m");

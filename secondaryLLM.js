@@ -68,6 +68,9 @@ async function sendRawCompletionRequest({
     body.custom_url = oai_settings.custom_url || "";
   }
 
+  console.log(`[SST] [${MODULE_NAME}]`, "Request URL:", url);
+  console.log(`[SST] [${MODULE_NAME}]`, "Request body:", JSON.stringify(body, null, 2));
+  
   const res = await fetch(url, {
     method: "POST",
     headers: headers,
@@ -75,7 +78,10 @@ async function sendRawCompletionRequest({
   });
 
   if (!res.ok) {
-    throw new Error(`LLM request failed: ${res.status} ${res.statusText}`);
+    const errorText = await res.text().catch(() => "Unable to read error response");
+    console.error(`[SST] [${MODULE_NAME}]`, "Request failed with status:", res.status);
+    console.error(`[SST] [${MODULE_NAME}]`, "Error response:", errorText);
+    throw new Error(`LLM request failed: ${res.status} ${res.statusText} - ${errorText}`);
   }
 
   const data = await res.json();
