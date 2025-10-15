@@ -317,6 +317,7 @@ function processChatHistory(chat, messageCount, get_settings) {
       role: role,
       content: cleanedContent,
       name: msg.name || (msg.is_user ? "User" : "Character"),
+      user_name: msg.is_user ? msg.name : "User"
     };
   });
 
@@ -450,7 +451,7 @@ async function generateTrackerWithSecondaryLLM(get_settings) {
     conversationText += `${msg.name}: ${msg.content}\n\n`;
   });
 
-  conversationText += `\nBased on the above conversation${previousTrackerData ? " and the previous tracker state" : ""}, generate ONLY the raw ${trackerFormat.toUpperCase()} data (without code fences or backticks). Output just the ${trackerFormat.toUpperCase()} structure directly. Ensure that ${msg.name} does NOT get a tracker entry, only story characters.`;
+  conversationText += `\nBased on the above conversation${previousTrackerData ? " and the previous tracker state" : ""}, generate ONLY the raw ${trackerFormat.toUpperCase()} data (without code fences or backticks). Output just the ${trackerFormat.toUpperCase()} structure directly. Ensure that ${msg.user_name} does NOT get a tracker entry, only story characters.`;
 
   try {
     console.log(`[SST] [${MODULE_NAME}]`, "Sending request to secondary LLM...");
