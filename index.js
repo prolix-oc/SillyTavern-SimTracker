@@ -717,10 +717,59 @@ characters:
       }
     });
     
+    // Helper function to wrap sim blocks in all messages with hidden divs
+    const wrapSimBlocksInChat = () => {
+      if (!get_settings("isEnabled") || !get_settings("hideSimBlocks")) return;
+      
+      const context = getContext();
+      const chat = context.chat;
+      
+      if (!chat || !Array.isArray(chat)) return;
+      
+      const identifier = get_settings("codeBlockIdentifier");
+      let modifiedCount = 0;
+      
+      chat.forEach((message, index) => {
+        if (!message || !message.mes) return;
+        
+        // Check if message contains unwrapped sim blocks
+        const unwrappedRegex = new RegExp(`(?<!<div style="display: none;">)\`\`\`${identifier}[\\s\\S]*?\`\`\`(?!</div>)`, 'g');
+        
+        if (unwrappedRegex.test(message.mes)) {
+          // Wrap any unwrapped sim blocks
+          const wrapRegex = new RegExp(`\`\`\`${identifier}[\\s\\S]*?\`\`\``, 'g');
+          message.mes = message.mes.replace(wrapRegex, (match) => {
+            // Check if this specific match is already wrapped
+            const beforeMatch = message.mes.substring(0, message.mes.indexOf(match));
+            const afterMatch = message.mes.substring(message.mes.indexOf(match) + match.length);
+            
+            if (beforeMatch.endsWith('<div style="display: none;">') && afterMatch.startsWith('</div>')) {
+              // Already wrapped, return as-is
+              return match;
+            }
+            
+            // Not wrapped, wrap it
+            modifiedCount++;
+            return `<div style="display: none;">${match}</div>`;
+          });
+        }
+      });
+      
+      if (modifiedCount > 0) {
+        log(`Wrapped ${modifiedCount} sim blocks in chat messages with hidden divs`);
+        // Save the chat after wrapping
+        context.saveChat();
+      }
+    };
+    
     eventSource.on(event_types.CHAT_CHANGED, () => {
       log("Chat changed, refreshing all cards and updating sidebars");
       // Clear generation flag since we're switching chats
       setGenerationInProgress(false);
+      
+      // Wrap sim blocks in the new chat
+      wrapSimBlocksInChat();
+      
       // Just refresh all cards - this will update sidebars with new chat data
       // The refreshAllCards function will find the latest sim data in the new chat
       wrappedRefreshAllCards();

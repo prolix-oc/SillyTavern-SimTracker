@@ -238,14 +238,24 @@ function stripHTML(text) {
 
 /**
  * Extract sim tracker data from a message
+ * Handles both wrapped and unwrapped sim blocks
  */
 function extractTrackerData(message, identifier) {
   if (!message || !message.mes) {
     return null;
   }
   
-  const simRegex = new RegExp("```" + identifier + "\\s*([\\s\\S]*?)```", "m");
-  const match = message.mes.match(simRegex);
+  // Try to match wrapped blocks first (with div wrapper)
+  const wrappedRegex = new RegExp(`<div style="display: none;">\`\`\`${identifier}\\s*([\\s\\S]*?)\`\`\`</div>`, "m");
+  let match = message.mes.match(wrappedRegex);
+  
+  if (match && match[1]) {
+    return match[1].trim();
+  }
+  
+  // Fall back to unwrapped blocks
+  const unwrappedRegex = new RegExp("```" + identifier + "\\s*([\\s\\S]*?)```", "m");
+  match = message.mes.match(unwrappedRegex);
   
   if (match && match[1]) {
     return match[1].trim();
@@ -287,9 +297,16 @@ function processChatHistory(chat, messageCount, get_settings) {
     // Determine role based on is_user flag
     const role = msg.is_user ? "user" : "assistant";
     
-    // Clean the message content - remove any existing sim blocks
-    const simRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
-    let cleanedContent = msg.mes.replace(simRegex, "").trim();
+    // Clean the message content - remove any existing sim blocks (both wrapped and unwrapped)
+    let cleanedContent = msg.mes;
+    
+    // Remove wrapped sim blocks
+    const wrappedRegex = new RegExp(`<div style="display: none;">\`\`\`${identifier}[\\s\\S]*?\`\`\`</div>`, "gm");
+    cleanedContent = cleanedContent.replace(wrappedRegex, "").trim();
+    
+    // Remove any remaining unwrapped sim blocks
+    const unwrappedRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
+    cleanedContent = cleanedContent.replace(unwrappedRegex, "").trim();
     
     // Strip HTML if enabled
     if (stripHTMLEnabled) {
