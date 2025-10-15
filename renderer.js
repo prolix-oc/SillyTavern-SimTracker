@@ -468,10 +468,25 @@ function attachTabEventListeners(sidebarElement) {
         }
       }
 
-      if (tabs[firstActiveIndex])
+      // Initialize all cards and tabs to hidden state first
+      cards.forEach((card) => {
+        card.classList.add("tab-hidden");
+        card.classList.remove("active", "sliding-in", "sliding-out");
+      });
+      tabs.forEach((tab) => {
+        tab.classList.add("tab-hidden");
+        tab.classList.remove("active", "sliding-in", "sliding-out");
+      });
+
+      // Then activate the first non-inactive card and tab
+      if (tabs[firstActiveIndex]) {
+        tabs[firstActiveIndex].classList.remove("tab-hidden");
         tabs[firstActiveIndex].classList.add("active");
-      if (cards[firstActiveIndex])
+      }
+      if (cards[firstActiveIndex]) {
+        cards[firstActiveIndex].classList.remove("tab-hidden");
         cards[firstActiveIndex].classList.add("active");
+      }
 
       // Add click listeners to tabs
       tabs.forEach((tab, index) => {
