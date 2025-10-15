@@ -78,6 +78,7 @@ function updateLeftSidebar(content) {
           visibility: visible !important;
           overflow: visible !important;
           pointer-events: none !important;
+          z-index: 100 !important;
       `;
     console.log(`[SST] [${MODULE_NAME}]`, "Created verticalContainer");
 
@@ -194,6 +195,7 @@ function updateRightSidebar(content) {
           visibility: visible !important;
           overflow: visible !important;
           pointer-events: none !important;
+          z-index: 100 !important;
       `;
     console.log(`[SST] [${MODULE_NAME}]`, "Created verticalContainer");
 
