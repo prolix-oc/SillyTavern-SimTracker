@@ -33,8 +33,10 @@
     justify-content: center;
     align-items: flex-end;
     padding-right: 0;
+    width: auto;
+    height: 100%;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    pointer-events: none;
+    pointer-events: none !important;
   }
 
   .sim-tracker-tab {
@@ -52,12 +54,18 @@
     border: 1px solid rgba(255, 255, 255, 0.05);
     flex-shrink: 0;
     margin-right: 8px;
-    transform: translateX(60px);
+    transform: translateX(0px);
     pointer-events: auto;
+    position: relative;
   }
 
   .sim-tracker-tab.active {
     transform: translateX(-270px);
+    filter: brightness(1.3) !important;
+  }
+
+  .sim-tracker-tab:hover {
+    filter: brightness(1.2) !important;
   }
 
   .tab-initials {
@@ -85,11 +93,12 @@
     padding: 20px;
     width: 270px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    position: absolute;
-    right: 0;
+    position: absolute !important;
+    right: 0 !important;
+    top: 50%;
     backdrop-filter: blur(10px);
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    transform: translateX(100%);
+    transform: translateY(-50%) translateX(100%) !important;
     opacity: 0;
     visibility: hidden;
     border: 1px solid rgba(255, 255, 255, 0.05);
@@ -98,21 +107,25 @@
   }
 
   .sim-tracker-card.active {
-    transform: translateX(0);
+    transform: translateY(-50%) translateX(0) !important;
     opacity: 1;
     visibility: visible;
   }
 
   .sim-tracker-card.sliding-in {
-    transform: translateX(0);
+    transform: translateY(-50%) translateX(0) !important;
     opacity: 1;
     visibility: visible;
   }
 
   .sim-tracker-card.sliding-out {
-    transform: translateX(300px);
+    transform: translateY(-50%) translateX(100%) !important;
     opacity: 0;
     visibility: hidden;
+  }
+
+  .sim-tracker-card.tab-hidden {
+    display: none !important;
   }
 
   .sim-tracker-card.inactive {
@@ -252,7 +265,15 @@
 
   <div class="sim-tracker-cards-wrapper">
     {{#each characters}}
-    <div <!-- Days counter at the top -->
+    <div
+      class="sim-tracker-card {{#if stats.inactive}}narrative-inactive{{/if}}"
+      data-character="{{@index}}"
+      style="background: linear-gradient(145deg, {{adjustColorBrightness bgColor 70}} 0%, {{adjustColorBrightness darkerBgColor 60}} 50%, {{adjustColorBrightness darkerBgColor 50}} 100%);"
+    >
+      <!-- Overlay for inactive characters -->
+      <div class="narrative-inactive-overlay"></div>
+
+      <!-- Days counter at the top -->
       <div class="days-counter">Day {{stats.days_since_first_meeting}}</div>
 
       <!-- Character header with name and status -->
@@ -354,7 +375,8 @@
     </div>
     {{/each}}
   </div>
-  <!-- CARD_TEMPLATE_END -->
+</div>
+<!-- CARD_TEMPLATE_END -->
 
   <!-- 
 TEMPLATE VARIABLES:
@@ -383,4 +405,4 @@ TEMPLATE VARIABLES:
 - {{healthIcon}}: Health status icon (🤕 or 💀)
 - {{reactionEmoji}}: Reaction emoji (👍, 👎, or 😐)
 - {{showThoughtBubble}}: Boolean to show/hide thought bubble
---></div>
+-->

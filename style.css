@@ -193,21 +193,6 @@ div[mesid] .mes_text #silly-sim-tracker-container {
   pointer-events: auto !important;
 }
 
-/* Ensure sidebar content is visible */
-.sim-tracker-container {
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 20px !important;
-  width: 100% !important;
-  box-sizing: border-box !important;
-  pointer-events: auto !important;
-}
-
-.sim-tracker-card {
-  display: block !important;
-  visibility: visible !important;
-  box-sizing: border-box !important;
-}
 
 /* Custom Fields Dialog Styles */
 #sst-custom-fields-modal {
