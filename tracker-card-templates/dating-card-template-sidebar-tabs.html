@@ -45,7 +45,7 @@
     border-radius: 8px;
     box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
     backdrop-filter: blur(10px);
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), filter 0.3s ease;
     cursor: pointer;
     display: flex;
     justify-content: center;
@@ -54,7 +54,7 @@
     border: 1px solid rgba(255, 255, 255, 0.05);
     flex-shrink: 0;
     margin-right: 8px;
-    transform: translateX(60px);  /* Start just outside screen edge */
+    transform: translateX(-8px);  /* Fully visible with small gap from edge */
     pointer-events: auto !important;
     position: relative;
   }
@@ -97,7 +97,7 @@
     right: 0 !important;
     top: 50%;
     backdrop-filter: blur(10px);
-    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease, visibility 0.3s ease;
     transform: translateY(-50%) translateX(100%) !important;
     opacity: 0;
     visibility: hidden;

@@ -180,7 +180,7 @@ div[mesid] .mes_text #silly-sim-tracker-container {
   display: block !important;
   visibility: visible !important;
   overflow: visible !important;
-  pointer-events: auto !important;
+  pointer-events: none !important;
 }
 
 
