@@ -534,75 +534,14 @@ characters:
       setGenerationInProgress(true);
     });
 
+    // Track the last rendered message ID for secondary LLM generation
+    let lastRenderedMessageId = null;
+
     eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, async (mesId) => {
-      // Clear generation in progress flag when message is rendered
-      setGenerationInProgress(false);
+      // Store the last rendered message ID
+      lastRenderedMessageId = mesId;
       
-      // Check if we should use secondary LLM generation
-      const useSecondaryLLM = get_settings("useSecondaryLLM");
-      const context = getContext();
-      const message = context.chat[mesId];
-      
-      // Only proceed if we have a valid character message with actual content
-      if (useSecondaryLLM && message && !message.is_user && !message.is_system && message.mes && message.mes.trim().length > 0) {
-        // Check if the message already has a sim block
-        const identifier = get_settings("codeBlockIdentifier");
-        const simRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "m");
-        const hasSimBlock = simRegex.test(message.mes);
-        
-        if (!hasSimBlock) {
-          log("Message doesn't have sim block, attempting secondary LLM generation...");
-          
-          try {
-            // Generate tracker block with secondary LLM
-            const generatedBlock = await generateTrackerWithSecondaryLLM(get_settings);
-            
-            if (generatedBlock) {
-              // Extract just the code block from the response
-              const blockMatch = generatedBlock.match(new RegExp("```" + identifier + "[\\s\\S]*?```", "m"));
-              
-              if (blockMatch) {
-                log("Successfully generated tracker block with secondary LLM");
-                
-                // Append the tracker block to the message
-                message.mes += "\n\n" + blockMatch[0];
-                
-                // Update lastSimJsonString for the macro
-                const content = blockMatch[0]
-                  .replace(/```/g, "")
-                  .replace(new RegExp(`^${identifier}\\s*`), "")
-                  .trim();
-                lastSimJsonString = content;
-                
-                // Save the updated chat
-                await context.saveChat();
-                
-                // Update the message in the UI
-                const messageElement = document.querySelector(
-                  `div[mesid="${mesId}"] .mes_text`
-                );
-                if (messageElement) {
-                  messageElement.innerHTML = messageFormatting(
-                    message.mes,
-                    message.name,
-                    message.is_system,
-                    message.is_user,
-                    mesId
-                  );
-                }
-                
-                log("Updated message with secondary LLM generated tracker block");
-              } else {
-                log("Generated block doesn't contain proper code fence");
-              }
-            }
-          } catch (error) {
-            console.error(`[SST] [${MODULE_NAME}]`, "Error in secondary LLM generation:", error);
-          }
-        }
-      }
-      
-      // Render the tracker (whether it was already there or just added)
+      // Render the tracker (this will use existing sim block if present)
       renderTracker(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
     });
     
@@ -632,10 +571,85 @@ characters:
       }
     });
 
-    // Listen for generation ended event to update sidebars
-    eventSource.on(event_types.GENERATION_ENDED, () => {
+    // Listen for generation ended event to update sidebars and trigger secondary LLM
+    eventSource.on(event_types.GENERATION_ENDED, async () => {
       log("Generation ended, updating sidebars if needed");
       setGenerationInProgress(false);
+
+      // Check if we should use secondary LLM generation
+      const useSecondaryLLM = get_settings("useSecondaryLLM");
+      const context = getContext();
+      
+      // Only proceed if we have a valid message ID from the last render
+      if (useSecondaryLLM && lastRenderedMessageId !== null) {
+        const mesId = lastRenderedMessageId;
+        const message = context.chat[mesId];
+        
+        // Only proceed if we have a valid character message with actual content
+        if (message && !message.is_user && !message.is_system && message.mes && message.mes.trim().length > 0) {
+          // Check if the message already has a sim block
+          const identifier = get_settings("codeBlockIdentifier");
+          const simRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "m");
+          const hasSimBlock = simRegex.test(message.mes);
+          
+          if (!hasSimBlock) {
+            log("Generation complete. Message doesn't have sim block, attempting secondary LLM generation...");
+            
+            try {
+              // Generate tracker block with secondary LLM
+              const generatedBlock = await generateTrackerWithSecondaryLLM(get_settings);
+              
+              if (generatedBlock) {
+                // Extract just the code block from the response
+                const blockMatch = generatedBlock.match(new RegExp("```" + identifier + "[\\s\\S]*?```", "m"));
+                
+                if (blockMatch) {
+                  log("Successfully generated tracker block with secondary LLM");
+                  
+                  // Append the tracker block to the message
+                  message.mes += "\n\n" + blockMatch[0];
+                  
+                  // Update lastSimJsonString for the macro
+                  const content = blockMatch[0]
+                    .replace(/```/g, "")
+                    .replace(new RegExp(`^${identifier}\\s*`), "")
+                    .trim();
+                  lastSimJsonString = content;
+                  
+                  // Save the updated chat
+                  await context.saveChat();
+                  
+                  // Update the message in the UI
+                  const messageElement = document.querySelector(
+                    `div[mesid="${mesId}"] .mes_text`
+                  );
+                  if (messageElement) {
+                    messageElement.innerHTML = messageFormatting(
+                      message.mes,
+                      message.name,
+                      message.is_system,
+                      message.is_user,
+                      mesId
+                    );
+                  }
+                  
+                  log("Updated message with secondary LLM generated tracker block");
+                  
+                  // Re-render the tracker with the new sim block
+                  renderTracker(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+                } else {
+                  log("Generated block doesn't contain proper code fence");
+                }
+              }
+            } catch (error) {
+              console.error(`[SST] [${MODULE_NAME}]`, "Error in secondary LLM generation:", error);
+            }
+          }
+        }
+        
+        // Reset the last rendered message ID
+        lastRenderedMessageId = null;
+      }
 
       // Update left sidebar if there's pending content
       const leftContent = getPendingLeftSidebarContent();
