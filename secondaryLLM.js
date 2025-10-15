@@ -71,7 +71,7 @@ async function sendRawCompletionRequest({
   console.log(`[SST] [${MODULE_NAME}]`, "Request URL:", url);
   console.log(`[SST] [${MODULE_NAME}]`, "Request body:", JSON.stringify(body, null, 2));
   
-  const res = await fetch(url, {
+  const res = await fetch(url + '/chat/completions', {
     method: "POST",
     headers: headers,
     body: JSON.stringify(body),
