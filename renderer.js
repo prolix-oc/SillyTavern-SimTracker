@@ -218,7 +218,7 @@ function updateRightSidebar(content) {
           visibility: visible !important;
           overflow: visible !important;
           position: relative !important;
-          pointer-events: auto !important;
+          pointer-events: none !important;
       `;
 
     // Add the sidebar to the vertical container
