@@ -110,9 +110,15 @@ function updateLeftSidebar(content) {
     globalLeftSidebar = verticalContainer;
     console.log(`[SST] [${MODULE_NAME}]`, "Stored reference to globalLeftSidebar");
 
-    // Insert as first child of sheld to be in proper stacking context
-    sheld.insertBefore(verticalContainer, sheld.firstChild);
-    console.log(`[SST] [${MODULE_NAME}]`, "Successfully inserted left sidebar as first child of sheld");
+    // Insert as sibling to sheld (after it) - position: fixed will handle placement
+    if (sheld.parentNode) {
+      sheld.parentNode.insertBefore(verticalContainer, sheld.nextSibling);
+      console.log(`[SST] [${MODULE_NAME}]`, "Successfully inserted left sidebar as sibling after sheld");
+    } else {
+      console.error("[SST] sheld has no parent node!");
+      // Fallback: append to body
+      document.body.appendChild(verticalContainer);
+    }
 
     // Add event listeners for tabs (only once when creating)
     attachTabEventListeners(leftSidebar);
@@ -219,9 +225,15 @@ function updateRightSidebar(content) {
     globalRightSidebar = verticalContainer;
     console.log(`[SST] [${MODULE_NAME}]`, "Stored reference to globalRightSidebar");
 
-    // Insert as first child of sheld to be in proper stacking context
-    sheld.insertBefore(verticalContainer, sheld.firstChild);
-    console.log(`[SST] [${MODULE_NAME}]`, "Successfully inserted right sidebar as first child of sheld");
+    // Insert as sibling to sheld (after it) - position: fixed will handle placement
+    if (sheld.parentNode) {
+      sheld.parentNode.insertBefore(verticalContainer, sheld.nextSibling);
+      console.log(`[SST] [${MODULE_NAME}]`, "Successfully inserted right sidebar as sibling after sheld");
+    } else {
+      console.error("[SST] sheld has no parent node!");
+      // Fallback: append to body
+      document.body.appendChild(verticalContainer);
+    }
 
     // Add event listeners for tabs (only once when creating)
     attachTabEventListeners(rightSidebar);
