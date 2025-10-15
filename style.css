@@ -154,6 +154,7 @@ div[mesid] .mes_text #silly-sim-tracker-container {
     visibility: visible !important;
     overflow: visible !important;
     pointer-events: none !important;
+    z-index: 100 !important;
 }
 
 #sst-global-sidebar-left {
