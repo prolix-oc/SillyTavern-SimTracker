@@ -33,7 +33,7 @@
     align-items: flex-end;
     padding-right: 0;
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-    pointer-events: none !important;
+    pointer-events: none;
   }
 
   .sim-tracker-tab {
@@ -252,8 +252,8 @@
   <div class="sim-tracker-cards-wrapper">
     {{#each characters}}
     <div
-      class="sim-tracker-card {{#if stats.inactive}}narrative-inactive{{/if}}"
-      data-character="{{@index}}"
+    
+    <!-- Days counter at the top -->
     <div class="days-counter">Day {{stats.days_since_first_meeting}}</div>
 
     <!-- Character header with name and status -->
