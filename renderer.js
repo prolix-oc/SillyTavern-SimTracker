@@ -1215,14 +1215,17 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
   
   console.log(`[SST] [${MODULE_NAME}]`, `Template position: ${templatePosition}`);
   
-  // Always remove old containers first to ensure clean slate when template changes
-  document.querySelectorAll(`#${CONTAINER_ID}`).forEach((container) => {
-    container.remove();
-  });
-  
-  // Remove existing sidebars when template position changes
-  // This ensures sidebars are destroyed when switching to/from positioned templates
-  removeGlobalSidebars();
+  // Only remove containers and sidebars if we're NOT using sidebar templates
+  // For sidebar templates, we'll update them in place
+  if (templatePosition !== "LEFT" && templatePosition !== "RIGHT") {
+    // Remove old containers for non-sidebar templates
+    document.querySelectorAll(`#${CONTAINER_ID}`).forEach((container) => {
+      container.remove();
+    });
+    
+    // Remove sidebars if we're switching away from sidebar templates
+    removeGlobalSidebars();
+  }
   
   if (templatePosition === "LEFT" || templatePosition === "RIGHT" || templatePosition === "TOP" || templatePosition === "BOTTOM") {
     // Find the last message with sim data by checking the context.chat array directly
