@@ -54,17 +54,17 @@ function updateLeftSidebar(content) {
       return;
     }
 
-    // Create a container that stretches vertically and position it before sheld
+    // Create a container that stretches vertically - will be inserted inside sheld
     const verticalContainer = document.createElement("div");
     verticalContainer.id = "sst-global-sidebar-left";
     verticalContainer.className = "vertical-container";
     verticalContainer.style.cssText = `
-          position: absolute !important;
+          position: fixed !important;
           left: 0 !important;
           top: 0 !important;
           bottom: 0 !important;
           width: auto !important;
-          height: 100% !important;
+          height: 100vh !important;
           box-sizing: border-box !important;
           margin: 0 !important;
           padding: 10px !important;
@@ -110,15 +110,9 @@ function updateLeftSidebar(content) {
     globalLeftSidebar = verticalContainer;
     console.log(`[SST] [${MODULE_NAME}]`, "Stored reference to globalLeftSidebar");
 
-    // Insert the sidebar container directly after the sheld div in the body
-    if (sheld.parentNode) {
-      sheld.parentNode.insertBefore(verticalContainer, sheld.nextSibling);
-      console.log(`[SST] [${MODULE_NAME}]`, "Successfully inserted left sidebar after sheld");
-    } else {
-      console.error("[SST] sheld has no parent node!");
-      // Fallback: append to body
-      document.body.appendChild(verticalContainer);
-    }
+    // Insert as first child of sheld to be in proper stacking context
+    sheld.insertBefore(verticalContainer, sheld.firstChild);
+    console.log(`[SST] [${MODULE_NAME}]`, "Successfully inserted left sidebar as first child of sheld");
 
     // Add event listeners for tabs (only once when creating)
     attachTabEventListeners(leftSidebar);
@@ -170,17 +164,17 @@ function updateRightSidebar(content) {
       return;
     }
 
-    // Create a container that stretches vertically and position it before sheld
+    // Create a container that stretches vertically - will be inserted inside sheld
     const verticalContainer = document.createElement("div");
     verticalContainer.id = "sst-global-sidebar-right";
     verticalContainer.className = "vertical-container";
     verticalContainer.style.cssText = `
-          position: absolute !important;
+          position: fixed !important;
           right: 0 !important;
           top: 0 !important;
           bottom: 0 !important;
           width: auto !important;
-          height: 100% !important;
+          height: 100vh !important;
           box-sizing: border-box !important;
           margin: 0 !important;
           padding: 10px !important;
@@ -225,15 +219,9 @@ function updateRightSidebar(content) {
     globalRightSidebar = verticalContainer;
     console.log(`[SST] [${MODULE_NAME}]`, "Stored reference to globalRightSidebar");
 
-    // Insert the sidebar container directly after the sheld div in the body
-    if (sheld.parentNode) {
-      sheld.parentNode.insertBefore(verticalContainer, sheld.nextSibling);
-      console.log(`[SST] [${MODULE_NAME}]`, "Successfully inserted right sidebar after sheld");
-    } else {
-      console.error("[SST] sheld has no parent node!");
-      // Fallback: append to body
-      document.body.appendChild(verticalContainer);
-    }
+    // Insert as first child of sheld to be in proper stacking context
+    sheld.insertBefore(verticalContainer, sheld.firstChild);
+    console.log(`[SST] [${MODULE_NAME}]`, "Successfully inserted right sidebar as first child of sheld");
 
     // Add event listeners for tabs (only once when creating)
     attachTabEventListeners(rightSidebar);

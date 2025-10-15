@@ -137,7 +137,11 @@ div[mesid] .mes_text #silly-sim-tracker-container {
 /* Global sidebar styles */
 #sst-global-sidebar-left,
 #sst-global-sidebar-right {
-    position: absolute !important;
+    position: fixed !important;
+    top: 0 !important;
+    bottom: 0 !important;
+    height: 100vh !important;
+    width: auto !important;
     box-sizing: border-box !important;
     margin: 0 !important;
     padding: 10px !important;
