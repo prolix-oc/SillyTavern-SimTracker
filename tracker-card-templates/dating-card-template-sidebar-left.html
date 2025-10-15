@@ -8,11 +8,10 @@
   .sim-tracker-container {
     display: flex;
     flex-direction: column;
-    justify-content: center;
-    align-items: center;
     gap: 20px;
     width: 100%;
     height: 100%;
+    position: relative;
     pointer-events: none;
   }
 
@@ -20,9 +19,13 @@
     background: linear-gradient(145deg, #2c2c2c, #1a1a1a);
     border-radius: 18px;
     padding: 20px;
-    width: 100%;
+    width: 270px;
+    max-width: 270px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
-    position: relative;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
     border: 1px solid rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(10px);
     transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
