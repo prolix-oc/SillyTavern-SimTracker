@@ -100,6 +100,7 @@ function updateLeftSidebar(content) {
           visibility: visible !important;
           overflow: visible !important;
           position: relative !important;
+          pointer-events: auto !important;
       `;
     console.log(`[SST] [${MODULE_NAME}]`, "Applied styles to leftSidebar");
 
@@ -217,6 +218,7 @@ function updateRightSidebar(content) {
           visibility: visible !important;
           overflow: visible !important;
           position: relative !important;
+          pointer-events: auto !important;
       `;
 
     // Add the sidebar to the vertical container
