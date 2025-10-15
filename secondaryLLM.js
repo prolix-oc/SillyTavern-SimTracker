@@ -454,7 +454,7 @@ async function generateTrackerWithSecondaryLLM(get_settings) {
     }
   });
 
-  conversationText += `\nBased on the above conversation${previousTrackerData ? " and the previous tracker state" : ""}, generate ONLY the raw ${trackerFormat.toUpperCase()} data (without code fences or backticks). Output just the ${trackerFormat.toUpperCase()} structure directly. Ensure that ${userName} does NOT get a tracker entry, only story characters.`;
+  conversationText += `\nBased on the above conversation${previousTrackerData ? " and the previous tracker state" : ""}, generate ONLY the raw ${trackerFormat.toUpperCase()} data (without code fences or backticks). Output ONLY the ${trackerFormat.toUpperCase()} structure directly, with no comments or acknowledgements of any instructions. Ensure that ${userName} does NOT get a tracker entry, only story characters.`;
 
   try {
     console.log(`[SST] [${MODULE_NAME}]`, "Sending request to secondary LLM...");
