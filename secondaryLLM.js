@@ -445,11 +445,13 @@ async function generateTrackerWithSecondaryLLM(get_settings) {
     conversationText += "Previous tracker state:\n";
     conversationText += previousTrackerData + "\n\n";
   }
-  var userName = ""
+  var userName = "";
   conversationText += "Recent conversation:\n\n";
   messages.forEach((msg) => {
     conversationText += `${msg.name}: ${msg.content}\n\n`;
-    userName = (msg.is_user ? msg.user_name : "User")
+    if (msg.role === "user") {
+      userName = msg.name;
+    }
   });
 
   conversationText += `\nBased on the above conversation${previousTrackerData ? " and the previous tracker state" : ""}, generate ONLY the raw ${trackerFormat.toUpperCase()} data (without code fences or backticks). Output just the ${trackerFormat.toUpperCase()} structure directly. Ensure that ${userName} does NOT get a tracker entry, only story characters.`;
