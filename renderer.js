@@ -362,19 +362,26 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml) {
       // Start with new card's base classes (this includes narrative-inactive if applicable)
       existingCard.className = newCard.className;
       
-      // Apply synchronized state
-      if (state === 'sliding-in') {
-        existingCard.classList.add('sliding-in');
-        existingCard.classList.remove('tab-hidden', 'sliding-out', 'active');
-      } else if (state === 'sliding-out') {
-        existingCard.classList.add('sliding-out');
-        existingCard.classList.remove('active', 'sliding-in', 'tab-hidden');
-      } else if (state === 'active') {
-        existingCard.classList.add('active');
-        existingCard.classList.remove('tab-hidden', 'sliding-in', 'sliding-out');
-      } else if (state === 'hidden') {
-        existingCard.classList.add('tab-hidden');
-        existingCard.classList.remove('active', 'sliding-in', 'sliding-out');
+      // Apply synchronized state - only add the final state classes without animations
+      // unless the card is actively in a transition state
+      if (state === 'sliding-in' || state === 'sliding-out') {
+        // Only preserve animation states if they're currently happening
+        if (state === 'sliding-in') {
+          existingCard.classList.add('sliding-in');
+          existingCard.classList.remove('tab-hidden', 'sliding-out', 'active');
+        } else {
+          existingCard.classList.add('sliding-out');
+          existingCard.classList.remove('active', 'sliding-in', 'tab-hidden');
+        }
+      } else {
+        // For stable states (active/hidden), just set the class without any animation
+        if (state === 'active') {
+          existingCard.classList.add('active');
+          existingCard.classList.remove('tab-hidden', 'sliding-in', 'sliding-out');
+        } else {
+          existingCard.classList.add('tab-hidden');
+          existingCard.classList.remove('active', 'sliding-in', 'sliding-out');
+        }
       }
       
       console.log(`[SST] [${MODULE_NAME}]`, `Card ${index} final classes:`, existingCard.className);
@@ -400,19 +407,25 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml) {
       // Start with new tab's base classes
       existingTab.className = newTab.className;
       
-      // Apply synchronized state (same logic as card)
-      if (state === 'sliding-in') {
-        existingTab.classList.add('sliding-in');
-        existingTab.classList.remove('tab-hidden', 'sliding-out', 'active');
-      } else if (state === 'sliding-out') {
-        existingTab.classList.add('sliding-out');
-        existingTab.classList.remove('active', 'sliding-in', 'tab-hidden');
-      } else if (state === 'active') {
-        existingTab.classList.add('active');
-        existingTab.classList.remove('tab-hidden', 'sliding-in', 'sliding-out');
-      } else if (state === 'hidden') {
-        existingTab.classList.add('tab-hidden');
-        existingTab.classList.remove('active', 'sliding-in', 'sliding-out');
+      // Apply synchronized state (same logic as card) - no animations for stable states
+      if (state === 'sliding-in' || state === 'sliding-out') {
+        // Only preserve animation states if they're currently happening
+        if (state === 'sliding-in') {
+          existingTab.classList.add('sliding-in');
+          existingTab.classList.remove('tab-hidden', 'sliding-out', 'active');
+        } else {
+          existingTab.classList.add('sliding-out');
+          existingTab.classList.remove('active', 'sliding-in', 'tab-hidden');
+        }
+      } else {
+        // For stable states (active/hidden), just set the class without any animation
+        if (state === 'active') {
+          existingTab.classList.add('active');
+          existingTab.classList.remove('tab-hidden', 'sliding-in', 'sliding-out');
+        } else {
+          existingTab.classList.add('tab-hidden');
+          existingTab.classList.remove('active', 'sliding-in', 'sliding-out');
+        }
       }
       
       console.log(`[SST] [${MODULE_NAME}]`, `Tab ${index} final classes:`, existingTab.className);
