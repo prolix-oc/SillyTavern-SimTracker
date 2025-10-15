@@ -637,11 +637,11 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
     if (get_settings("hideSimBlocks")) {
       let displayMessage = message.mes;
 
-      // Hide sim blocks with spans (for pre-processing)
+      // Hide sim blocks with div wrapper (more robust against re-rendering)
       const hideRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
       displayMessage = displayMessage.replace(
         hideRegex,
-        (match) => `<span style="display: none !important;">${match}</span>`
+        (match) => `<div style="display: none;">${match}</div>`
       );
 
       // Format and display the message content (without the tracker UI)
@@ -925,7 +925,7 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
         const hideRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
         displayMessage = displayMessage.replace(
           hideRegex,
-          (match) => `<span style="display: none !important;">${match}</span>`
+          (match) => `<div style="display: none;">${match}</div>`
         );
       }
 
