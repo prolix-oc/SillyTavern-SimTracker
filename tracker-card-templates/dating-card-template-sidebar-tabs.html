@@ -71,6 +71,13 @@
     font-size: 18px;
   }
 
+  .sim-tracker-cards-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    pointer-events: none;
+  }
+
   .sim-tracker-card {
     background: linear-gradient(145deg, #2c2c2c, #1a1a1a);
     border-radius: 18px;
@@ -247,12 +254,6 @@
     <div
       class="sim-tracker-card {{#if stats.inactive}}narrative-inactive{{/if}}"
       data-character="{{@index}}"
-      style="background: linear-gradient(145deg, {{adjustColorBrightness bgColor 70}} 0%, {{adjustColorBrightness darkerBgColor 60}} 50%, {{adjustColorBrightness darkerBgColor 50}} 100%);"
-    >
-    <!-- Overlay for inactive characters -->
-    <div class="narrative-inactive-overlay"></div>
-    
-    <!-- Days counter at the top -->
     <div class="days-counter">Day {{stats.days_since_first_meeting}}</div>
 
     <!-- Character header with name and status -->
@@ -351,9 +352,8 @@
       </div>
     </div>
     {{/if}}
-    </div>
-    {{/each}}
   </div>
+  {{/each}}
 </div>
 <!-- CARD_TEMPLATE_END -->
 
