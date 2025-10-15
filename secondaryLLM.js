@@ -237,12 +237,31 @@ function stripHTML(text) {
 }
 
 /**
+ * Extract sim tracker data from a message
+ */
+function extractTrackerData(message, identifier) {
+  if (!message || !message.mes) {
+    return null;
+  }
+  
+  const simRegex = new RegExp("```" + identifier + "\\s*([\\s\\S]*?)```", "m");
+  const match = message.mes.match(simRegex);
+  
+  if (match && match[1]) {
+    return match[1].trim();
+  }
+  
+  return null;
+}
+
+/**
  * Process chat history to extract the last N messages
  * Converts them to a format suitable for the secondary LLM
+ * Returns both the messages and any previous tracker data
  */
 function processChatHistory(chat, messageCount, get_settings) {
   if (!chat || !Array.isArray(chat)) {
-    return [];
+    return { messages: [], previousTrackerData: null };
   }
 
   // Get the last N messages, but filter out system messages
@@ -253,14 +272,22 @@ function processChatHistory(chat, messageCount, get_settings) {
 
   // Check if HTML stripping is enabled
   const stripHTMLEnabled = get_settings("secondaryLLMStripHTML") !== false; // Default to true
+  const identifier = get_settings("codeBlockIdentifier");
+
+  // Extract tracker data from the message before the most recent one
+  let previousTrackerData = null;
+  if (recentMessages.length >= 2) {
+    // Look at the second-to-last message (the one before the most recent)
+    const previousMessage = recentMessages[recentMessages.length - 2];
+    previousTrackerData = extractTrackerData(previousMessage, identifier);
+  }
 
   // Convert to a simple format for the LLM
-  return recentMessages.map((msg) => {
+  const messages = recentMessages.map((msg) => {
     // Determine role based on is_user flag
     const role = msg.is_user ? "user" : "assistant";
     
     // Clean the message content - remove any existing sim blocks
-    const identifier = get_settings("codeBlockIdentifier");
     const simRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
     let cleanedContent = msg.mes.replace(simRegex, "").trim();
     
@@ -275,6 +302,8 @@ function processChatHistory(chat, messageCount, get_settings) {
       name: msg.name || (msg.is_user ? "User" : "Character"),
     };
   });
+
+  return { messages, previousTrackerData };
 }
 
 /**
@@ -356,7 +385,7 @@ async function generateTrackerWithSecondaryLLM(get_settings) {
   const trackerDesc = templateData?.trackerDesc || "general tracker";
 
   // Process chat history
-  const messages = processChatHistory(chat, messageCount, get_settings);
+  const { messages, previousTrackerData } = processChatHistory(chat, messageCount, get_settings);
 
   if (messages.length === 0) {
     console.log(`[SST] [${MODULE_NAME}]`, "No messages to process for secondary generation");
@@ -392,12 +421,19 @@ async function generateTrackerWithSecondaryLLM(get_settings) {
   
   // Build the conversation context
   let conversationText = processedPrompt + "\n\n";
+  
+  // Include previous tracker data if available
+  if (previousTrackerData) {
+    conversationText += "Previous tracker state:\n";
+    conversationText += previousTrackerData + "\n\n";
+  }
+  
   conversationText += "Recent conversation:\n\n";
   messages.forEach((msg) => {
     conversationText += `${msg.name}: ${msg.content}\n\n`;
   });
 
-  conversationText += `\nBased on the above conversation, generate ONLY the raw ${trackerFormat.toUpperCase()} data (without code fences or backticks). Output just the ${trackerFormat.toUpperCase()} structure directly.`;
+  conversationText += `\nBased on the above conversation${previousTrackerData ? " and the previous tracker state" : ""}, generate ONLY the raw ${trackerFormat.toUpperCase()} data (without code fences or backticks). Output just the ${trackerFormat.toUpperCase()} structure directly.`;
 
   try {
     console.log(`[SST] [${MODULE_NAME}]`, "Sending request to secondary LLM...");
