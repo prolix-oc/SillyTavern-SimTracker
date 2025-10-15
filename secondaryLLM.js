@@ -86,6 +86,8 @@ async function sendRawCompletionRequest({
 
   const data = await res.json();
 
+  console.log(`[SST] Received the following response: ${res.json}`)
+
   let text = "";
 
   // Handle different response formats
