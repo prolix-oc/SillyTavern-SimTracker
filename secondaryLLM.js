@@ -317,9 +317,9 @@ async function generateTrackerWithSecondaryLLM(get_settings) {
   }
 
   // Get the actual system prompt
-  const systemPrompt = get_settings("sysPrompt") || "";
+  const systemPrompt = get_settings("datingSimPrompt") || "";
   
-  // Build the format example to replace {{sim_format}}
+  // Build the format example to replace {{sim_format}} - WITHOUT code fences
   const trackerFormat = get_settings("trackerFormat") || "json";
   const customFields = get_settings("customFields") || [];
   const codeBlockIdentifier = get_settings("codeBlockIdentifier") || "sim";
@@ -327,18 +327,17 @@ async function generateTrackerWithSecondaryLLM(get_settings) {
   let formatExample = "";
   
   if (trackerFormat === "yaml") {
-    formatExample = `\`\`\`${codeBlockIdentifier}\nworldData:\n  current_date: "YYYY-MM-DD"\n  current_time: "HH:MM"\ncharacters:\n  - name: "Character Name"\n`;
+    formatExample = `worldData:\n  current_date: "YYYY-MM-DD"\n  current_time: "HH:MM"\ncharacters:\n  - name: "Character Name"\n`;
     customFields.forEach((field) => {
       formatExample += `    ${field.key}: [appropriate value] # ${field.description}\n`;
     });
-    formatExample += `\`\`\``;
   } else {
-    formatExample = `\`\`\`${codeBlockIdentifier}\n{\n  "worldData": {\n    "current_date": "YYYY-MM-DD",\n    "current_time": "HH:MM"\n  },\n  "characters": [\n    {\n      "name": "Character Name",\n`;
+    formatExample = `{\n  "worldData": {\n    "current_date": "YYYY-MM-DD",\n    "current_time": "HH:MM"\n  },\n  "characters": [\n    {\n      "name": "Character Name",\n`;
     customFields.forEach((field, index) => {
       const comma = index < customFields.length - 1 ? "," : "";
       formatExample += `      "${field.key}": [appropriate value]${comma} // ${field.description}\n`;
     });
-    formatExample += `    }\n  ]\n}\n\`\`\``;
+    formatExample += `    }\n  ]\n}`;
   }
 
   // Replace {{sim_format}} in the system prompt
@@ -351,7 +350,7 @@ async function generateTrackerWithSecondaryLLM(get_settings) {
     conversationText += `${msg.name}: ${msg.content}\n\n`;
   });
 
-  conversationText += `\nBased on the above conversation, generate ONLY the tracker block in the specified format. Do not include any other text or explanations.`;
+  conversationText += `\nBased on the above conversation, generate ONLY the raw ${trackerFormat.toUpperCase()} data (without code fences or backticks). Output just the ${trackerFormat.toUpperCase()} structure directly.`;
 
   try {
     console.log(`[SST] [${MODULE_NAME}]`, "Sending request to secondary LLM...");

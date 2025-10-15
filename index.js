@@ -597,49 +597,49 @@ characters:
             
             try {
               // Generate tracker block with secondary LLM
-              const generatedBlock = await generateTrackerWithSecondaryLLM(get_settings);
+              const generatedContent = await generateTrackerWithSecondaryLLM(get_settings);
               
-              if (generatedBlock) {
-                // Extract just the code block from the response
-                const blockMatch = generatedBlock.match(new RegExp("```" + identifier + "[\\s\\S]*?```", "m"));
+              if (generatedContent) {
+                log("Successfully generated tracker content with secondary LLM");
                 
-                if (blockMatch) {
-                  log("Successfully generated tracker block with secondary LLM");
-                  
-                  // Append the tracker block to the message
-                  message.mes += "\n\n" + blockMatch[0];
-                  
-                  // Update lastSimJsonString for the macro
-                  const content = blockMatch[0]
-                    .replace(/```/g, "")
-                    .replace(new RegExp(`^${identifier}\\s*`), "")
-                    .trim();
-                  lastSimJsonString = content;
-                  
-                  // Save the updated chat
-                  await context.saveChat();
-                  
-                  // Update the message in the UI
-                  const messageElement = document.querySelector(
-                    `div[mesid="${mesId}"] .mes_text`
+                // Clean up the response - remove any markdown code fences if present
+                let cleanedContent = generatedContent.trim();
+                
+                // Remove code fences if the LLM added them anyway
+                cleanedContent = cleanedContent.replace(/^```(?:json|yaml)?\s*\n?/i, "");
+                cleanedContent = cleanedContent.replace(/\n?```\s*$/i, "");
+                cleanedContent = cleanedContent.trim();
+                
+                // Wrap the content in our code block
+                const wrappedBlock = `\`\`\`${identifier}\n${cleanedContent}\n\`\`\``;
+                
+                // Append the tracker block to the message
+                message.mes += "\n\n" + wrappedBlock;
+                
+                // Update lastSimJsonString for the macro
+                lastSimJsonString = cleanedContent;
+                
+                // Save the updated chat
+                await context.saveChat();
+                
+                // Update the message in the UI
+                const messageElement = document.querySelector(
+                  `div[mesid="${mesId}"] .mes_text`
+                );
+                if (messageElement) {
+                  messageElement.innerHTML = messageFormatting(
+                    message.mes,
+                    message.name,
+                    message.is_system,
+                    message.is_user,
+                    mesId
                   );
-                  if (messageElement) {
-                    messageElement.innerHTML = messageFormatting(
-                      message.mes,
-                      message.name,
-                      message.is_system,
-                      message.is_user,
-                      mesId
-                    );
-                  }
-                  
-                  log("Updated message with secondary LLM generated tracker block");
-                  
-                  // Re-render the tracker with the new sim block
-                  renderTracker(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
-                } else {
-                  log("Generated block doesn't contain proper code fence");
                 }
+                
+                log("Updated message with secondary LLM generated tracker block");
+                
+                // Re-render the tracker with the new sim block
+                renderTracker(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
               }
             } catch (error) {
               console.error(`[SST] [${MODULE_NAME}]`, "Error in secondary LLM generation:", error);
