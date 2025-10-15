@@ -116,15 +116,15 @@
 .stats-container {
   position: absolute;
   top: 115px;
-  bottom: 110px;
   left: 0;
   right: 0;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   padding: 0 12px;
   gap: 8px;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
+  min-height: 100px;
 }
 
 /* Individual stat item */
@@ -292,7 +292,6 @@
   /* Adjust stats container position for mobile */
   .stats-container {
     top: 100px !important;
-    bottom: 110px !important;
   }
 }
 
@@ -313,7 +312,6 @@
   /* Adjust stats container position for desktop */
   .stats-container {
     top: 110px !important;
-    bottom: 110px !important;
   }
 }
 
@@ -333,7 +331,6 @@
   /* Adjust stats container position for large screens */
   .stats-container {
     top: 110px !important;
-    bottom: 110px !important;
   }
 }
 </style>
