@@ -27,6 +27,7 @@ function getCurrentCompletionEndpoint() {
 /**
  * Send a raw completion request to generate tracker data
  * Based on the example-send.js implementation
+ * Supports both streaming and non-streaming responses
  */
 async function sendRawCompletionRequest({
   model,
@@ -45,6 +46,7 @@ async function sendRawCompletionRequest({
     model,
     temperature,
     chat_completion_source: api,
+    stream: true, // Enable streaming
     ...extra,
   };
 
@@ -60,6 +62,7 @@ async function sendRawCompletionRequest({
       model,
       messages: [{ role: "user", content: prompt }],
       temperature,
+      stream: true, // Enable streaming
       ...extra,
     };
   } else if (api === "custom" && model) {
@@ -84,31 +87,84 @@ async function sendRawCompletionRequest({
     throw new Error(`LLM request failed: ${res.status} ${res.statusText} - ${errorText}`);
   }
 
-  const data = await res.json();
+  // Handle streaming response
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder("utf-8");
+  let buffer = "";
+  let fullText = "";
 
-  console.log(`[SST] Received the following response: ${res.json}`)
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      
+      if (done) {
+        break;
+      }
 
-  let text = "";
-
-  // Handle different response formats
-  if (data.choices?.[0]?.message?.content) {
-    text = data.choices[0].message.content;
-  } else if (data.completion) {
-    text = data.completion;
-  } else if (data.choices?.[0]?.text) {
-    text = data.choices[0].text;
-  } else if (data.content && Array.isArray(data.content)) {
-    // Handle Claude's structured format
-    const textBlock = data.content.find(
-      (block) =>
-        block && typeof block === "object" && block.type === "text" && block.text
-    );
-    text = textBlock?.text || "";
-  } else if (typeof data.content === "string") {
-    text = data.content;
+      // Decode the chunk and add to buffer
+      buffer += decoder.decode(value, { stream: true });
+      
+      // Process complete lines from the buffer
+      const lines = buffer.split('\n');
+      // Keep the last incomplete line in the buffer
+      buffer = lines.pop() || "";
+      
+      for (const line of lines) {
+        const trimmedLine = line.trim();
+        
+        // Skip empty lines and comments
+        if (!trimmedLine || trimmedLine.startsWith(':')) {
+          continue;
+        }
+        
+        // SSE format: "data: {...}"
+        if (trimmedLine.startsWith('data: ')) {
+          const data = trimmedLine.slice(6); // Remove "data: " prefix
+          
+          // Check for stream end marker
+          if (data === '[DONE]') {
+            continue;
+          }
+          
+          try {
+            const parsed = JSON.parse(data);
+            
+            // Extract content from the delta
+            let content = "";
+            
+            // OpenAI-style streaming format
+            if (parsed.choices?.[0]?.delta?.content) {
+              content = parsed.choices[0].delta.content;
+            }
+            // Alternative format - direct content in delta
+            else if (parsed.delta?.content) {
+              content = parsed.delta.content;
+            }
+            // Claude-style format
+            else if (parsed.delta?.text) {
+              content = parsed.delta.text;
+            }
+            // Some APIs might use 'text' directly
+            else if (parsed.choices?.[0]?.text) {
+              content = parsed.choices[0].text;
+            }
+            
+            if (content) {
+              fullText += content;
+            }
+          } catch (parseError) {
+            console.warn(`[SST] [${MODULE_NAME}]`, "Failed to parse SSE data:", data, parseError);
+          }
+        }
+      }
+    }
+  } finally {
+    reader.releaseLock();
   }
 
-  return { text, full: data };
+  console.log(`[SST] [${MODULE_NAME}]`, "Received complete response from streaming");
+
+  return { text: fullText, full: { choices: [{ message: { content: fullText } }] } };
 }
 
 /**
