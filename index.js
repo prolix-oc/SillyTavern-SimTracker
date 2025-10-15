@@ -397,6 +397,167 @@ ${exampleJson}
     });
     log("Macros registered successfully.");
 
+    // Register the slash command for force-regenerating tracker blocks
+    SlashCommandParser.addCommandObject(
+      SlashCommand.fromProps({
+        name: "sst-regen",
+        callback: async () => {
+          if (!get_settings("isEnabled")) {
+            return "Silly Sim Tracker is not enabled.";
+          }
+
+          const useSecondaryLLM = get_settings("useSecondaryLLM");
+          if (!useSecondaryLLM) {
+            return "Secondary LLM generation is not enabled. Please enable it in settings.";
+          }
+
+          try {
+            const context = getContext();
+            if (!context || !context.chat || context.chat.length === 0) {
+              return "No chat history found.";
+            }
+
+            // Get the last character message
+            let lastCharMessageIndex = -1;
+            for (let i = context.chat.length - 1; i >= 0; i--) {
+              if (!context.chat[i].is_user && !context.chat[i].is_system) {
+                lastCharMessageIndex = i;
+                break;
+              }
+            }
+
+            if (lastCharMessageIndex === -1) {
+              return "No character message found in chat history.";
+            }
+
+            const lastCharMessage = context.chat[lastCharMessageIndex];
+            const identifier = get_settings("codeBlockIdentifier");
+
+            // Remove existing sim block if present
+            const simRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
+            lastCharMessage.mes = lastCharMessage.mes.replace(simRegex, "").trim();
+
+            // Update the message UI to show it's being regenerated
+            const messageElement = document.querySelector(
+              `div[mesid="${lastCharMessageIndex}"] .mes_text`
+            );
+            if (messageElement) {
+              messageElement.innerHTML = messageFormatting(
+                lastCharMessage.mes,
+                lastCharMessage.name,
+                lastCharMessage.is_system,
+                lastCharMessage.is_user,
+                lastCharMessageIndex
+              );
+              
+              // Add visual feedback that generation is in progress
+              const preparingText = document.createElement("div");
+              preparingText.className = "sst-preparing-text sst-regen-preparing";
+              preparingText.textContent = "Regenerating tracker data...";
+              preparingText.style.cssText = `
+                color: #4a3a9d;
+                font-style: italic;
+                margin: 10px 0;
+                animation: sst-pulse 1.5s infinite;
+              `;
+              messageElement.parentNode.insertBefore(
+                preparingText,
+                messageElement.nextSibling
+              );
+            }
+
+            log("Force-regenerating tracker block for last character message...");
+            
+            // Generate tracker block with secondary LLM
+            const generatedContent = await generateTrackerWithSecondaryLLM(get_settings);
+            
+            if (generatedContent) {
+              log("Successfully generated tracker content with secondary LLM");
+              
+              // Clean up the response - remove any markdown code fences if present
+              let cleanedContent = generatedContent.trim();
+              
+              // Remove code fences if the LLM added them anyway
+              cleanedContent = cleanedContent.replace(/^```(?:json|yaml)?\s*\n?/i, "");
+              cleanedContent = cleanedContent.replace(/\n?```\s*$/i, "");
+              cleanedContent = cleanedContent.trim();
+              
+              // Wrap the content in our code block
+              const wrappedBlock = `\`\`\`${identifier}\n${cleanedContent}\n\`\`\``;
+              
+              // Append the tracker block to the message
+              lastCharMessage.mes += "\n\n" + wrappedBlock;
+              
+              // Update lastSimJsonString for the macro
+              lastSimJsonString = cleanedContent;
+              
+              // Save the updated chat
+              await context.saveChat();
+              
+              // Update the message in the UI
+              const messageElement = document.querySelector(
+                `div[mesid="${lastCharMessageIndex}"] .mes_text`
+              );
+              if (messageElement) {
+                messageElement.innerHTML = messageFormatting(
+                  lastCharMessage.mes,
+                  lastCharMessage.name,
+                  lastCharMessage.is_system,
+                  lastCharMessage.is_user,
+                  lastCharMessageIndex
+                );
+              }
+              
+              log("Updated message with force-regenerated tracker block");
+              
+              // Remove the preparing text
+              const preparingTextElement = document.querySelector(".sst-regen-preparing");
+              if (preparingTextElement) {
+                preparingTextElement.remove();
+              }
+              
+              // Re-render the tracker with the new sim block
+              renderTrackerWithoutSim(lastCharMessageIndex, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+              
+              return "Successfully regenerated tracker block for last character message.";
+            } else {
+              // Remove the preparing text even on failure
+              const preparingTextElement = document.querySelector(".sst-regen-preparing");
+              if (preparingTextElement) {
+                preparingTextElement.remove();
+              }
+              return "Failed to generate tracker content. Check console for errors.";
+            }
+          } catch (error) {
+            log(`Error in /sst-regen command: ${error.message}`);
+            // Remove the preparing text on error
+            const preparingTextElement = document.querySelector(".sst-regen-preparing");
+            if (preparingTextElement) {
+              preparingTextElement.remove();
+            }
+            return `Error: ${error.message}`;
+          }
+        },
+        returns: "status message",
+        unnamedArgumentList: [],
+        helpString: `
+                <div>
+                    Force-regenerates the tracker block for the last character message using the secondary LLM.
+                    This is useful if the response is invalid or blank.
+                </div>
+                <div>
+                    <strong>Example:</strong>
+                    <ul>
+                        <li>
+                            <pre><code class="language-stscript">/sst-regen</code></pre>
+                            Regenerates the tracker block for the last character message
+                        </li>
+                    </ul>
+                </div>
+            `,
+      })
+    );
+
     // Register the slash command for adding sim data to messages
     SlashCommandParser.addCommandObject(
       SlashCommand.fromProps({
@@ -649,8 +810,9 @@ characters:
                 
                 log("Updated message with secondary LLM generated tracker block");
                 
-                // Re-render the tracker with the new sim block
-                renderTracker(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+                // Re-render the tracker with the new sim block using renderTrackerWithoutSim
+                // This ensures proper state synchronization for sidebars
+                renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
               }
             } catch (error) {
               console.error(`[SST] [${MODULE_NAME}]`, "Error in secondary LLM generation:", error);
