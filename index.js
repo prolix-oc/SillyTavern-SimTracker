@@ -735,12 +735,14 @@ characters:
     
     eventSource.on(event_types.MESSAGE_SWIPE, (mesId) => {
       log(
-        `Message swipe detected for message ID ${mesId}. Updating last_sim_stats macro.`
+        `Message swipe detected for message ID ${mesId}. Updating last_sim_stats macro and re-rendering tracker.`
       );
       const updatedStats = updateLastSimStatsOnRegenerateOrSwipe(mesId, get_settings);
       if (updatedStats) {
         lastSimJsonString = updatedStats;
       }
+      // Re-render the tracker for the swiped message
+      renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
     });
 
     // Listen for generation ended event to update sidebars and trigger secondary LLM
