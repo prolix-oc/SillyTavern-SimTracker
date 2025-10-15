@@ -543,6 +543,17 @@ characters:
       
       // Render the tracker (this will use existing sim block if present)
       renderTracker(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+      
+      // For sidebar templates, ensure they render even on first message
+      // by forcing a re-render after a short delay if this is a positioned template
+      const templatePosition = currentTemplatePosition;
+      if (templatePosition === "LEFT" || templatePosition === "RIGHT") {
+        setTimeout(() => {
+          // Re-render to ensure sidebars are created if they weren't during initial render
+          log(`Re-rendering message ${mesId} to ensure sidebar creation`);
+          renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+        }, 150);
+      }
     });
     
     eventSource.on(event_types.CHAT_CHANGED, () => {

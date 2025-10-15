@@ -28,8 +28,9 @@ const getGenerationInProgress = () => {
 
 // Helper function to create or update a global left sidebar
 function updateLeftSidebar(content) {
-  // If generation is in progress, store the content for later
-  if (isGenerationInProgress) {
+  // If generation is in progress AND we already have a sidebar, store the content for later
+  // But if we don't have a sidebar yet, we need to create it now (first message case)
+  if (isGenerationInProgress && globalLeftSidebar) {
     pendingLeftSidebarContent = content;
     console.log(`[SST] [${MODULE_NAME}]`, "Generation in progress, storing left sidebar content for later");
     return;
@@ -147,8 +148,9 @@ function updateLeftSidebar(content) {
 
 // Helper function to create or update a global right sidebar
 function updateRightSidebar(content) {
-  // If generation is in progress, store the content for later
-  if (isGenerationInProgress) {
+  // If generation is in progress AND we already have a sidebar, store the content for later
+  // But if we don't have a sidebar yet, we need to create it now (first message case)
+  if (isGenerationInProgress && globalRightSidebar) {
     pendingRightSidebarContent = content;
     console.log(`[SST] [${MODULE_NAME}]`, "Generation in progress, storing right sidebar content for later");
     return;
