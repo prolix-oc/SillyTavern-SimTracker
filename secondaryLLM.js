@@ -485,7 +485,22 @@ async function generateTrackerWithSecondaryLLM(get_settings) {
     }
 
     console.log(`[SST] [${MODULE_NAME}]`, "Received response from secondary LLM");
-    return response.text;
+    
+    // Sanitize the response to remove code block markers
+    let sanitizedText = response.text.trim();
+    
+    // Remove code blocks with language identifiers (```json, ```yaml, etc.)
+    sanitizedText = sanitizedText.replace(/^```(?:json|yaml|yml)\s*/i, '');
+    // Remove generic code blocks (```)
+    sanitizedText = sanitizedText.replace(/^```\s*/, '');
+    // Remove closing code blocks
+    sanitizedText = sanitizedText.replace(/\s*```\s*$/, '');
+    
+    // Trim again after removal
+    sanitizedText = sanitizedText.trim();
+    
+    console.log(`[SST] [${MODULE_NAME}]`, "Sanitized response (removed code block markers if present)");
+    return sanitizedText;
   } catch (error) {
     console.error(`[SST] [${MODULE_NAME}]`, "Error calling secondary LLM:", error);
     toastr.error(`Secondary LLM generation failed: ${error.message}`);
