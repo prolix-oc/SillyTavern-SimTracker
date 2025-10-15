@@ -213,6 +213,16 @@
             <p class="description">
               Enable streaming for faster response processing. Disable if your API doesn't support streaming.
             </p>
+            
+            <div class="setting">
+              <label for="secondaryLLMStripHTML">Strip HTML from Context</label>
+              <div class="control">
+                <input type="checkbox" id="secondaryLLMStripHTML" />
+              </div>
+            </div>
+            <p class="description">
+              Remove HTML tags and their contents (like &lt;div&gt;, &lt;details&gt;, etc.) from messages before sending to the secondary LLM. Helps reduce context usage.
+            </p>
           </div>
         </div>
         <hr />

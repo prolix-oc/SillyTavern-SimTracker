@@ -198,6 +198,45 @@ async function sendRawCompletionRequest({
 }
 
 /**
+ * Strip HTML tags and their contents from a string
+ * Only removes specific container/structural tags while preserving inline formatting
+ * Removes: div, details, summary, section, article, aside, nav, header, footer, etc.
+ * Preserves: font, b, i, u, strong, em, span, etc.
+ */
+function stripHTML(text) {
+  if (!text || typeof text !== 'string') {
+    return text;
+  }
+  
+  // List of container/structural tags to remove (with their contents)
+  const tagsToRemove = [
+    'div', 'details', 'summary', 'section', 'article', 'aside', 'nav',
+    'header', 'footer', 'main', 'figure', 'figcaption', 'blockquote',
+    'pre', 'code', 'script', 'style', 'iframe', 'object', 'embed'
+  ];
+  
+  let stripped = text;
+  
+  // Remove each specified tag and its contents
+  tagsToRemove.forEach(tag => {
+    // Match opening tag (with any attributes), content, and closing tag
+    const regex = new RegExp(`<${tag}[^>]*>([\\s\\S]*?)<\\/${tag}>`, 'gi');
+    stripped = stripped.replace(regex, '');
+  });
+  
+  // Remove self-closing versions of these tags
+  tagsToRemove.forEach(tag => {
+    const regex = new RegExp(`<${tag}[^>]*\\/>`, 'gi');
+    stripped = stripped.replace(regex, '');
+  });
+  
+  // Clean up any excessive whitespace that might be left
+  stripped = stripped.replace(/\s+/g, ' ').trim();
+  
+  return stripped;
+}
+
+/**
  * Process chat history to extract the last N messages
  * Converts them to a format suitable for the secondary LLM
  */
@@ -212,6 +251,9 @@ function processChatHistory(chat, messageCount, get_settings) {
     .filter((msg) => !msg.is_system)
     .slice(-messageCount); // Take only the last N after filtering
 
+  // Check if HTML stripping is enabled
+  const stripHTMLEnabled = get_settings("secondaryLLMStripHTML") !== false; // Default to true
+
   // Convert to a simple format for the LLM
   return recentMessages.map((msg) => {
     // Determine role based on is_user flag
@@ -220,7 +262,12 @@ function processChatHistory(chat, messageCount, get_settings) {
     // Clean the message content - remove any existing sim blocks
     const identifier = get_settings("codeBlockIdentifier");
     const simRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
-    const cleanedContent = msg.mes.replace(simRegex, "").trim();
+    let cleanedContent = msg.mes.replace(simRegex, "").trim();
+    
+    // Strip HTML if enabled
+    if (stripHTMLEnabled) {
+      cleanedContent = stripHTML(cleanedContent);
+    }
 
     return {
       role: role,

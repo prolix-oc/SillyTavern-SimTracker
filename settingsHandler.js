@@ -92,6 +92,7 @@ const default_settings = {
   secondaryLLMTemperature: 0.7, // Temperature for secondary generation
   secondaryLLMTopP: 1, // Top P for secondary generation
   secondaryLLMStreaming: true, // Enable streaming for secondary LLM
+  secondaryLLMStripHTML: true, // Strip HTML from context for secondary LLM
 };
 
 let settings = {};
@@ -249,6 +250,7 @@ const initialize_settings_listeners = (
   bind_setting("#secondaryLLMTemperature", "secondaryLLMTemperature", "text");
   bind_setting("#secondaryLLMTopP", "secondaryLLMTopP", "text");
   bind_setting("#secondaryLLMStreaming", "secondaryLLMStreaming", "boolean");
+  bind_setting("#secondaryLLMStripHTML", "secondaryLLMStripHTML", "boolean");
 
   // Listener for the default template dropdown
   const $templateSelect = $("#templateFile");
