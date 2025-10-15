@@ -578,6 +578,44 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
       console.log(`[SST] [${MODULE_NAME}]`, `Error: Could not find message with ID ${mesId}. Aborting render.`);
       return;
     }
+    
+    // For positioned templates (TOP/BOTTOM/LEFT/RIGHT), only render if this is the most recent message with sim data
+    const templatePosition = currentTemplatePosition;
+    if (templatePosition === "TOP" || templatePosition === "BOTTOM" || templatePosition === "LEFT" || templatePosition === "RIGHT") {
+      // Find the most recent message with sim data
+      const identifier = get_settings("codeBlockIdentifier");
+      let mostRecentSimMessageId = null;
+      
+      for (let i = context.chat.length - 1; i >= 0; i--) {
+        const msg = context.chat[i];
+        if (msg) {
+          const dataMatch = msg.mes.match(new RegExp("```" + identifier + "[\\s\\S]*?```", "m"));
+          if (dataMatch && dataMatch[0]) {
+            mostRecentSimMessageId = i;
+            break;
+          }
+        }
+      }
+      
+      // If this message is not the most recent one with sim data, skip rendering
+      if (mostRecentSimMessageId !== null && mesId !== mostRecentSimMessageId) {
+        console.log(`[SST] [${MODULE_NAME}]`, `Skipping render for positioned template - message ${mesId} is not the most recent (most recent is ${mostRecentSimMessageId})`);
+        return;
+      }
+      
+      // If this IS the most recent, remove any old positioned cards first
+      if (templatePosition === "TOP" || templatePosition === "BOTTOM") {
+        // Remove containers from all other messages
+        document.querySelectorAll(`#${CONTAINER_ID}`).forEach((container) => {
+          const containerMesId = container.closest('.mes')?.getAttribute('mesid');
+          if (containerMesId && parseInt(containerMesId) !== mesId) {
+            console.log(`[SST] [${MODULE_NAME}]`, `Removing old positioned card from message ${containerMesId}`);
+            container.remove();
+          }
+        });
+      }
+    }
+    
     const messageElement = document.querySelector(
       `div[mesid="${mesId}"] .mes_text`
     );
@@ -1156,7 +1194,7 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
   // Get all message divs currently in the chat DOM
   const visibleMessages = document.querySelectorAll("div#chat .mes");
   
-  // For positioned templates (LEFT/RIGHT), we only want to show the most recent sim data
+  // For positioned templates (LEFT/RIGHT/TOP/BOTTOM), we only want to show the most recent sim data
   // So we need to find the last message with sim data first
   const templatePosition = currentTemplatePosition;
   
@@ -1171,7 +1209,7 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
   // This ensures sidebars are destroyed when switching to/from positioned templates
   removeGlobalSidebars();
   
-  if (templatePosition === "LEFT" || templatePosition === "RIGHT") {
+  if (templatePosition === "LEFT" || templatePosition === "RIGHT" || templatePosition === "TOP" || templatePosition === "BOTTOM") {
     // Find the last message with sim data by checking the context.chat array directly
     // This is more reliable than checking DOM, especially during chat switching
     const context = getContext();
@@ -1198,16 +1236,16 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
     }
     
     // Only render the last message with sim data for positioned templates
-    // This will create new sidebars at the correct position
+    // This will create new sidebars/positioned cards at the correct position
     if (lastMessageWithSim !== null) {
-      console.log(`[SST] [${MODULE_NAME}]`, `Rendering sidebar for message ${lastMessageWithSim}`);
+      console.log(`[SST] [${MODULE_NAME}]`, `Rendering positioned template for message ${lastMessageWithSim}`);
       renderTrackerWithoutSim(lastMessageWithSim);
     } else {
       // If no message with sim data found, sidebars were already removed above
-      console.log(`[SST] [${MODULE_NAME}]`, "No sim data found in chat, sidebars removed");
+      console.log(`[SST] [${MODULE_NAME}]`, "No sim data found in chat, positioned elements removed");
     }
   } else {
-    // For non-positioned templates (TOP, BOTTOM, MACRO), render all messages
+    // For non-positioned templates (MACRO), render all messages
     visibleMessages.forEach((messageElement) => {
       const mesId = messageElement.getAttribute("mesid");
       if (mesId) {
