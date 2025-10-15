@@ -316,37 +316,42 @@ async function generateTrackerWithSecondaryLLM(get_settings) {
     return null;
   }
 
-  // Build the prompt for tracker generation
+  // Get the actual system prompt
+  const systemPrompt = get_settings("sysPrompt") || "";
+  
+  // Build the format example to replace {{sim_format}}
   const trackerFormat = get_settings("trackerFormat") || "json";
   const customFields = get_settings("customFields") || [];
   const codeBlockIdentifier = get_settings("codeBlockIdentifier") || "sim";
 
-  // Create a description of the conversation
-  let conversationText = `You are evaluating a conversation for a ${trackerDesc} context. Based on the following conversation, generate a tracker block that accurately reflects the current context:\n\n`;
+  let formatExample = "";
+  
+  if (trackerFormat === "yaml") {
+    formatExample = `\`\`\`${codeBlockIdentifier}\nworldData:\n  current_date: "YYYY-MM-DD"\n  current_time: "HH:MM"\ncharacters:\n  - name: "Character Name"\n`;
+    customFields.forEach((field) => {
+      formatExample += `    ${field.key}: [appropriate value] # ${field.description}\n`;
+    });
+    formatExample += `\`\`\``;
+  } else {
+    formatExample = `\`\`\`${codeBlockIdentifier}\n{\n  "worldData": {\n    "current_date": "YYYY-MM-DD",\n    "current_time": "HH:MM"\n  },\n  "characters": [\n    {\n      "name": "Character Name",\n`;
+    customFields.forEach((field, index) => {
+      const comma = index < customFields.length - 1 ? "," : "";
+      formatExample += `      "${field.key}": [appropriate value]${comma} // ${field.description}\n`;
+    });
+    formatExample += `    }\n  ]\n}\n\`\`\``;
+  }
+
+  // Replace {{sim_format}} in the system prompt
+  let processedPrompt = systemPrompt.replace(/\{\{sim_format\}\}/g, formatExample);
+  
+  // Build the conversation context
+  let conversationText = processedPrompt + "\n\n";
+  conversationText += "Recent conversation:\n\n";
   messages.forEach((msg) => {
     conversationText += `${msg.name}: ${msg.content}\n\n`;
   });
 
-  // Add instructions for the tracker format
-  conversationText += `\nGenerate a tracker block in ${trackerFormat.toUpperCase()} format wrapped in \`\`\`${codeBlockIdentifier} code fence.\n`;
-  conversationText += `The tracker should follow this structure:\n`;
-
-  if (trackerFormat === "yaml") {
-    conversationText += `\`\`\`${codeBlockIdentifier}\nworldData:\n  current_date: "YYYY-MM-DD"\n  current_time: "HH:MM"\ncharacters:\n  - name: "Character Name"\n`;
-    customFields.forEach((field) => {
-      conversationText += `    ${field.key}: [appropriate value] # ${field.description}\n`;
-    });
-    conversationText += `\`\`\`\n`;
-  } else {
-    conversationText += `\`\`\`${codeBlockIdentifier}\n{\n  "worldData": {\n    "current_date": "YYYY-MM-DD",\n    "current_time": "HH:MM"\n  },\n  "characters": [\n    {\n      "name": "Character Name",\n`;
-    customFields.forEach((field, index) => {
-      const comma = index < customFields.length - 1 ? "," : "";
-      conversationText += `      "${field.key}": [appropriate value]${comma} // ${field.description}\n`;
-    });
-    conversationText += `    }\n  ]\n}\n\`\`\`\n`;
-  }
-
-  conversationText += `\nIMPORTANT: Only output the tracker block wrapped in the code fence. Do not include any other text or explanations.`;
+  conversationText += `\nBased on the above conversation, generate ONLY the tracker block in the specified format. Do not include any other text or explanations.`;
 
   try {
     console.log(`[SST] [${MODULE_NAME}]`, "Sending request to secondary LLM...");
