@@ -115,6 +115,89 @@
           Choose the format for generated tracker blocks. Both JSON and YAML formats are supported.
         </p>
         <hr />
+        
+        <h4>Secondary LLM Generation (Optional)</h4>
+        <div class="setting">
+          <label for="useSecondaryLLM">Enable Secondary LLM</label>
+          <div class="control"><input type="checkbox" id="useSecondaryLLM" /></div>
+        </div>
+        <p class="description">
+          When enabled, after the primary AI finishes its response, a secondary LLM will be used to generate the tracker block based on the conversation history.
+        </p>
+        
+        <div class="setting">
+          <label for="secondaryLLMMessageCount">Messages to Include</label>
+          <div class="control">
+            <input type="number" id="secondaryLLMMessageCount" class="text_pole" min="1" max="50" value="5" />
+          </div>
+        </div>
+        <p class="description">
+          Number of recent messages to send to the secondary LLM for tracker generation (1-50).
+        </p>
+        
+        <div class="setting">
+          <label for="secondaryLLMAPI">Secondary API</label>
+          <select id="secondaryLLMAPI" class="text_pole">
+            <option value="openai">OpenAI</option>
+            <option value="claude">Claude</option>
+            <option value="custom">Custom</option>
+            <option value="full-manual">Full Manual</option>
+          </select>
+        </div>
+        <p class="description">
+          Choose which API to use for secondary tracker generation.
+        </p>
+        
+        <div class="setting">
+          <label for="secondaryLLMModel">Secondary Model</label>
+          <div class="control">
+            <input type="text" id="secondaryLLMModel" class="text_pole" placeholder="e.g., gpt-4o-mini" />
+          </div>
+        </div>
+        <p class="description">
+          The model to use for secondary tracker generation.
+        </p>
+        
+        <div class="setting">
+          <label for="secondaryLLMEndpoint">Secondary Endpoint (Optional)</label>
+          <div class="control">
+            <input type="text" id="secondaryLLMEndpoint" class="text_pole" placeholder="https://api.example.com/v1/chat/completions" />
+          </div>
+        </div>
+        <p class="description">
+          Custom endpoint for full-manual mode. Leave empty for standard APIs.
+        </p>
+        
+        <div class="setting">
+          <label for="secondaryLLMAPIKey">Secondary API Key (Optional)</label>
+          <div class="control">
+            <input type="password" id="secondaryLLMAPIKey" class="text_pole" placeholder="API key for full-manual mode" />
+          </div>
+        </div>
+        <p class="description">
+          API key for full-manual mode. Leave empty to use default credentials.
+        </p>
+        
+        <div class="setting">
+          <label for="secondaryLLMTemperature">Secondary Temperature</label>
+          <div class="control">
+            <input type="number" id="secondaryLLMTemperature" class="text_pole" min="0" max="2" step="0.1" value="0.7" />
+          </div>
+        </div>
+        <p class="description">
+          Temperature setting for the secondary LLM (0-2, lower is more deterministic).
+        </p>
+        
+        <div class="setting">
+          <label for="secondaryLLMTopP">Secondary Top P</label>
+          <div class="control">
+            <input type="number" id="secondaryLLMTopP" class="text_pole" min="0" max="1" step="0.05" value="1" />
+          </div>
+        </div>
+        <p class="description">
+          Top P (nucleus sampling) setting for the secondary LLM (0-1). Set to 1 to disable.
+        </p>
+        <hr />
 
         <div class="setting">
           <label for="datingSimPrompt">Sim Tracker System Prompt</label>

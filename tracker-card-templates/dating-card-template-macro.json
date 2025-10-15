@@ -92,5 +92,6 @@
     "showThoughtBubble": true,
     "hideSimBlocks": true,
     "templateFile": "dating-card-template-macro.html"
-  }
+  },
+  "trackerDesc": "romantic encounter with slow burn focus."
 }

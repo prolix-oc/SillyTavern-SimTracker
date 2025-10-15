@@ -83,6 +83,14 @@ const default_settings = {
   hideSimBlocks: true, // New setting to hide sim blocks in message text
   userPresets: [], // New setting to store user presets
   trackerFormat: "json", // New setting for tracker format (json or yaml)
+  useSecondaryLLM: false, // Enable secondary LLM generation
+  secondaryLLMMessageCount: 5, // Number of messages to include for secondary generation
+  secondaryLLMAPI: "openai", // API to use for secondary generation
+  secondaryLLMModel: "", // Model to use for secondary generation
+  secondaryLLMEndpoint: "", // Custom endpoint for full-manual mode
+  secondaryLLMAPIKey: "", // API key for full-manual mode
+  secondaryLLMTemperature: 0.7, // Temperature for secondary generation
+  secondaryLLMTopP: 1, // Top P for secondary generation
 };
 
 let settings = {};
@@ -226,9 +234,19 @@ const initialize_settings_listeners = (
   bind_setting("#codeBlockIdentifier", "codeBlockIdentifier", "text");
   bind_setting("#defaultBgColor", "defaultBgColor", "color");
   bind_setting("#showThoughtBubble", "showThoughtBubble", "boolean");
-  bind_setting("#hideSimBlocks", "hideSimBlocks", "boolean"); // New setting
-  bind_setting("#trackerFormat", "trackerFormat", "text"); // New setting
+  bind_setting("#hideSimBlocks", "hideSimBlocks", "boolean");
+  bind_setting("#trackerFormat", "trackerFormat", "text");
   bind_setting("#datingSimPrompt", "datingSimPrompt", "textarea");
+  
+  // Secondary LLM settings
+  bind_setting("#useSecondaryLLM", "useSecondaryLLM", "boolean");
+  bind_setting("#secondaryLLMMessageCount", "secondaryLLMMessageCount", "text");
+  bind_setting("#secondaryLLMAPI", "secondaryLLMAPI", "text");
+  bind_setting("#secondaryLLMModel", "secondaryLLMModel", "text");
+  bind_setting("#secondaryLLMEndpoint", "secondaryLLMEndpoint", "text");
+  bind_setting("#secondaryLLMAPIKey", "secondaryLLMAPIKey", "text");
+  bind_setting("#secondaryLLMTemperature", "secondaryLLMTemperature", "text");
+  bind_setting("#secondaryLLMTopP", "secondaryLLMTopP", "text");
 
   // Listener for the default template dropdown
   const $templateSelect = $("#templateFile");
