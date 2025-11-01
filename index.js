@@ -826,12 +826,42 @@ characters:
       }
       // Re-render the tracker for the swiped message (same as MESSAGE_EDITED)
       renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+      
+      // For positioned templates (sidebars/top/bottom), also refresh all cards to revert display
+      const templatePosition = currentTemplatePosition;
+      if (templatePosition === "LEFT" || templatePosition === "RIGHT" || templatePosition === "TOP" || templatePosition === "BOTTOM") {
+        log("Swipe detected with positioned template - refreshing all cards to revert display to last tracker block");
+        wrappedRefreshAllCards();
+      }
+    });
+    
+    // Listen for MESSAGE_DELETED to revert display on delete
+    eventSource.on(event_types.MESSAGE_DELETED, (mesId) => {
+      log(`Message ${mesId} was deleted. Refreshing cards to revert to last tracker block.`);
+      
+      // Update the last sim stats macro
+      const updatedStats = updateLastSimStatsOnRegenerateOrSwipe(null, get_settings);
+      if (updatedStats) {
+        lastSimJsonString = updatedStats;
+      }
+      
+      // Refresh all cards to show the reverted state
+      wrappedRefreshAllCards();
     });
 
     // Listen for generation ended event to update sidebars and trigger secondary LLM
-    eventSource.on(event_types.GENERATION_ENDED, async () => {
-      log("Generation ended, updating sidebars if needed");
+    eventSource.on(event_types.GENERATION_ENDED, async (type) => {
+      log(`Generation ended (type: ${type}), updating sidebars if needed`);
       setGenerationInProgress(false);
+      
+      // For regenerate or continue operations with positioned templates, refresh all cards
+      // This ensures the display reverts to the last tracker block instance
+      if (type === "regenerate" || type === "continue") {
+        const templatePosition = currentTemplatePosition;
+        if (templatePosition === "LEFT" || templatePosition === "RIGHT" || templatePosition === "TOP" || templatePosition === "BOTTOM") {
+          log(`${type} operation detected with positioned template - will refresh after processing`);
+        }
+      }
 
       // Check if we should use secondary LLM generation
       const useSecondaryLLM = get_settings("useSecondaryLLM");
