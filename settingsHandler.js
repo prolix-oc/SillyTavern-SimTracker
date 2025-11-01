@@ -93,6 +93,7 @@ const default_settings = {
   secondaryLLMTopP: 1, // Top P for secondary generation
   secondaryLLMStreaming: true, // Enable streaming for secondary LLM
   secondaryLLMStripHTML: true, // Strip HTML from context for secondary LLM
+  maxSimBlocksInContext: 3, // Maximum number of sim blocks to include in LLM context
 };
 
 let settings = {};
@@ -251,6 +252,7 @@ const initialize_settings_listeners = (
   bind_setting("#secondaryLLMTopP", "secondaryLLMTopP", "text");
   bind_setting("#secondaryLLMStreaming", "secondaryLLMStreaming", "boolean");
   bind_setting("#secondaryLLMStripHTML", "secondaryLLMStripHTML", "boolean");
+  bind_setting("#maxSimBlocksInContext", "maxSimBlocksInContext", "text");
 
   // Listener for the default template dropdown
   const $templateSelect = $("#templateFile");

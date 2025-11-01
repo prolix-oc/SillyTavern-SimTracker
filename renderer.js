@@ -641,7 +641,7 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
       const hideRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
       displayMessage = displayMessage.replace(
         hideRegex,
-        (match) => `<div style="display: none;">${match}</div>`
+        (match) => `<div style="display: none;">\n${match}\n</div>`
       );
 
       // Format and display the message content (without the tracker UI)
@@ -925,7 +925,7 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
         const hideRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
         displayMessage = displayMessage.replace(
           hideRegex,
-          (match) => `<div style="display: none;">${match}</div>`
+          (match) => `<div style="display: none;">\n${match}\n</div>`
         );
       }
 

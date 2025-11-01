@@ -226,6 +226,17 @@
           </div>
         </div>
         <hr />
+        
+        <div class="setting">
+          <label for="maxSimBlocksInContext">Max Sim Blocks in LLM Context</label>
+          <div class="control">
+            <input type="number" id="maxSimBlocksInContext" class="text_pole" min="0" max="50" value="3" />
+          </div>
+        </div>
+        <p class="description">
+          Maximum number of sim blocks to include in the outgoing LLM context (0-50). Older sim blocks beyond this limit will be hidden from the LLM but remain in the chat history. Set to 0 to include all sim blocks.
+        </p>
+        <hr />
 
         <div class="setting">
           <label for="datingSimPrompt">Sim Tracker System Prompt</label>

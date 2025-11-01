@@ -101,10 +101,17 @@ globalThis.simTrackerGenInterceptor = async function (
     }
   }
 
-  // Filter out sim blocks from messages beyond the last 3
-  filterSimBlocksInPrompt(chat, get_settings);
+  // Clone the chat array to make ephemeral modifications for LLM context
+  // Use structuredClone to deep copy message objects so we don't affect the actual chat history
+  const clonedChat = chat.map(msg => structuredClone(msg));
 
-  return { chat, contextSize, abort };
+  // Filter out sim blocks from messages beyond the configured maximum
+  // This modifies only the cloned chat, not the original
+  filterSimBlocksInPrompt(clonedChat, get_settings);
+
+  // Return the modified clone - SillyTavern will use this for prompt building
+  // The original chat array remains unchanged in the chat history
+  return { chat: clonedChat, contextSize, abort };
 };
 
 // --- ENTRY POINT ---
@@ -754,7 +761,7 @@ characters:
             
             // Not wrapped, wrap it
             modifiedCount++;
-            return `<div style="display: none;">${match}</div>`;
+            return `<div style="display: none;">\n${match}\n</div>`;
           });
         }
       });
