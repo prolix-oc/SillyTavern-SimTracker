@@ -728,7 +728,7 @@ characters:
       }
     });
     
-    // Helper function to wrap sim blocks in all messages with hidden divs
+    // Helper function to clean up and wrap sim blocks in all messages with hidden divs
     const wrapSimBlocksInChat = () => {
       if (!get_settings("isEnabled") || !get_settings("hideSimBlocks")) return;
       
@@ -739,35 +739,58 @@ characters:
       
       const identifier = get_settings("codeBlockIdentifier");
       let modifiedCount = 0;
+      let fixedOldFormatCount = 0;
       
       chat.forEach((message, index) => {
         if (!message || !message.mes) return;
         
-        // Check if message contains unwrapped sim blocks
-        const unwrappedRegex = new RegExp(`(?<!<div style="display: none;">)\`\`\`${identifier}[\\s\\S]*?\`\`\`(?!</div>)`, 'g');
+        // First, fix old incorrect format: <div style="display: none;">```sim without newlines
+        const oldIncorrectFormat = new RegExp(
+          `<div style="display: none;">\`\`\`${identifier}([\\s\\S]*?)\`\`\`</div>`,
+          'g'
+        );
+        
+        message.mes = message.mes.replace(oldIncorrectFormat, (match, content) => {
+          // Check if it already has proper newlines
+          if (match.startsWith('<div style="display: none;">\n```') && match.endsWith('```\n</div>')) {
+            return match; // Already correct
+          }
+          
+          // Fix the format with proper newlines
+          fixedOldFormatCount++;
+          return `<div style="display: none;">\n\`\`\`${identifier}${content}\`\`\`\n</div>`;
+        });
+        
+        // Now check if message contains unwrapped sim blocks
+        // Look for sim blocks that aren't preceded by the div tag with newline
+        const unwrappedRegex = new RegExp(
+          `(?<!<div style="display: none;">\\n)\`\`\`${identifier}[\\s\\S]*?\`\`\`(?!\\n</div>)`,
+          'g'
+        );
         
         if (unwrappedRegex.test(message.mes)) {
           // Wrap any unwrapped sim blocks
           const wrapRegex = new RegExp(`\`\`\`${identifier}[\\s\\S]*?\`\`\``, 'g');
           message.mes = message.mes.replace(wrapRegex, (match) => {
-            // Check if this specific match is already wrapped
-            const beforeMatch = message.mes.substring(0, message.mes.indexOf(match));
-            const afterMatch = message.mes.substring(message.mes.indexOf(match) + match.length);
+            // Check if this specific match is already wrapped with proper format
+            const matchIndex = message.mes.indexOf(match);
+            const beforeMatch = message.mes.substring(Math.max(0, matchIndex - 30), matchIndex);
+            const afterMatch = message.mes.substring(matchIndex + match.length, matchIndex + match.length + 10);
             
-            if (beforeMatch.endsWith('<div style="display: none;">') && afterMatch.startsWith('</div>')) {
-              // Already wrapped, return as-is
+            if (beforeMatch.endsWith('<div style="display: none;">\n') && afterMatch.startsWith('\n</div>')) {
+              // Already wrapped correctly, return as-is
               return match;
             }
             
-            // Not wrapped, wrap it
+            // Not wrapped, wrap it with proper newlines
             modifiedCount++;
             return `<div style="display: none;">\n${match}\n</div>`;
           });
         }
       });
       
-      if (modifiedCount > 0) {
-        log(`Wrapped ${modifiedCount} sim blocks in chat messages with hidden divs`);
+      if (modifiedCount > 0 || fixedOldFormatCount > 0) {
+        log(`Fixed ${fixedOldFormatCount} old format sim blocks and wrapped ${modifiedCount} unwrapped sim blocks`);
         // Save the chat after wrapping
         context.saveChat();
       }

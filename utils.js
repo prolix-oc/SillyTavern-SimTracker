@@ -121,6 +121,7 @@ const filterSimBlocksInPrompt = (chat, get_settings) => {
 
     // Find all messages with sim data
     const identifier = get_settings("codeBlockIdentifier");
+    // Pattern to match both wrapped and unwrapped sim blocks
     const simRegexPattern = "```" + identifier + "[\\s\\S]*?```";
 
     // Collect all messages with sim data along with their positions
@@ -148,11 +149,22 @@ const filterSimBlocksInPrompt = (chat, get_settings) => {
       messagesToRemove.forEach(({ index, message }) => {
         // Remove sim blocks entirely from the prompt context
         if (message.mes) {
-          // Create a new regex for replacement to avoid state issues
-          const replaceRegex = new RegExp(simRegexPattern, "gm");
-          // Remove the sim blocks completely from the prompt context
           const originalMes = message.mes;
-          const filteredMes = originalMes.replace(replaceRegex, "").trim();
+          
+          // First, try to remove wrapped sim blocks (with hidden div and newlines)
+          // Pattern: <div style="display: none;">\n```identifier...```\n</div>
+          const wrappedRegex = new RegExp(
+            `<div style="display: none;">\\s*\`\`\`${identifier}[\\s\\S]*?\`\`\`\\s*</div>`,
+            "gm"
+          );
+          let filteredMes = originalMes.replace(wrappedRegex, "");
+          
+          // Then, remove any remaining unwrapped sim blocks
+          const unwrappedRegex = new RegExp(simRegexPattern, "gm");
+          filteredMes = filteredMes.replace(unwrappedRegex, "");
+          
+          // Clean up extra whitespace
+          filteredMes = filteredMes.trim();
 
           // Only modify if we actually made changes
           if (filteredMes !== originalMes) {

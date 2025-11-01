@@ -2,7 +2,7 @@
   "name": "silly-sim-tracker",
   "display_name": "Silly Sim Tracker",
   "author": "Prolix OCs",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Displays a sim-type tracker card based on a JSON code block in a character's message. Can range from game-time to dating to anything!",
   "js": "index.js",
   "css": "style.css",
