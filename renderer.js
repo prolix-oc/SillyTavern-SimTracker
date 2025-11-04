@@ -308,6 +308,23 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml) {
     // Fallback to innerHTML if structure doesn't match or template has changed
     console.log(`[SST] [${MODULE_NAME}]`, "Container structure mismatch or template change detected, rebuilding sidebar");
     existingSidebar.innerHTML = newContentHtml;
+    
+    // Immediately apply critical container styles before event listener attachment
+    const container = query('#silly-sim-tracker-container', existingSidebar);
+    if (container) {
+      container.style.cssText += `
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        display: block !important;
+        visibility: visible !important;
+        height: 100%;
+      `;
+    }
+    
+    // Force a reflow to ensure styles are applied
+    existingSidebar.offsetHeight;
+    
     attachTabEventListeners(existingSidebar);
     return;
   }
@@ -324,6 +341,23 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml) {
   if (existingCards.length !== newCards.length || existingTabs.length !== newTabs.length) {
     console.log(`[SST] [${MODULE_NAME}]`, "Card/tab count changed, rebuilding sidebar");
     existingSidebar.innerHTML = newContentHtml;
+    
+    // Immediately apply critical container styles before event listener attachment
+    const container = query('#silly-sim-tracker-container', existingSidebar);
+    if (container) {
+      container.style.cssText += `
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        display: block !important;
+        visibility: visible !important;
+        height: 100%;
+      `;
+    }
+    
+    // Force a reflow to ensure styles are applied
+    existingSidebar.offsetHeight;
+    
     attachTabEventListeners(existingSidebar);
     return;
   }
