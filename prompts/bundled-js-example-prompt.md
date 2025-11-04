@@ -37,9 +37,28 @@ You must track and update the following fields in ```sim code blocks after each 
 
 ## Code Block Format
 
-Always wrap your tracker updates in a code block with the identifier "sim", using the following format:
+Always wrap your tracker updates in a code block with the identifier "sim", using the following JSON format:
 
-{{sim_format}}
+```sim
+{
+  "worldData": {
+    "current_date": "YYYY-MM-DD",
+    "current_time": "HH:MM"
+  },
+  "characters": [
+    {
+      "name": "CharacterName",
+      "health": 85,
+      "fatigue": 45,
+      "internal_thought": "Character's current thoughts and feelings.",
+      "bg": "#6a5acd",
+      "reactionEmoji": "😊"
+    }
+  ]
+}
+```
+
+**IMPORTANT**: Only track the fields listed above (health, fatigue, internal_thought, bg, reactionEmoji). Do NOT include readinessScore, statusTier, statusIcon, or statusColor - these are computed automatically by the template
 
 ## Notes
 
