@@ -118,7 +118,8 @@ async function populateTemplateDropdown(get_settings) {
     "dating-card-template-sidebar-left.json",
     "dating-card-template-sidebar-tabs.json",
     "dating-card-template-sidebar-left-tabs.json",
-    "dating-card-template-macro.json"
+    "dating-card-template-macro.json",
+    "disposition-card-template-sidebar-tabs.json"
   ];
 
   const templateOptions = [];
