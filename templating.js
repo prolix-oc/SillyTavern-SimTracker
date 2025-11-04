@@ -4,6 +4,9 @@ const MODULE_NAME = "silly-sim-tracker";
 // Module-level variable to store the current template position
 let currentTemplatePosition = "BOTTOM";
 
+// Module-level variable to store the current template's bundled JavaScript logic
+let currentTemplateLogic = null;
+
 const unescapeHtml = (safe) => {
   if (typeof safe !== "string") return safe;
   return safe
@@ -119,6 +122,23 @@ const extractTemplatePosition = (templateHtml) => {
   const positionRegex = /<!--\s*POSITION\s*:\s*(.*?)\s*-->/i;
   const positionMatch = templateHtml.match(positionRegex);
   return positionMatch ? positionMatch[1].trim().toUpperCase() : "BOTTOM";
+};
+
+// Function to extract bundled JavaScript logic from template HTML
+const extractTemplateLogic = (templateHtml) => {
+  if (!templateHtml) return null;
+  
+  // Look for <script type="text/x-handlebars-template-logic">...</script>
+  const scriptRegex = /<script\s+type=["']text\/x-handlebars-template-logic["'][^>]*>([\s\S]*?)<\/script>/i;
+  const scriptMatch = templateHtml.match(scriptRegex);
+  
+  if (scriptMatch && scriptMatch[1]) {
+    const logic = scriptMatch[1].trim();
+    console.log(`[SST] [${MODULE_NAME}]`, `Extracted template logic (${logic.length} characters)`);
+    return logic;
+  }
+  
+  return null;
 };
 
 const get_extension_directory = () => {
@@ -310,6 +330,9 @@ const loadTemplate = async (get_settings, set_settings) => {
         }
       }
 
+      // Extract bundled JavaScript logic from the custom template
+      currentTemplateLogic = extractTemplateLogic(customTemplateHtml);
+      
       compiledCardTemplate = Handlebars.compile(cardTemplate);
       // Store the template position in a module-level variable for use during rendering
       currentTemplatePosition = templatePosition;
@@ -382,6 +405,9 @@ const loadTemplate = async (get_settings, set_settings) => {
           }
         }
           
+          // Extract bundled JavaScript logic from the user preset template
+          currentTemplateLogic = extractTemplateLogic(unescapedHtmlTemplate);
+          
           compiledCardTemplate = Handlebars.compile(cardTemplate);
           // Store the template position in a module-level variable for use during rendering
           currentTemplatePosition = templatePosition;
@@ -452,6 +478,9 @@ const loadTemplate = async (get_settings, set_settings) => {
           }
         }
         
+        // Extract bundled JavaScript logic from the default template
+        currentTemplateLogic = extractTemplateLogic(unescapedHtmlTemplate);
+        
         compiledCardTemplate = Handlebars.compile(cardTemplate);
         // Store the template position in a module-level variable for use during rendering
         currentTemplatePosition = templatePosition;
@@ -474,6 +503,8 @@ const loadTemplate = async (get_settings, set_settings) => {
         No custom template is loaded and the selected default template could not be found or parsed.
     </div>`;
   compiledCardTemplate = Handlebars.compile(fallbackTemplate);
+  // Reset template logic for fallback template
+  currentTemplateLogic = null;
   // Store the template position in a module-level variable for use during rendering
   currentTemplatePosition = "BOTTOM";
 };
@@ -489,5 +520,6 @@ export {
   loadTemplate,
   extractTemplatePosition,
   currentTemplatePosition,
+  currentTemplateLogic,
   unescapeHtml
 };

@@ -18,3 +18,5 @@ PLAN.md
 !style.css
 regex/*
 !docs/*
+tracker-card-templates/user_submitted.html
+potential_bundled_js_investigation.txt

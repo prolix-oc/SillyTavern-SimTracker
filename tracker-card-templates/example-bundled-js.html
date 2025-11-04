@@ -1,0 +1,164 @@
+<!-- POSITION: BOTTOM -->
+<!-- CARD_TEMPLATE_START -->
+<script type="text/x-handlebars-template-logic">
+// Example bundled JavaScript for SillySimTracker templates
+// This demonstrates how to add computed properties and transform data
+
+if (data.stats) {
+  // 1. Calculate readiness score based on health and fatigue
+  const health = data.stats.health || 0;
+  const fatigue = data.stats.fatigue || 0;
+  data.stats.readinessScore = Math.round((health - fatigue) / 2);
+  
+  // 2. Determine status tier with icon and color
+  if (data.stats.readinessScore > 40) {
+    data.stats.statusTier = "Ready";
+    data.stats.statusIcon = "✓";
+    data.stats.statusColor = "#2ecc71";
+  } else if (data.stats.readinessScore > 20) {
+    data.stats.statusTier = "Capable";
+    data.stats.statusIcon = "◐";
+    data.stats.statusColor = "#f39c12";
+  } else {
+    data.stats.statusTier = "Needs Rest";
+    data.stats.statusIcon = "⚠";
+    data.stats.statusColor = "#e74c3c";
+  }
+  
+  // 3. Create health percentage for progress bar
+  data.stats.healthPercent = Math.min(100, Math.max(0, health));
+  
+  // 4. Truncate long thoughts for compact display
+  if (data.stats.internal_thought && data.stats.internal_thought.length > 100) {
+    data.stats.shortThought = data.stats.internal_thought.substring(0, 97) + '...';
+    data.stats.hasLongThought = true;
+  } else {
+    data.stats.shortThought = data.stats.internal_thought;
+    data.stats.hasLongThought = false;
+  }
+  
+  // 5. Add character initials for avatar
+  if (data.characterName) {
+    data.initials = data.characterName.split(' ').map(n => n[0].toUpperCase()).join('');
+  }
+}
+</script>
+
+<div class="sim-tracker-card" style="
+  background: linear-gradient(135deg, {{bgColor}} 0%, {{darkerBgColor}} 100%);
+  border-radius: 12px;
+  padding: 20px;
+  margin: 15px 0;
+  color: white;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+">
+  <!-- Header with Avatar and Name -->
+  <div style="display: flex; align-items: center; margin-bottom: 15px;">
+    <div style="
+      width: 50px;
+      height: 50px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 20px;
+      font-weight: bold;
+      margin-right: 15px;
+    ">
+      {{initials}}
+    </div>
+    <div>
+      <h3 style="margin: 0; font-size: 1.4em;">{{characterName}}</h3>
+      <div style="opacity: 0.8; font-size: 0.9em;">{{currentDate}} • {{currentTime}}</div>
+    </div>
+  </div>
+  
+  <!-- Status Banner - This uses computed properties from bundled JS -->
+  <div style="
+    background: {{stats.statusColor}};
+    padding: 12px 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    font-weight: bold;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  ">
+    {{stats.statusIcon}} {{stats.statusTier}} (Readiness: {{stats.readinessScore}})
+  </div>
+  
+  <!-- Health Progress Bar -->
+  <div style="margin-bottom: 15px;">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+      <span>Health</span>
+      <span>{{stats.health}}%</span>
+    </div>
+    <div style="
+      background: rgba(0,0,0,0.2);
+      border-radius: 10px;
+      height: 20px;
+      overflow: hidden;
+    ">
+      <div style="
+        background: linear-gradient(90deg, #2ecc71 0%, #27ae60 100%);
+        height: 100%;
+        width: {{stats.healthPercent}}%;
+        transition: width 0.3s ease;
+      "></div>
+    </div>
+  </div>
+  
+  <!-- Fatigue Indicator -->
+  <div style="margin-bottom: 15px;">
+    <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+      <span>Fatigue</span>
+      <span>{{stats.fatigue}}%</span>
+    </div>
+    <div style="
+      background: rgba(0,0,0,0.2);
+      border-radius: 10px;
+      height: 20px;
+      overflow: hidden;
+    ">
+      <div style="
+        background: linear-gradient(90deg, #e74c3c 0%, #c0392b 100%);
+        height: 100%;
+        width: {{stats.fatigue}}%;
+        transition: width 0.3s ease;
+      "></div>
+    </div>
+  </div>
+  
+  <!-- Internal Thought Bubble -->
+  {{#if stats.internal_thought}}
+    <div style="
+      background: rgba(255,255,255,0.15);
+      border-left: 4px solid rgba(255,255,255,0.5);
+      padding: 12px 15px;
+      border-radius: 6px;
+      font-style: italic;
+      margin-top: 15px;
+    ">
+      <div style="opacity: 0.7; font-size: 0.85em; margin-bottom: 5px;">💭 Thinking...</div>
+      <div>{{stats.shortThought}}</div>
+      {{#if stats.hasLongThought}}
+        <div style="opacity: 0.6; font-size: 0.85em; margin-top: 5px;">[Thought truncated]</div>
+      {{/if}}
+    </div>
+  {{/if}}
+  
+  <!-- Reaction Emoji -->
+  {{#if reactionEmoji}}
+    <div style="
+      text-align: center;
+      font-size: 2em;
+      margin-top: 15px;
+      padding-top: 15px;
+      border-top: 1px solid rgba(255,255,255,0.2);
+    ">
+      {{reactionEmoji}}
+    </div>
+  {{/if}}
+</div>
+<!-- CARD_TEMPLATE_END -->

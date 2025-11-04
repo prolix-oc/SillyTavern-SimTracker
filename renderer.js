@@ -1,9 +1,9 @@
 // renderer.js - HTML card rendering code
 import { getContext } from "../../../extensions.js";
 import { messageFormatting } from "../../../../script.js";
-import { extractTemplatePosition, currentTemplatePosition } from "./templating.js";
+import { extractTemplatePosition, currentTemplatePosition, currentTemplateLogic } from "./templating.js";
 import { parseTrackerData } from "./formatUtils.js";
-import { 
+import {
   createElement, 
   query, 
   queryAll, 
@@ -25,6 +25,30 @@ let isGenerationInProgress = false;
 
 // Keep track of mesTexts that have preparing text
 const mesTextsWithPreparingText = new Set();
+
+// Function to execute bundled template logic
+const executeTemplateLogic = (data, templateType) => {
+  // If no template logic exists, return data unchanged
+  if (!currentTemplateLogic || currentTemplateLogic.trim() === '') {
+    return data;
+  }
+  
+  try {
+    // Create a sandboxed function that receives the data object
+    // The template logic should modify the data object and we return it
+    const logicFunction = new Function('data', currentTemplateLogic + '\n; return data;');
+    const transformedData = logicFunction(data);
+    
+    console.log(`[SST] [${MODULE_NAME}]`, `Template logic executed successfully for ${templateType} template`);
+    return transformedData;
+  } catch (error) {
+    console.warn(`[SST] [${MODULE_NAME}]`, `Template logic execution failed:`, error);
+    toastr.error(`Template logic error: ${error.message}`, 'Template Logic Error');
+    
+    // Return original data on error as fallback
+    return data;
+  }
+};
 
 // State management functions
 const setGenerationInProgress = (value) => {
@@ -791,11 +815,14 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
           .filter(Boolean); // Remove any null entries
 
         // For tabbed templates, we pass all characters in one data object
-        const templateData = {
+        let templateData = {
           characters: charactersData,
           currentDate: currentDate,
           currentTime: currentTime,
         };
+        
+        // Execute bundled template logic if it exists
+        templateData = executeTemplateLogic(templateData, 'tabbed');
 
         cardsHtml = compiledCardTemplate(templateData);
       } else {
@@ -810,7 +837,7 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
               return "";
             }
             const bgColor = stats.bg || get_settings("defaultBgColor");
-            const cardData = {
+            let cardData = {
               characterName: name,
               currentDate: currentDate,
               currentTime: currentTime,
@@ -833,6 +860,10 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
                 stats.health === 1 ? "🤕" : stats.health === 2 ? "💀" : null,
               showThoughtBubble: get_settings("showThoughtBubble"),
             };
+            
+            // Execute bundled template logic if it exists
+            cardData = executeTemplateLogic(cardData, 'single');
+            
             return compiledCardTemplate(cardData);
           })
           .join("");
@@ -1085,11 +1116,14 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
           .filter(Boolean); // Remove any null entries
 
         // For tabbed templates, we pass all characters in one data object
-        const templateData = {
+        let templateData = {
           characters: charactersData,
           currentDate: currentDate,
           currentTime: currentTime,
         };
+        
+        // Execute bundled template logic if it exists
+        templateData = executeTemplateLogic(templateData, 'tabbed');
 
         cardsHtml = compiledCardTemplate(templateData);
       } else {
@@ -1104,7 +1138,7 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
               return "";
             }
             const bgColor = stats.bg || get_settings("defaultBgColor");
-            const cardData = {
+            let cardData = {
               characterName: name,
               currentDate: currentDate,
               currentTime: currentTime,
@@ -1127,6 +1161,10 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
                 stats.health === 1 ? "🤕" : stats.health === 2 ? "💀" : null,
               showThoughtBubble: get_settings("showThoughtBubble"),
             };
+            
+            // Execute bundled template logic if it exists
+            cardData = executeTemplateLogic(cardData, 'single');
+            
             return compiledCardTemplate(cardData);
           })
           .join("");
