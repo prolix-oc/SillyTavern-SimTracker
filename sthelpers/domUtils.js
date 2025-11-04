@@ -718,5 +718,36 @@ const DOMUtils = {
   }
 };
 
-// Export module (ES6)
+// Export individual functions for convenience
+export const {
+  createElement,
+  query,
+  queryAll,
+  on,
+  once,
+  debounce,
+  throttle,
+  addClass,
+  removeClass,
+  toggleClass,
+  hasClass,
+  scrollTo,
+  isVisible,
+  observeVisibility,
+  getRect,
+  getOffset,
+  setStyle,
+  getStyle,
+  show,
+  hide,
+  toggle,
+  remove,
+  empty,
+  attr,
+  removeAttr,
+  ready,
+  createQueryCache
+} = DOMUtils;
+
+// Export module (ES6) - keep default export for backward compatibility
 export default DOMUtils;

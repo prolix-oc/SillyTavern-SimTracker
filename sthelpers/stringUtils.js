@@ -550,5 +550,33 @@ const StringUtils = {
   }
 };
 
-// Export module (ES6)
+// Export individual functions for convenience
+export const {
+  truncate,
+  stripHtml,
+  stripMarkdown,
+  levenshtein,
+  similarity,
+  toCamelCase,
+  toSnakeCase,
+  toKebabCase,
+  toTitleCase,
+  escapeHtml,
+  unescapeHtml,
+  template,
+  wordCount,
+  charCount,
+  slugify,
+  reverse,
+  isPalindrome,
+  capitalize,
+  repeat,
+  pad,
+  extractUrls,
+  extractEmails,
+  isAlphanumeric,
+  random
+} = StringUtils;
+
+// Export module (ES6) - keep default export for backward compatibility
 export default StringUtils;
