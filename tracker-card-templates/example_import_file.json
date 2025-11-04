@@ -1,0 +1,97 @@
+{
+  "templateName": "Dating Sim Tracker (Right, Single)",
+  "templateAuthor": "Prolix OCs",
+  "templatePosition": "RIGHT",
+  "htmlTemplate": "",
+  "sysPrompt": "",
+  "customFields": [
+    {
+      "key": "ap",
+      "description": "Affection Points (0-200)"
+    },
+    {
+      "key": "dp",
+      "description": "Desire Points (0-150)"
+    },
+    {
+      "key": "tp",
+      "description": "Trust Points (0-150)"
+    },
+    {
+      "key": "cp",
+      "description": "Contempt Points (0-150)"
+    },
+    {
+      "key": "apChange",
+      "description": "Change in Affection from last action (positive/negative/zero)"
+    },
+    {
+      "key": "dpChange",
+      "description": "Change in Desire from last action (positive/negative/zero)"
+    },
+    {
+      "key": "tpChange",
+      "description": "Change in Trust from last action (positive/negative/zero)"
+    },
+    {
+      "key": "cpChange",
+      "description": "Change in Contempt from last action (positive/negative/zero)"
+    },
+    {
+      "key": "relationshipStatus",
+      "description": "Relationship status text (e.g., 'Romantic Interest')"
+    },
+    {
+      "key": "desireStatus",
+      "description": "Desire status text (e.g., 'A smoldering flame builds.')"
+    },
+    {
+      "key": "preg",
+      "description": "Boolean for pregnancy status (true/false)"
+    },
+    {
+      "key": "days_preg",
+      "description": "Days pregnant (if applicable)"
+    },
+    {
+      "key": "conception_date",
+      "description": "Date of conception (YYYY-MM-DD)"
+    },
+    {
+      "key": "health",
+      "description": "Health Status (0=Unharmed, 1=Injured, 2=Critical)"
+    },
+    {
+      "key": "bg",
+      "description": "Hex color for card background (e.g., #6a5acd)"
+    },
+    {
+      "key": "last_react",
+      "description": "Reaction to User (0=Neutral, 1=Like, 2=Dislike)"
+    },
+    {
+      "key": "internal_thought",
+      "description": "Character's current internal thoughts/feelings"
+    },
+    {
+      "key": "days_since_first_meeting",
+      "description": "Total days since first meeting"
+    },
+    {
+      "key": "inactive",
+      "description": "Boolean for character inactivity (true/false)"
+    },
+    {
+      "key": "inactiveReason",
+      "description": "Reason for inactivity (0=Not inactive, 1=Asleep, 2=Comatose, 3=Contempt/anger, 4=Incapacitated, 5=Death)"
+    }
+  ],
+  "extSettings": {
+    "codeBlockIdentifier": "sim",
+    "defaultBgColor": "#6a5acd",
+    "showThoughtBubble": true,
+    "hideSimBlocks": true,
+    "templateFile": "dating-card-template-sidebar.html"
+  },
+  "trackerDesc": "romantic encounter with slow burn focus."
+}

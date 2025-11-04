@@ -105,6 +105,15 @@
         <hr />
         
         <div class="setting">
+          <label for="enableInlineTemplates">Enable Inline Templates</label>
+          <div class="control"><input type="checkbox" id="enableInlineTemplates" /></div>
+        </div>
+        <p class="description">
+          Enable rendering of inline template markers in messages. This allows templates to define accessories like phone messages, notes, emails, etc. that can be inserted mid-message using special syntax. Only works with templates that have <code>inlineTemplatesEnabled: true</code>.
+        </p>
+        <hr />
+        
+        <div class="setting">
           <label for="trackerFormat">Tracker Format</label>
           <select id="trackerFormat" class="text_pole">
             <option value="json">JSON</option>
@@ -244,6 +253,16 @@
         </div>
         <p class="description">
           The base prompt to be injected when you use the {{sim_tracker}} macro.
+        </p>
+        
+        <hr />
+        
+        <div class="setting">
+          <label for="displayInstructionsPrompt">Display Instructions Prompt</label>
+          <textarea id="displayInstructionsPrompt" class="text_pole" rows="8"></textarea>
+        </div>
+        <p class="description">
+          Custom instructions for using tracker displays, injected when you use the {{sim_displays}} macro. This is shown to the LLM alongside auto-generated documentation about available templates and inline displays.
         </p>
         
         <hr />

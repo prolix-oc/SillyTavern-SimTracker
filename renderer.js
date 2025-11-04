@@ -1,11 +1,27 @@
 // renderer.js - HTML card rendering code
 import { getContext } from "../../../extensions.js";
 import { messageFormatting } from "../../../../script.js";
-import { extractTemplatePosition, currentTemplatePosition } from "./templating.js";
+import { extractTemplatePosition, currentTemplatePosition, currentTemplateLogic, clearDomMeasurementCache } from "./templating.js";
 import { parseTrackerData } from "./formatUtils.js";
+import {
+  createElement, 
+  query, 
+  queryAll, 
+  on, 
+  addClass, 
+  removeClass, 
+  hasClass 
+} from "./helpers.js";
+import DOMUtils from "./sthelpers/domUtils.js";
 
 const MODULE_NAME = "silly-sim-tracker";
 const CONTAINER_ID = "silly-sim-tracker-container";
+
+// Viewport change detection
+let viewportResizeTimeout = null;
+let lastViewportWidth = window.innerWidth;
+let lastViewportHeight = window.innerHeight;
+let isViewportChangeHandlerInitialized = false;
 
 // Global sidebar tracker elements
 let globalLeftSidebar = null;
@@ -16,6 +32,32 @@ let isGenerationInProgress = false;
 
 // Keep track of mesTexts that have preparing text
 const mesTextsWithPreparingText = new Set();
+
+// Function to execute bundled template logic
+const executeTemplateLogic = (data, templateType) => {
+  // If no template logic exists, return data unchanged
+  if (!currentTemplateLogic || currentTemplateLogic.trim() === '') {
+    return data;
+  }
+  
+  try {
+    // Create a sandboxed function that receives the data object
+    // Wrap in strict mode and use proper encoding to handle Unicode characters
+    // We use indirect eval to ensure global scope and better Unicode handling
+    const wrappedLogic = '"use strict";\n' + currentTemplateLogic + '\n; return data;';
+    const logicFunction = new Function('data', wrappedLogic);
+    const transformedData = logicFunction(data);
+    
+    console.log(`[SST] [${MODULE_NAME}]`, `Template logic executed successfully for ${templateType} template`);
+    return transformedData;
+  } catch (error) {
+    console.warn(`[SST] [${MODULE_NAME}]`, `Template logic execution failed:`, error);
+    toastr.error(`Template logic error: ${error.message}`, 'Template Logic Error');
+    
+    // Return original data on error as fallback
+    return data;
+  }
+};
 
 // State management functions
 const setGenerationInProgress = (value) => {
@@ -48,53 +90,59 @@ function updateLeftSidebar(content) {
     }
 
     // Create a container that stretches vertically - will be inserted inside sheld
-    const verticalContainer = document.createElement("div");
-    verticalContainer.id = "sst-global-sidebar-left";
-    verticalContainer.className = "vertical-container";
-    verticalContainer.style.cssText = `
-          position: fixed !important;
-          left: 0 !important;
-          top: 0 !important;
-          bottom: 0 !important;
-          width: auto !important;
-          height: 100vh !important;
-          box-sizing: border-box !important;
-          margin: 0 !important;
-          padding: 10px !important;
-          background: transparent !important;
-          border: none !important;
-          box-shadow: none !important;
-          display: flex !important;
-          flex-direction: column !important;
-          justify-content: center !important;
-          align-items: flex-start !important;
-          visibility: visible !important;
-          overflow: visible !important;
-          pointer-events: none !important;
-          z-index: 100 !important;
-      `;
+    const verticalContainer = createElement('div', {
+      attrs: {
+        id: 'sst-global-sidebar-left',
+        class: 'vertical-container'
+      },
+      style: {
+        position: 'fixed',
+        left: '0',
+        top: '0',
+        bottom: '0',
+        width: 'auto',
+        height: '100vh',
+        boxSizing: 'border-box',
+        margin: '0',
+        padding: '10px',
+        background: 'transparent',
+        border: 'none',
+        boxShadow: 'none',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'flex-start',
+        visibility: 'visible',
+        overflow: 'visible',
+        pointerEvents: 'none',
+        zIndex: '100'
+      }
+    });
     console.log(`[SST] [${MODULE_NAME}]`, "Created verticalContainer");
 
     // Create the actual sidebar content container
-    const leftSidebar = document.createElement("div");
-    leftSidebar.id = "sst-sidebar-left-content";
-    leftSidebar.innerHTML = content;
-    leftSidebar.style.cssText = `
-          width: auto !important;
-          height: 100% !important;
-          max-width: 300px !important;
-          box-sizing: border-box !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          background: transparent !important;
-          border: none !important;
-          box-shadow: none !important;
-          display: block !important;
-          visibility: visible !important;
-          overflow: visible !important;
-          position: relative !important;
-          pointer-events: auto !important;
-      `;
+    const leftSidebar = createElement('div', {
+      attrs: {
+        id: 'sst-sidebar-left-content'
+      },
+      html: content,
+      style: {
+        width: 'auto',
+        height: '100%',
+        maxWidth: '300px',
+        boxSizing: 'border-box',
+        margin: '0',
+        padding: '0',
+        background: 'transparent',
+        border: 'none',
+        boxShadow: 'none',
+        display: 'block',
+        visibility: 'visible',
+        overflow: 'visible',
+        position: 'relative',
+        pointerEvents: 'auto'
+      }
+    });
     console.log(`[SST] [${MODULE_NAME}]`, "Applied styles to leftSidebar");
 
     // Add the sidebar to the vertical container
@@ -127,9 +175,7 @@ function updateLeftSidebar(content) {
     return verticalContainer;
   } else {
     // Update existing sidebar content without destroying DOM structure
-    const leftSidebar = globalLeftSidebar.querySelector(
-      "#sst-sidebar-left-content"
-    );
+    const leftSidebar = query('#sst-sidebar-left-content', globalLeftSidebar);
     if (leftSidebar) {
       updateSidebarContentInPlace(leftSidebar, content);
       // Restore scroll position after updating the sidebar
@@ -159,53 +205,59 @@ function updateRightSidebar(content) {
     }
 
     // Create a container that stretches vertically - will be inserted inside sheld
-    const verticalContainer = document.createElement("div");
-    verticalContainer.id = "sst-global-sidebar-right";
-    verticalContainer.className = "vertical-container";
-    verticalContainer.style.cssText = `
-          position: fixed !important;
-          right: 0 !important;
-          top: 0 !important;
-          bottom: 0 !important;
-          width: auto !important;
-          height: 100vh !important;
-          box-sizing: border-box !important;
-          margin: 0 !important;
-          padding: 10px !important;
-          background: transparent !important;
-          border: none !important;
-          box-shadow: none !important;
-          display: flex !important;
-          flex-direction: column !important;
-          justify-content: center !important;
-          align-items: flex-end !important;
-          visibility: visible !important;
-          overflow: visible !important;
-          pointer-events: none !important;
-          z-index: 100 !important;
-      `;
+    const verticalContainer = createElement('div', {
+      attrs: {
+        id: 'sst-global-sidebar-right',
+        class: 'vertical-container'
+      },
+      style: {
+        position: 'fixed',
+        right: '0',
+        top: '0',
+        bottom: '0',
+        width: 'auto',
+        height: '100vh',
+        boxSizing: 'border-box',
+        margin: '0',
+        padding: '10px',
+        background: 'transparent',
+        border: 'none',
+        boxShadow: 'none',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'flex-end',
+        visibility: 'visible',
+        overflow: 'visible',
+        pointerEvents: 'none',
+        zIndex: '100'
+      }
+    });
     console.log(`[SST] [${MODULE_NAME}]`, "Created verticalContainer");
 
     // Create the actual sidebar content container
-    const rightSidebar = document.createElement("div");
-    rightSidebar.id = "sst-sidebar-right-content";
-    rightSidebar.innerHTML = content;
-    rightSidebar.style.cssText = `
-          width: auto !important;
-          height: 100% !important;
-          max-width: 300px !important;
-          box-sizing: border-box !important;
-          margin: 0 !important;
-          padding: 0 !important;
-          background: transparent !important;
-          border: none !important;
-          box-shadow: none !important;
-          display: block !important;
-          visibility: visible !important;
-          overflow: visible !important;
-          position: relative !important;
-          pointer-events: none !important;
-      `;
+    const rightSidebar = createElement('div', {
+      attrs: {
+        id: 'sst-sidebar-right-content'
+      },
+      html: content,
+      style: {
+        width: 'auto',
+        height: '100%',
+        maxWidth: '300px',
+        boxSizing: 'border-box',
+        margin: '0',
+        padding: '0',
+        background: 'transparent',
+        border: 'none',
+        boxShadow: 'none',
+        display: 'block',
+        visibility: 'visible',
+        overflow: 'visible',
+        position: 'relative',
+        pointerEvents: 'none'
+      }
+    });
 
     // Add the sidebar to the vertical container
     verticalContainer.appendChild(rightSidebar);
@@ -234,9 +286,7 @@ function updateRightSidebar(content) {
     return verticalContainer;
   } else {
     // Update existing sidebar content without destroying DOM structure
-    const rightSidebar = globalRightSidebar.querySelector(
-      "#sst-sidebar-right-content"
-    );
+    const rightSidebar = query('#sst-sidebar-right-content', globalRightSidebar);
     if (rightSidebar) {
       updateSidebarContentInPlace(rightSidebar, content);
       // Restore scroll position after updating the sidebar
@@ -253,22 +303,44 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml) {
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = newContentHtml;
   
-  const existingContainer = existingSidebar.querySelector('#' + CONTAINER_ID);
-  const newContainer = tempDiv.querySelector('#' + CONTAINER_ID);
+  const existingContainer = query(`#${CONTAINER_ID}`, existingSidebar);
+  const newContainer = query(`#${CONTAINER_ID}`, tempDiv);
   
-  if (!existingContainer || !newContainer) {
-    // Fallback to innerHTML if structure doesn't match
-    console.log(`[SST] [${MODULE_NAME}]`, "Container structure mismatch, using innerHTML fallback");
+  // Check if the container structure has changed (different class names or structure)
+  // This indicates a template switch, so we should rebuild completely
+  const existingContainerClasses = existingContainer ? existingContainer.className : '';
+  const newContainerClasses = newContainer ? newContainer.className : '';
+  
+  if (!existingContainer || !newContainer || existingContainerClasses !== newContainerClasses) {
+    // Fallback to innerHTML if structure doesn't match or template has changed
+    console.log(`[SST] [${MODULE_NAME}]`, "Container structure mismatch or template change detected, rebuilding sidebar");
     existingSidebar.innerHTML = newContentHtml;
+    
+    // Immediately apply critical container styles before event listener attachment
+    const container = query('#silly-sim-tracker-container', existingSidebar);
+    if (container) {
+      container.style.cssText += `
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        display: block !important;
+        visibility: visible !important;
+        height: 100%;
+      `;
+    }
+    
+    // Force a reflow to ensure styles are applied
+    existingSidebar.offsetHeight;
+    
     attachTabEventListeners(existingSidebar);
     return;
   }
   
   // Get all cards and tabs
-  const existingCards = existingContainer.querySelectorAll('.sim-tracker-card');
-  const newCards = newContainer.querySelectorAll('.sim-tracker-card');
-  const existingTabs = existingContainer.querySelectorAll('.sim-tracker-tab');
-  const newTabs = newContainer.querySelectorAll('.sim-tracker-tab');
+  const existingCards = queryAll('.sim-tracker-card', existingContainer);
+  const newCards = queryAll('.sim-tracker-card', newContainer);
+  const existingTabs = queryAll('.sim-tracker-tab', existingContainer);
+  const newTabs = queryAll('.sim-tracker-tab', newContainer);
   
   console.log(`[SST] [${MODULE_NAME}]`, `Updating ${newCards.length} cards and ${newTabs.length} tabs`);
   
@@ -276,6 +348,23 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml) {
   if (existingCards.length !== newCards.length || existingTabs.length !== newTabs.length) {
     console.log(`[SST] [${MODULE_NAME}]`, "Card/tab count changed, rebuilding sidebar");
     existingSidebar.innerHTML = newContentHtml;
+    
+    // Immediately apply critical container styles before event listener attachment
+    const container = query('#silly-sim-tracker-container', existingSidebar);
+    if (container) {
+      container.style.cssText += `
+        width: 100% !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+        display: block !important;
+        visibility: visible !important;
+        height: 100%;
+      `;
+    }
+    
+    // Force a reflow to ensure styles are applied
+    existingSidebar.offsetHeight;
+    
     attachTabEventListeners(existingSidebar);
     return;
   }
@@ -423,9 +512,7 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml) {
 function removeGlobalSidebars() {
   if (globalLeftSidebar) {
     // Remove event listeners before removing the sidebar
-    const leftSidebar = globalLeftSidebar.querySelector(
-      "#sst-sidebar-left-content"
-    );
+    const leftSidebar = query('#sst-sidebar-left-content', globalLeftSidebar);
     if (leftSidebar) {
       // Remove any existing event listeners by cloning and replacing
       const newLeftSidebar = leftSidebar.cloneNode(true);
@@ -436,9 +523,7 @@ function removeGlobalSidebars() {
   }
   if (globalRightSidebar) {
     // Remove event listeners before removing the sidebar
-    const rightSidebar = globalRightSidebar.querySelector(
-      "#sst-sidebar-right-content"
-    );
+    const rightSidebar = query('#sst-sidebar-right-content', globalRightSidebar);
     if (rightSidebar) {
       // Remove any existing event listeners by cloning and replacing
       const newRightSidebar = rightSidebar.cloneNode(true);
@@ -451,17 +536,26 @@ function removeGlobalSidebars() {
 
 // Helper function to attach tab event listeners
 function attachTabEventListeners(sidebarElement) {
+  // Track animation timeouts to prevent race conditions
+  const animationTimeouts = new Map();
+  
+  // Helper to cancel all pending animations
+  const cancelAllAnimations = () => {
+    animationTimeouts.forEach(timeout => clearTimeout(timeout));
+    animationTimeouts.clear();
+  };
+  
   // Use setTimeout to ensure DOM is ready
   setTimeout(() => {
-    const tabs = sidebarElement.querySelectorAll(".sim-tracker-tab");
-    const cards = sidebarElement.querySelectorAll(".sim-tracker-card");
+    const tabs = queryAll('.sim-tracker-tab', sidebarElement);
+    const cards = queryAll('.sim-tracker-card', sidebarElement);
 
     if (tabs.length > 0 && cards.length > 0) {
       // Initially activate the first non-inactive tab and card
       let firstActiveIndex = 0;
-      // Find the first non-inactive card
+      // Find the first non-inactive card (check both "inactive" and "narrative-inactive" for compatibility)
       for (let i = 0; i < cards.length; i++) {
-        if (!cards[i].classList.contains("inactive")) {
+        if (!cards[i].classList.contains("inactive") && !cards[i].classList.contains("narrative-inactive")) {
           firstActiveIndex = i;
           break;
         }
@@ -477,7 +571,7 @@ function attachTabEventListeners(sidebarElement) {
         tab.classList.remove("active", "sliding-in", "sliding-out");
       });
 
-      // Then activate the first non-inactive card and tab
+      // Then activate the first non-inactive card and tab immediately
       if (tabs[firstActiveIndex]) {
         tabs[firstActiveIndex].classList.remove("tab-hidden");
         tabs[firstActiveIndex].classList.add("active");
@@ -493,49 +587,67 @@ function attachTabEventListeners(sidebarElement) {
           // Check if this tab is already active
           const isActive = tab.classList.contains("active");
 
-          // Remove active class from all tabs
+          // Cancel all pending animation timeouts to prevent race conditions
+          cancelAllAnimations();
+
+          // Remove active class from all tabs immediately
           tabs.forEach((t) => t.classList.remove("active"));
 
-          // Handle card and tab animations
+          // Handle card animations in a non-blocking way
           cards.forEach((card, cardIndex) => {
             const correspondingTab = tabs[cardIndex];
+            
             if (cardIndex === index && !isActive) {
-              // Slide in the selected card and tab
-              card.classList.remove("sliding-out", "tab-hidden");
-              card.classList.add("sliding-in");
+              // Activate the selected card - make it visible immediately
+              // Remove hidden state first so card can animate in
+              card.classList.remove("tab-hidden", "sliding-out");
               if (correspondingTab) {
-                correspondingTab.classList.remove("sliding-out", "tab-hidden");
-                correspondingTab.classList.add("sliding-in");
+                correspondingTab.classList.remove("tab-hidden", "sliding-out");
               }
-              // Add active class after a short delay to ensure the animation works
-              setTimeout(() => {
-                card.classList.remove("sliding-in");
-                card.classList.add("active");
+              
+              // Use requestAnimationFrame for smooth, non-blocking animation
+              requestAnimationFrame(() => {
+                card.classList.add("sliding-in");
                 if (correspondingTab) {
-                  correspondingTab.classList.remove("sliding-in");
-                  correspondingTab.classList.add("active");
+                  correspondingTab.classList.add("sliding-in");
                 }
-              }, 10);
+                
+                // Transition to active state immediately (CSS handles the visual animation)
+                requestAnimationFrame(() => {
+                  card.classList.remove("sliding-in");
+                  card.classList.add("active");
+                  if (correspondingTab) {
+                    correspondingTab.classList.remove("sliding-in");
+                    correspondingTab.classList.add("active");
+                  }
+                });
+              });
             } else {
-              // Slide out all other cards and tabs
-              if (card.classList.contains("active")) {
-                card.classList.remove("active");
-                card.classList.remove("sliding-in");
+              // Deactivate other cards (or the clicked card if it was already active)
+              if (card.classList.contains("active") || card.classList.contains("sliding-in")) {
+                card.classList.remove("active", "sliding-in");
                 card.classList.add("sliding-out");
                 if (correspondingTab) {
-                  correspondingTab.classList.remove("active");
-                  correspondingTab.classList.remove("sliding-in");
+                  correspondingTab.classList.remove("active", "sliding-in");
                   correspondingTab.classList.add("sliding-out");
                 }
-                // Add tab-hidden class after animation completes
-                setTimeout(() => {
-                  card.classList.add("tab-hidden");
-                  card.classList.remove("sliding-out");
-                  if (correspondingTab) {
+                
+                // Hide card after animation completes (300ms transition)
+                // Store timeout so it can be cancelled if user clicks rapidly
+                const timeoutId = setTimeout(() => {
+                  // Only hide if still in sliding-out state (not interrupted)
+                  if (card.classList.contains("sliding-out")) {
+                    card.classList.add("tab-hidden");
+                    card.classList.remove("sliding-out");
+                  }
+                  if (correspondingTab && correspondingTab.classList.contains("sliding-out")) {
                     correspondingTab.classList.add("tab-hidden");
                     correspondingTab.classList.remove("sliding-out");
                   }
+                  animationTimeouts.delete(cardIndex);
                 }, 300);
+                
+                animationTimeouts.set(cardIndex, timeoutId);
               }
             }
           });
@@ -548,9 +660,7 @@ function attachTabEventListeners(sidebarElement) {
       });
     }
 
-    const container = sidebarElement.querySelector(
-      "#silly-sim-tracker-container"
-    );
+    const container = query('#silly-sim-tracker-container', sidebarElement);
     if (container) {
       container.style.cssText += `
                 width: 100% !important;
@@ -780,11 +890,14 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
           .filter(Boolean); // Remove any null entries
 
         // For tabbed templates, we pass all characters in one data object
-        const templateData = {
+        let templateData = {
           characters: charactersData,
           currentDate: currentDate,
           currentTime: currentTime,
         };
+        
+        // Execute bundled template logic if it exists
+        templateData = executeTemplateLogic(templateData, 'tabbed');
 
         cardsHtml = compiledCardTemplate(templateData);
       } else {
@@ -799,7 +912,7 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
               return "";
             }
             const bgColor = stats.bg || get_settings("defaultBgColor");
-            const cardData = {
+            let cardData = {
               characterName: name,
               currentDate: currentDate,
               currentTime: currentTime,
@@ -822,6 +935,10 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
                 stats.health === 1 ? "🤕" : stats.health === 2 ? "💀" : null,
               showThoughtBubble: get_settings("showThoughtBubble"),
             };
+            
+            // Execute bundled template logic if it exists
+            cardData = executeTemplateLogic(cardData, 'single');
+            
             return compiledCardTemplate(cardData);
           })
           .join("");
@@ -1074,11 +1191,14 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
           .filter(Boolean); // Remove any null entries
 
         // For tabbed templates, we pass all characters in one data object
-        const templateData = {
+        let templateData = {
           characters: charactersData,
           currentDate: currentDate,
           currentTime: currentTime,
         };
+        
+        // Execute bundled template logic if it exists
+        templateData = executeTemplateLogic(templateData, 'tabbed');
 
         cardsHtml = compiledCardTemplate(templateData);
       } else {
@@ -1093,7 +1213,7 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
               return "";
             }
             const bgColor = stats.bg || get_settings("defaultBgColor");
-            const cardData = {
+            let cardData = {
               characterName: name,
               currentDate: currentDate,
               currentTime: currentTime,
@@ -1116,6 +1236,10 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
                 stats.health === 1 ? "🤕" : stats.health === 2 ? "💀" : null,
               showThoughtBubble: get_settings("showThoughtBubble"),
             };
+            
+            // Execute bundled template logic if it exists
+            cardData = executeTemplateLogic(cardData, 'single');
+            
             return compiledCardTemplate(cardData);
           })
           .join("");
@@ -1190,6 +1314,23 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
 const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) => {
   console.log(`[SST] [${MODULE_NAME}]`, "Refreshing all tracker cards on screen.");
 
+  // ALWAYS clear all existing containers and sidebars first when refreshing
+  // This ensures a clean state when switching templates and prevents duplicate cards
+  console.log(`[SST] [${MODULE_NAME}]`, "Clearing all existing tracker containers and sidebars");
+  
+  // Remove all container elements from the DOM
+  document.querySelectorAll(`#${CONTAINER_ID}`).forEach((container) => {
+    console.log(`[SST] [${MODULE_NAME}]`, "Removing container:", container);
+    container.remove();
+  });
+  
+  // Remove all sidebars
+  removeGlobalSidebars();
+  
+  // Note: We do NOT clear the DOM measurement cache here, as that would interfere
+  // with the viewport handler's ability to detect if templates use DOM helpers.
+  // Cache clearing happens in the viewport handler only.
+
   // Get all message divs currently in the chat DOM
   const visibleMessages = document.querySelectorAll("div#chat .mes");
   
@@ -1198,18 +1339,6 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
   const templatePosition = currentTemplatePosition;
   
   console.log(`[SST] [${MODULE_NAME}]`, `Template position: ${templatePosition}`);
-  
-  // Only remove containers and sidebars if we're NOT using sidebar templates
-  // For sidebar templates, we'll update them in place
-  if (templatePosition !== "LEFT" && templatePosition !== "RIGHT") {
-    // Remove old containers for non-sidebar templates
-    document.querySelectorAll(`#${CONTAINER_ID}`).forEach((container) => {
-      container.remove();
-    });
-    
-    // Remove sidebars if we're switching away from sidebar templates
-    removeGlobalSidebars();
-  }
   
   if (templatePosition === "LEFT" || templatePosition === "RIGHT" || templatePosition === "TOP" || templatePosition === "BOTTOM") {
     // Find the last message with sim data by checking the context.chat array directly
@@ -1270,6 +1399,73 @@ const getPendingRightSidebarContent = () => {
   return content;
 };
 
+/**
+ * Initialize viewport change detection
+ * This ensures templates re-render when viewport dimensions change
+ * Only re-renders if the template actually uses DOM measurement helpers
+ */
+const initializeViewportChangeHandler = (get_settings) => {
+  if (isViewportChangeHandlerInitialized) {
+    console.log(`[SST] [${MODULE_NAME}]`, "Viewport change handler already initialized");
+    return;
+  }
+  
+  console.log(`[SST] [${MODULE_NAME}]`, "Initializing viewport change detection");
+  
+  // Use debounced handler to avoid excessive re-renders
+  const handleViewportChange = DOMUtils.debounce(() => {
+    const currentWidth = window.innerWidth;
+    const currentHeight = window.innerHeight;
+    
+    // Only re-render if dimensions actually changed
+    if (currentWidth !== lastViewportWidth || currentHeight !== lastViewportHeight) {
+      console.log(`[SST] [${MODULE_NAME}]`, 
+        `Viewport changed from ${lastViewportWidth}x${lastViewportHeight} to ${currentWidth}x${currentHeight}`
+      );
+      
+      lastViewportWidth = currentWidth;
+      lastViewportHeight = currentHeight;
+      
+      // Check if the template actually uses DOM helpers by checking if cache has entries
+      // This way we only re-render templates that opt-in by using DOM measurement helpers
+      const wasCacheUsed = clearDomMeasurementCache(); // Returns true if cache had entries
+      
+      // Only re-render if the template was using DOM measurements
+      if (wasCacheUsed && get_settings && get_settings("isEnabled")) {
+        console.log(`[SST] [${MODULE_NAME}]`, "Template uses DOM helpers - refreshing cards after viewport change");
+        refreshAllCards(get_settings, CONTAINER_ID, renderTrackerWithoutSim);
+      } else if (!wasCacheUsed) {
+        console.log(`[SST] [${MODULE_NAME}]`, "Template doesn't use DOM helpers - skipping refresh");
+      }
+    }
+  }, 250); // Debounce for 250ms to avoid excessive re-renders
+  
+  // Listen for window resize
+  window.addEventListener('resize', handleViewportChange);
+  
+  // Listen for orientation change (mobile devices)
+  window.addEventListener('orientationchange', () => {
+    // Orientation change needs a slight delay for viewport to update
+    setTimeout(handleViewportChange, 100);
+  });
+  
+  isViewportChangeHandlerInitialized = true;
+  console.log(`[SST] [${MODULE_NAME}]`, "Viewport change detection initialized successfully");
+};
+
+/**
+ * Manually trigger DOM measurement cache clear and re-render
+ * Useful for external code that needs to force a layout update
+ */
+const forceLayoutUpdate = (get_settings) => {
+  console.log(`[SST] [${MODULE_NAME}]`, "Forcing layout update");
+  clearDomMeasurementCache();
+  
+  if (get_settings && get_settings("isEnabled")) {
+    refreshAllCards(get_settings, CONTAINER_ID, renderTrackerWithoutSim);
+  }
+};
+
 // Export functions
 export {
   updateLeftSidebar,
@@ -1287,5 +1483,7 @@ export {
   getPendingRightSidebarContent,
   setGenerationInProgress,
   getGenerationInProgress,
+  initializeViewportChangeHandler,
+  forceLayoutUpdate,
   CONTAINER_ID
 };

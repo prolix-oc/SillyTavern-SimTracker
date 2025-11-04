@@ -1,0 +1,506 @@
+<!-- TEMPLATE NAME: Disposition Tracker (Right Side with Tabs) -->
+<!-- AUTHOR: Prolix OCs -->
+<!-- POSITION: RIGHT -->
+
+<!-- CARD_TEMPLATE_START -->
+<style>
+  /* The actual template styling */
+  .sim-tracker-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr;
+    width: 100%;
+    position: relative;
+    height: 100%;
+    pointer-events: none !important;
+  }
+
+  /* Both tabs and cards exist in the same grid cell, naturally layered */
+  .sim-tracker-tabs,
+  .sim-tracker-cards-wrapper {
+    grid-column: 1;
+    grid-row: 1;
+    position: relative;
+    height: 100%;
+    width: 100%;
+    pointer-events: none !important;
+  }
+
+  .sim-tracker-tabs {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    justify-content: center;
+    align-items: flex-end;
+    padding-right: 0;
+    width: auto;
+    height: 100%;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+    pointer-events: none !important;
+  }
+
+  .sim-tracker-tab {
+    width: 60px;
+    height: 60px;
+    border-radius: 8px;
+    box-shadow: 2px 2px 8px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), filter 0.3s ease;
+    cursor: pointer;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(145deg, #2c2c2c, #1a1a1a);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    flex-shrink: 0;
+    margin-right: 8px;
+    pointer-events: auto !important;
+    position: relative;
+  }
+
+  .sim-tracker-tab.active {
+    transform: translateX(-320px);  /* Move into view with card */
+    filter: brightness(1.3) !important;
+  }
+
+  .sim-tracker-tab:hover {
+    filter: brightness(1.2) !important;
+  }
+
+  .tab-initials {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, #6a5acd, #5a4abc);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    font-size: 18px;
+  }
+
+  .sim-tracker-cards-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    pointer-events: none !important;
+  }
+
+  .sim-tracker-card {
+    background: linear-gradient(145deg, #2c2c2c, #1a1a1a);
+    border-radius: 18px;
+    padding: 20px;
+    width: 320px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    position: absolute !important;
+    right: 0 !important;
+    top: 50%;
+    backdrop-filter: blur(10px);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.3s ease, visibility 0.3s ease;
+    transform: translateY(-50%) translateX(100%) !important;
+    opacity: 0;
+    visibility: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    pointer-events: auto !important;
+  }
+
+  .sim-tracker-card.active {
+    transform: translateY(-50%) translateX(0) !important;
+    opacity: 1;
+    visibility: visible;
+  }
+
+  .sim-tracker-card.sliding-out {
+    transform: translateY(-50%) translateX(100%) !important;
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .sim-tracker-card.tab-hidden {
+    display: none !important;
+  }
+
+  .sim-tracker-card.narrative-inactive {
+    opacity: 1;
+  }
+
+  .sim-tracker-card.narrative-inactive.active {
+    opacity: 1;
+  }
+
+  .character-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+
+  .character-name {
+    font-size: 1.3em;
+    font-weight: 600;
+    color: #ffffff;
+  }
+
+  .status-icons {
+    display: flex;
+    gap: 6px;
+    font-size: 1.3em;
+  }
+
+  .stats-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+  }
+
+  .stat-item {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .stat-header {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9em;
+    color: rgba(255, 255, 255, 0.7);
+  }
+
+  .stat-bar-bg {
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    position: relative;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .stat-bar-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .stat-bar-center-mark {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateX(-50%);
+    z-index: 1;
+    height: 100%;
+    border-radius: 4px;
+    z-index: 2;
+  }
+
+  .stat-bar-center-mark {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateX(-50%);
+    z-index: 3;
+  }
+
+  .days-counter {
+    text-align: left;
+    font-style: italic;
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.95em;
+    margin-bottom: 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  .thought-bubble {
+    margin-top: 6px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .thought-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.7);
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    letter-spacing: 0.25px;
+    margin-bottom: 4px;
+  }
+
+  .section-container {
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+  }
+
+  .section-title {
+    font-size: 0.85em;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+  }
+
+  .connections-list,
+  .belongings-list,
+  .goals-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .connection-item,
+  .belonging-item,
+  .goal-item {
+    font-size: 0.9em;
+    color: rgba(255, 255, 255, 0.85);
+    padding: 6px 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 6px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .connection-affinity {
+    font-size: 0.85em;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 500;
+  }
+
+  /* Overlay for inactive characters */
+  .narrative-inactive-overlay {
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    width: calc(100% + 10px);
+    height: calc(100% + 10px);
+    background-color: black;
+    opacity: 0.5;
+    border-radius: 18px;
+    display: none;
+    z-index: 100;
+    pointer-events: none;
+  }
+
+  .narrative-inactive .narrative-inactive-overlay {
+    display: block;
+  }
+
+  /* Scrollbar styling */
+  .sim-tracker-card::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .sim-tracker-card::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+  }
+
+  .sim-tracker-card::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 3px;
+  }
+
+  .sim-tracker-card::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+</style>
+
+<div class="sim-tracker-container">
+  <div class="sim-tracker-tabs">
+    {{#each characters}}
+    <div
+      class="sim-tracker-tab"
+      data-character="{{@index}}"
+      style="background: linear-gradient(145deg, {{adjustColorBrightness bgColor 70}} 0%, {{adjustColorBrightness darkerBgColor 60}} 50%, {{adjustColorBrightness darkerBgColor 50}} 100%);"
+    >
+      <div
+        class="tab-initials"
+        style="background: linear-gradient(145deg, {{adjustColorBrightness bgColor 90}} 0%, {{adjustColorBrightness bgColor 70}} 100%);"
+      >
+        {{initials characterName}}
+      </div>
+    </div>
+    {{/each}}
+  </div>
+
+  <div class="sim-tracker-cards-wrapper">
+    {{#each characters}}
+    <div
+      class="sim-tracker-card {{#if stats.inactive}}narrative-inactive{{/if}}"
+      data-character="{{@index}}"
+      style="background: linear-gradient(145deg, {{adjustColorBrightness bgColor 70}} 0%, {{adjustColorBrightness darkerBgColor 60}} 50%, {{adjustColorBrightness darkerBgColor 50}} 100%);"
+    >
+      <!-- Overlay for inactive characters -->
+      <div class="narrative-inactive-overlay"></div>
+
+      <!-- Days counter and time at the top -->
+      <div class="days-counter">
+        {{#if currentDateTime}}{{currentDateTime}}{{else}}Day {{stats.days_since_first_meeting}}{{/if}}
+        {{#if stats.time_known}}
+        <br><span style="font-size: 0.85em; opacity: 0.8;">Known for {{stats.time_known}}</span>
+        {{/if}}
+      </div>
+
+      <!-- Character header with name and status icons -->
+      <div class="character-header">
+        <div class="character-name">{{characterName}}</div>
+        <div class="status-icons">
+          {{#if stats.narrativeStatus}}{{stats.narrativeStatus}}{{/if}}
+          {{#if stats.preg}}🤰{{/if}}
+          {{#if stats.reactionIcon}}{{stats.reactionIcon}}{{/if}}
+        </div>
+      </div>
+
+      <!-- Core Stats with progress bars -->
+      <div class="stats-container">
+        <!-- Affinity (-100 to 100) -->
+        <div class="stat-item">
+          <div class="stat-header">
+            <span>Affinity</span>
+            <span>{{stats.affinity}}</span>
+          </div>
+          <div class="stat-bar-bg">
+            <div class="stat-bar-center-mark"></div>
+            <div
+              class="stat-bar-fill"
+              style="background: linear-gradient(90deg, #c74550 0%, #ee5a6f 12.5%, #ff6b6b 25%, #ff9999 37.5%, #c4d4d4 50%, #8fd3f4 62.5%, #84fab0 75%, #5a9d7a 87.5%, #4a8d6a 100%);
+                     {{#if (gte stats.affinity 0)}}clip-path: inset(0 {{subtract 50 (multiply (abs stats.affinity) 0.5)}}% 0 50% round 0 4px 4px 0);{{else}}clip-path: inset(0 50% 0 {{subtract 50 (multiply (abs stats.affinity) 0.5)}}% round 4px 0 0 4px);{{/if}}"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Desire (-100 to 100) -->
+        <div class="stat-item">
+          <div class="stat-header">
+            <span>Desire</span>
+            <span>{{stats.desire}}</span>
+          </div>
+          <div class="stat-bar-bg">
+            <div class="stat-bar-center-mark"></div>
+            <div
+              class="stat-bar-fill"
+              style="background: linear-gradient(90deg, #5447b8 0%, #6c5ce7 12.5%, #a29bfe 25%, #c5c0ff 37.5%, #c4d4ec 50%, #c2e9fb 62.5%, #a1c4fd 75%, #7a9ed4 87.5%, #6a8ec4 100%);
+                     {{#if (gte stats.desire 0)}}clip-path: inset(0 {{subtract 50 (multiply (abs stats.desire) 0.5)}}% 0 50% round 0 4px 4px 0);{{else}}clip-path: inset(0 50% 0 {{subtract 50 (multiply (abs stats.desire) 0.5)}}% round 4px 0 0 4px);{{/if}}"
+            ></div>
+          </div>
+        </div>
+
+        <!-- Health (0 to 100) -->
+        <div class="stat-item">
+          <div class="stat-header">
+            <span>Health</span>
+            <span>{{stats.health}}</span>
+          </div>
+          <div class="stat-bar-bg">
+            <div
+              class="stat-bar-fill"
+              style="background: linear-gradient(90deg, #8b0000 0%, #d63031 10%, #ff7675 20%, #fdcb6e 40%, #ffeaa7 60%, #00b894 80%, #55efc4 100%);
+                     clip-path: inset(0 {{subtract 100 stats.health}}% 0 0 round 4px);"
+            ></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Internal Thought -->
+      {{#if stats.internal_thought}}
+      <div class="thought-label">Current Thought:</div>
+      <div class="thought-bubble">
+        <div style="display: flex; align-items: flex-start; gap: 10px">
+          <div style="font-size: 1.2em; flex-shrink: 0">💭</div>
+          <div
+            style="
+              font-size: 0.9em;
+              line-height: 1.4;
+              color: rgba(255, 255, 255, 0.85);
+            "
+          >
+            {{stats.internal_thought}}
+          </div>
+        </div>
+      </div>
+      {{/if}}
+
+      <!-- Connections -->
+      {{#if stats.connections}}
+      <div class="section-container">
+        <div class="section-title">Connections</div>
+        <div class="connections-list">
+          {{#each stats.connections}}
+          <div class="connection-item" style="background: {{#if (gte this.affinity 50)}}rgba(132, 250, 176, 0.08){{else if (gte this.affinity 20)}}rgba(132, 250, 176, 0.05){{else if (gte this.affinity -20)}}rgba(255, 255, 255, 0.03){{else if (gte this.affinity -50)}}rgba(255, 107, 107, 0.05){{else}}rgba(255, 107, 107, 0.08){{/if}};">
+            <span>{{this.name}}</span>
+            <span class="connection-affinity">{{this.affinity}}</span>
+          </div>
+          {{/each}}
+        </div>
+      </div>
+      {{/if}}
+
+      <!-- Belongings -->
+      {{#if stats.belongings}}
+      <div class="section-container">
+        <div class="section-title">Belongings</div>
+        <div class="belongings-list">
+          {{#each stats.belongings}}
+          <div class="belonging-item">{{this}}</div>
+          {{/each}}
+        </div>
+      </div>
+      {{/if}}
+
+      <!-- Goals -->
+      {{#if stats.goals}}
+      <div class="section-container">
+        <div class="section-title">Goals</div>
+        <div class="goals-list">
+          {{#each stats.goals}}
+          <div class="goal-item">{{this}}</div>
+          {{/each}}
+        </div>
+      </div>
+      {{/if}}
+    </div>
+    {{/each}}
+  </div>
+</div>
+<!-- CARD_TEMPLATE_END -->
+
+<!-- 
+TEMPLATE VARIABLES:
+- {{characters}}: Array of character objects with their data
+- {{characterName}}: Character's name
+- {{currentDateTime}}: Current date and time in the narrative
+- {{bgColor}}: Primary background color
+- {{darkerBgColor}}: Darker variant of background color
+- {{contrastColor}}: Contrast color for text against background
+- {{stats.affinity}}: Affinity (-100 to 100)
+- {{stats.desire}}: Desire (-100 to 100)
+- {{stats.health}}: Health (0 to 100)
+- {{stats.affinityChange}}: Change in affinity from last action
+- {{stats.desireChange}}: Change in desire from last action
+- {{stats.healthChange}}: Change in health from last action
+- {{stats.days_since_first_meeting}}: Days since first meeting
+- {{stats.time_known}}: Human-readable time known (e.g., "3 days" or "2 weeks")
+- {{stats.narrativeStatus}}: Status icon (💤 asleep, 🏥 medical, 🪦 dead, etc.)
+- {{stats.preg}}: Boolean for pregnancy status
+- {{stats.days_preg}}: Days pregnant (if applicable)
+- {{stats.reactionIcon}}: Reaction icon (😊 pleased, 😐 neutral, 😠 displeased)
+- {{stats.internal_thought}}: Character's current internal thought (max 3 sentences)
+- {{stats.connections}}: Array of connections [{name: string, affinity: number}]
+- {{stats.belongings}}: Array of belongings (strings)
+- {{stats.goals}}: Array of goals (strings)
+- {{stats.inactive}}: Boolean for inactive status
+- {{stats.inactiveReason}}: Number indicating reason for inactivity
+-->
