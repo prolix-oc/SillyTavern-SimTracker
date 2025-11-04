@@ -316,51 +316,6 @@
   .sim-tracker-card::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
   }
-
-  .change-indicator {
-    color: white;
-    font-size: 0.75em;
-    font-weight: 600;
-    padding: 2px 5px;
-    border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    min-width: 20px;
-    text-align: center;
-    line-height: 1.2;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-  }
-
-  .change-indicator.positive {
-    background: rgba(46, 204, 113, 0.9) !important;
-    margin-left: 6px;
-  }
-
-  .change-indicator.negative {
-    background: rgba(231, 76, 60, 0.9) !important;
-    margin-right: 6px;
-  }
-
-  .health-change-indicator {
-    color: white;
-    font-size: 0.75em;
-    font-weight: 600;
-    padding: 2px 5px;
-    border-radius: 4px;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    min-width: 20px;
-    text-align: center;
-    line-height: 1.2;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    margin-left: 6px;
-  }
-
-  .health-change-indicator.positive {
-    background: rgba(46, 204, 113, 0.9) !important;
-  }
-
-  .health-change-indicator.negative {
-    background: rgba(231, 76, 60, 0.9) !important;
-  }
 </style>
 
 <div class="sim-tracker-container">
@@ -415,19 +370,7 @@
         <div class="stat-item">
           <div class="stat-header">
             <span>Affinity</span>
-            <span style="display: flex; align-items: center;">
-              {{#if stats.affinityChange}}{{#unless (eq stats.affinityChange 0)}}{{#if (lt stats.affinityChange 0)}}
-              <span class="change-indicator negative">
-                {{stats.affinityChange}}
-              </span>
-              {{/if}}{{/unless}}{{/if}}
-              <span>{{stats.affinity}}</span>
-              {{#if stats.affinityChange}}{{#unless (eq stats.affinityChange 0)}}{{#if (gt stats.affinityChange 0)}}
-              <span class="change-indicator positive">
-                +{{stats.affinityChange}}
-              </span>
-              {{/if}}{{/unless}}{{/if}}
-            </span>
+            <span>{{stats.affinity}}</span>
           </div>
           <div class="stat-bar-bg">
             <div class="stat-bar-center-mark"></div>
@@ -443,19 +386,7 @@
         <div class="stat-item">
           <div class="stat-header">
             <span>Desire</span>
-            <span style="display: flex; align-items: center;">
-              {{#if stats.desireChange}}{{#unless (eq stats.desireChange 0)}}{{#if (lt stats.desireChange 0)}}
-              <span class="change-indicator negative">
-                {{stats.desireChange}}
-              </span>
-              {{/if}}{{/unless}}{{/if}}
-              <span>{{stats.desire}}</span>
-              {{#if stats.desireChange}}{{#unless (eq stats.desireChange 0)}}{{#if (gt stats.desireChange 0)}}
-              <span class="change-indicator positive">
-                +{{stats.desireChange}}
-              </span>
-              {{/if}}{{/unless}}{{/if}}
-            </span>
+            <span>{{stats.desire}}</span>
           </div>
           <div class="stat-bar-bg">
             <div class="stat-bar-center-mark"></div>
@@ -471,14 +402,7 @@
         <div class="stat-item">
           <div class="stat-header">
             <span>Health</span>
-            <span style="display: flex; align-items: center;">
-              <span>{{stats.health}}</span>
-              {{#if stats.healthChange}}{{#unless (eq stats.healthChange 0)}}
-              <span class="health-change-indicator {{#if (gt stats.healthChange 0)}}positive{{else}}negative{{/if}}">
-                {{#if (gt stats.healthChange 0)}}+{{/if}}{{stats.healthChange}}
-              </span>
-              {{/unless}}{{/if}}
-            </span>
+            <span>{{stats.health}}</span>
           </div>
           <div class="stat-bar-bg">
             <div
