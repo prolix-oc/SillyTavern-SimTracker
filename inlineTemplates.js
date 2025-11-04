@@ -191,6 +191,10 @@ export function processInlineTemplates(messageElement, templateConfig, isEnabled
   messageHTML = messageHTML.replace(INLINE_TEMPLATE_REGEX, (match, templateName, dataJSON) => {
     hasChanges = true;
     
+    console.log(`[SST] [${MODULE_NAME}]`, `DEBUG - Full match:`, match);
+    console.log(`[SST] [${MODULE_NAME}]`, `DEBUG - Template name:`, templateName);
+    console.log(`[SST] [${MODULE_NAME}]`, `DEBUG - Raw dataJSON:`, dataJSON);
+    
     // Parse the data
     const data = parseInlineData(dataJSON);
     
