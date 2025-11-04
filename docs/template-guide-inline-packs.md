@@ -21,6 +21,7 @@ An inline template pack is a JSON file with the following structure:
 {
   "templateName": "Mystery Game Inline Pack",
   "templateAuthor": "Your Name",
+  "displayInstructions": "These inline displays are designed for mystery/detective scenarios. Use them to create immersive evidence, clues, and communication artifacts that enhance the investigative atmosphere.",
   "inlineTemplates": [
     {
       "insertName": "phone",
@@ -38,14 +39,31 @@ An inline template pack is a JSON file with the following structure:
 - **templateAuthor**: Your name or organization
 - **inlineTemplates**: Array of template definitions (must have at least one item)
 
+### Optional Fields
+
+- **displayInstructions**: Custom guidance for the LLM on when and how to use these templates. This text will be included in the `{{sim_displays}}` macro output under "Template Pack Guidelines" to help the LLM understand the intended use cases for your templates.
+
 ### Template Definition Fields
 
 Each inline template in the array must have:
 
 - **insertName**: Unique identifier used in the `[[DISPLAY=...]]` syntax
-- **insertPurpose**: Description of what this template displays (for documentation)
-- **parameters**: Array of parameter names this template accepts
+- **insertPurpose**: Description of what this template displays (for LLM guidance)
+- **parameters**: Array of parameter objects, each with `name` and `description` fields
 - **htmlContent**: Handlebars template string with inline CSS
+
+#### Parameter Format
+
+Parameters are defined as objects with two properties:
+
+```json
+{
+  "name": "parameterName",
+  "description": "What this parameter is for and what values it should contain"
+}
+```
+
+This structured format allows the LLM to better understand each parameter's purpose when generating inline displays.
 
 ## Creating Inline Templates
 
@@ -55,7 +73,10 @@ Each inline template in the array must have:
 {
   "insertName": "note",
   "insertPurpose": "Display a handwritten note",
-  "parameters": ["content", "signature"],
+  "parameters": [
+    {"name": "content", "description": "The note's text content"},
+    {"name": "signature", "description": "Signature or initial at the end (optional)"}
+  ],
   "htmlContent": "<div style='background: #fef9e7; padding: 20px;'><div>{{content}}</div>{{#if signature}}<div>- {{signature}}</div>{{/if}}</div>"
 }
 ```
@@ -116,7 +137,11 @@ Inline templates support Handlebars syntax:
 {
   "insertName": "phone",
   "insertPurpose": "Display a phone message notification",
-  "parameters": ["name", "textContent", "time"],
+  "parameters": [
+    {"name": "name", "description": "Contact name or phone number"},
+    {"name": "textContent", "description": "The message text"},
+    {"name": "time", "description": "Time the message was received (optional)"}
+  ],
   "htmlContent": "<div style='background: #1a1a1a; border-radius: 12px; padding: 16px; margin: 12px 0; max-width: 400px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);'><div style='display: flex; align-items: center; margin-bottom: 8px;'><span style='font-size: 24px; margin-right: 12px;'>📱</span><div><div style='font-weight: bold; color: #fff;'>{{name}}</div>{{#if time}}<div style='font-size: 12px; color: #888;'>{{time}}</div>{{/if}}</div></div><div style='color: #ddd; line-height: 1.4;'>{{textContent}}</div></div>"
 }
 ```
@@ -132,7 +157,11 @@ Inline templates support Handlebars syntax:
 {
   "insertName": "email",
   "insertPurpose": "Display an email preview",
-  "parameters": ["from", "subject", "preview"],
+  "parameters": [
+    {"name": "from", "description": "Sender's email address or name"},
+    {"name": "subject", "description": "Email subject line"},
+    {"name": "preview", "description": "Preview of the email body"}
+  ],
   "htmlContent": "<div style='background: #f5f5f5; border-left: 4px solid #4285f4; padding: 16px; margin: 12px 0; max-width: 500px;'><div style='font-weight: bold; color: #202124; margin-bottom: 4px;'>{{from}}</div><div style='font-weight: 600; color: #5f6368; margin-bottom: 8px;'>{{subject}}</div><div style='color: #5f6368; font-size: 14px;'>{{preview}}</div></div>"
 }
 ```
@@ -143,7 +172,11 @@ Inline templates support Handlebars syntax:
 {
   "insertName": "evidence",
   "insertPurpose": "Display a piece of evidence or clue",
-  "parameters": ["title", "description", "tag"],
+  "parameters": [
+    {"name": "title", "description": "Name or title of the evidence"},
+    {"name": "description", "description": "Detailed description of the evidence"},
+    {"name": "tag", "description": "Category tag (e.g., 'Physical', 'Testimony', optional)"}
+  ],
   "htmlContent": "<div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; padding: 2px; margin: 12px 0; max-width: 400px;'><div style='background: #fff; border-radius: 6px; padding: 16px;'><div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'><div style='font-weight: bold; color: #333; font-size: 16px;'>🔍 {{title}}</div>{{#if tag}}<div style='background: #667eea; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px;'>{{tag}}</div>{{/if}}</div><div style='color: #666; line-height: 1.5; font-size: 14px;'>{{description}}</div></div></div>"
 }
 ```
@@ -243,6 +276,53 @@ To share your pack:
 - **Fix**: Test in both light and dark themes
 - **Fix**: Set explicit `color` values, don't rely on inheritance
 
+## Display Instructions (LLM Guidance)
+
+The optional `displayInstructions` field allows you to provide context-specific guidance to the LLM about when and how to use your inline templates. This is especially useful for themed packs or templates with specific use cases.
+
+### When to Use Display Instructions
+
+- **Themed Packs**: Explain the theme and scenarios where templates should be used
+- **Special Requirements**: Clarify any special usage patterns or best practices
+- **Context Guidance**: Help the LLM understand the narrative tone or style
+
+### Example
+
+```json
+{
+  "templateName": "Mystery Game Inline Pack",
+  "templateAuthor": "Detective Stories Inc",
+  "displayInstructions": "These inline displays are designed for mystery/detective scenarios. Use them to create immersive evidence, clues, and communication artifacts that enhance the investigative atmosphere. Prefer these over plain text when presenting clues, messages, or physical evidence the player discovers.",
+  "inlineTemplates": [...]
+}
+```
+
+### How It Works
+
+When you include `displayInstructions` in your pack:
+
+1. The text appears in the `{{sim_displays}}` macro output under "Template Pack Guidelines"
+2. Multiple packs can each contribute their own instructions
+3. The LLM receives this guidance along with the list of available templates
+4. This helps the LLM make better decisions about when to use your templates
+
+### Best Practices for Display Instructions
+
+- **Be concise but clear** - One to two sentences is usually sufficient
+- **Focus on use cases** - When should these templates be used?
+- **Mention tone/style** - What narrative style do these support?
+- **Avoid technical details** - Focus on creative guidance, not implementation
+
+**Good Example:**
+```
+"These templates create a retro-futuristic aesthetic perfect for cyberpunk or sci-fi noir stories. Use them for terminal outputs, holographic displays, and digital communications."
+```
+
+**Too Technical:**
+```
+"These templates use CSS gradients and flexbox. The phone template has three parameters."
+```
+
 ## Advanced Techniques
 
 ### Multi-line Content
@@ -285,16 +365,22 @@ Use this template to start your own pack:
 {
   "templateName": "My Inline Pack",
   "templateAuthor": "Your Name",
+  "displayInstructions": "Optional: Provide guidance to the LLM about when and how to use these templates.",
   "inlineTemplates": [
     {
       "insertName": "example",
       "insertPurpose": "Example template",
-      "parameters": ["param1", "param2"],
+      "parameters": [
+        {"name": "param1", "description": "Description of what param1 is for"},
+        {"name": "param2", "description": "Description of what param2 is for"}
+      ],
       "htmlContent": "<div style='padding: 16px;'>{{param1}} - {{param2}}</div>"
     }
   ]
 }
 ```
+
+**Note:** The `displayInstructions` field is optional but recommended if your pack has a specific theme or use case.
 
 ## See Also
 

@@ -247,6 +247,16 @@
         <hr />
         
         <div class="setting">
+          <label for="displayInstructionsPrompt">Display Instructions Prompt</label>
+          <textarea id="displayInstructionsPrompt" class="text_pole" rows="8"></textarea>
+        </div>
+        <p class="description">
+          Custom instructions for using tracker displays, injected when you use the {{sim_displays}} macro. This is shown to the LLM alongside auto-generated documentation about available templates and inline displays.
+        </p>
+        
+        <hr />
+        
+        <div class="setting">
           <label>JSON Format Migration</label>
           <div class="flex-container">
             <button id="migrateJsonFormatBtn" class="menu_button" title="Migrate all existing sim data to the new format with worldData and characters array.">

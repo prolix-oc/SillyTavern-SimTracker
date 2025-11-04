@@ -79,6 +79,7 @@ const default_settings = {
   templatePosition: "BOTTOM", // Default template position
   datingSimPrompt:
     "Default prompt could not be loaded. Please check file path.",
+  displayInstructionsPrompt: "", // Custom instructions for display methods
   customFields: [...defaultSimFields], // Clone the default fields
   hideSimBlocks: true, // New setting to hide sim blocks in message text
   userPresets: [], // New setting to store user presets
@@ -241,6 +242,7 @@ const initialize_settings_listeners = (
   bind_setting("#hideSimBlocks", "hideSimBlocks", "boolean");
   bind_setting("#trackerFormat", "trackerFormat", "text");
   bind_setting("#datingSimPrompt", "datingSimPrompt", "textarea");
+  bind_setting("#displayInstructionsPrompt", "displayInstructionsPrompt", "textarea");
   
   // Secondary LLM settings
   bind_setting("#useSecondaryLLM", "useSecondaryLLM", "boolean");

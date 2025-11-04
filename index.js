@@ -440,6 +440,179 @@ ${exampleJson}
 \`\`\``;
       }
     });
+
+    MacrosParser.registerMacro("sim_displays", () => {
+      if (!get_settings("isEnabled")) return "";
+      log("Processed {{sim_displays}} macro.");
+      
+      const identifier = get_settings("codeBlockIdentifier") || "sim";
+      const inlineEnabled = get_settings("enableInlineTemplates");
+      const templateConfig = getCurrentTemplateConfig();
+      const customInstructions = get_settings("displayInstructionsPrompt") || "";
+      
+      let output = "";
+      
+      // Add custom instructions first if provided
+      if (customInstructions && customInstructions.trim() !== "") {
+        output += customInstructions.trim() + "\n\n";
+      }
+      
+      output += "## Available Display Methods\n\n";
+      output += "### 1. Tracker Code Block\n\n";
+      output += "Place tracker data at the END of your response in a code block:\n\n";
+      output += "- Syntax: ```" + identifier + "\\n[data here]\\n```\n";
+      output += "- Must be the LAST element in your message\n";
+      output += "- Use the format specified in {{sim_format}} (see main tracker instructions)\n";
+      output += "- Will render as visual tracker cards for the user\n\n";
+      
+      if (inlineEnabled && templateConfig) {
+        // Collect all available inline templates with their pack info
+        const allTemplates = [];
+        const packInstructions = [];
+        
+        // Add templates from current template config
+        if (templateConfig.inlineTemplates && Array.isArray(templateConfig.inlineTemplates)) {
+          allTemplates.push(...templateConfig.inlineTemplates);
+        }
+        
+        // Add display instructions from current template if available
+        if (templateConfig.displayInstructions && templateConfig.displayInstructions.trim() !== "") {
+          packInstructions.push({
+            source: templateConfig.templateName || "Current Template",
+            instructions: templateConfig.displayInstructions.trim()
+          });
+        }
+        
+        // Add templates from enabled packs
+        const inlinePacks = get_settings("inlinePacks") || [];
+        inlinePacks.forEach(pack => {
+          if (pack.enabled !== false && pack.inlineTemplates && Array.isArray(pack.inlineTemplates)) {
+            allTemplates.push(...pack.inlineTemplates.map(t => ({
+              ...t,
+              packName: pack.templateName
+            })));
+            
+            // Add pack-specific display instructions if available
+            if (pack.displayInstructions && pack.displayInstructions.trim() !== "") {
+              packInstructions.push({
+                source: pack.templateName,
+                instructions: pack.displayInstructions.trim()
+              });
+            }
+          }
+        });
+        
+        if (allTemplates.length > 0) {
+          output += "### 2. Inline Display Templates\n\n";
+          output += "Embed visual elements WITHIN narrative text using special syntax:\n\n";
+          output += "- Syntax: `[[DISPLAY=templateName, DATA={param1: \"value1\", param2: \"value2\"}]]`\n";
+          output += "- Short form: `[[D=templateName, DATA={...}]]`\n";
+          output += "- Can appear anywhere in narrative text\n";
+          output += "- Data must be valid JSON object with string values in quotes\n\n";
+          
+          // Add pack-specific instructions if available
+          if (packInstructions.length > 0) {
+            output += "**Template Pack Guidelines:**\n\n";
+            packInstructions.forEach(packInfo => {
+              output += `- **${packInfo.source}**: ${packInfo.instructions}\n`;
+            });
+            output += "\n";
+          }
+          
+          output += "**Available Templates:**\n\n";
+          
+          allTemplates.forEach(template => {
+            const packInfo = template.packName ? ` *(from ${template.packName})*` : "";
+            output += `- **${template.insertName}**${packInfo}: ${template.insertPurpose}\n`;
+            
+            // List parameters with their descriptions
+            if (template.parameters && template.parameters.length > 0) {
+              output += `  - Parameters:\n`;
+              template.parameters.forEach(param => {
+                output += `    - \`${param.name}\`: ${param.description}\n`;
+              });
+              
+              // Generate example with parameter names
+              const exampleParams = template.parameters.map(p => `${p.name}: "example"`).join(", ");
+              output += `  - Example: \\\`[[D=${template.insertName}, DATA={${exampleParams}}]]\\\`\n`;
+            }
+          });
+        }
+      }
+      
+      return output;
+    });
+
+    MacrosParser.registerMacro("sim_display_format", () => {
+      if (!get_settings("isEnabled")) return "";
+      log("Processed {{sim_display_format}} macro.");
+      
+      const inlineEnabled = get_settings("enableInlineTemplates");
+      const templateConfig = getCurrentTemplateConfig();
+      
+      if (!inlineEnabled || !templateConfig) {
+        return "Inline templates are not currently enabled.";
+      }
+      
+      // Collect all available inline templates
+      const allTemplates = [];
+      
+      // Add templates from current template config
+      if (templateConfig.inlineTemplates && Array.isArray(templateConfig.inlineTemplates)) {
+        allTemplates.push(...templateConfig.inlineTemplates);
+      }
+      
+      // Add templates from enabled packs
+      const inlinePacks = get_settings("inlinePacks") || [];
+      inlinePacks.forEach(pack => {
+        if (pack.enabled !== false && pack.inlineTemplates && Array.isArray(pack.inlineTemplates)) {
+          allTemplates.push(...pack.inlineTemplates.map(t => ({
+            ...t,
+            packName: pack.templateName
+          })));
+        }
+      });
+      
+      if (allTemplates.length === 0) {
+        return "No inline display templates are currently available.";
+      }
+      
+      let output = "## Inline Display Format Reference\n\n";
+      output += "Use inline displays to embed visual elements within your narrative text.\n\n";
+      output += "**Syntax:**\n";
+      output += "- Full: `[[DISPLAY=templateName, DATA={param1: \"value1\", param2: \"value2\"}]]`\n";
+      output += "- Short: `[[D=templateName, DATA={...}]]`\n\n";
+      output += "**Rules:**\n";
+      output += "- Can appear anywhere in narrative text (unlike tracker code blocks)\n";
+      output += "- DATA must be valid JSON with string values in quotes\n";
+      output += "- Use double quotes for JSON, single quotes may cause errors\n";
+      output += "- All parameter values should be strings (e.g., `time: \"2:30 PM\"` not `time: 2:30`)\n\n";
+      output += "**Available Templates:**\n\n";
+      
+      allTemplates.forEach(template => {
+        const packInfo = template.packName ? ` *(from ${template.packName})*` : "";
+        output += `### ${template.insertName}${packInfo}\n\n`;
+        output += `**Purpose:** ${template.insertPurpose}\n\n`;
+        
+        // List parameters with descriptions
+        if (template.parameters && template.parameters.length > 0) {
+          output += `**Parameters:**\n`;
+          template.parameters.forEach(param => {
+            output += `- \`${param.name}\`: ${param.description}\n`;
+          });
+          output += `\n`;
+          
+          output += `**Example:**\n`;
+          output += "```\n";
+          output += `[[D=${template.insertName}, DATA={`;
+          const exampleParams = template.parameters.map(p => `${p.name}: "example value"`).join(", ");
+          output += exampleParams;
+          output += "}]]\n```\n\n";
+        }
+      });
+      
+      return output;
+    });
     log("Macros registered successfully.");
 
     // Register the slash command for force-regenerating tracker blocks
