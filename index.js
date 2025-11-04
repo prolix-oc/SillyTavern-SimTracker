@@ -611,7 +611,8 @@ ${exampleJson}
             name: "selector",
             type: "string",
             description: "CSS selector of element to measure",
-            optional: false,
+            optional: true,
+            enumList: []
           },
         ],
         helpString: `
