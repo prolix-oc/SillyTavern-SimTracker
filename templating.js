@@ -49,6 +49,20 @@ Handlebars.registerHelper("multiply", function (a, b) {
   return a * b;
 });
 
+Handlebars.registerHelper("subtract", function (a, b) {
+  if (typeof a !== "number" || typeof b !== "number") {
+    return 0;
+  }
+  return a - b;
+});
+
+Handlebars.registerHelper("add", function (a, b) {
+  if (typeof a !== "number" || typeof b !== "number") {
+    return 0;
+  }
+  return a + b;
+});
+
 Handlebars.registerHelper("divide", function (a, b) {
   if (typeof a !== "number" || typeof b !== "number" || b === 0) {
     return 0;
