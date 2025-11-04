@@ -6,6 +6,7 @@ srpc-ui/settings.html
 demo.html
 .env
 QWEN.md
+PLAN.md
 *.md
 *.html
 *.css
