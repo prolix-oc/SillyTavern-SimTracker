@@ -57,8 +57,8 @@ export function clearInlineTemplateCache() {
  */
 function parseInlineData(dataString) {
   try {
-    // First, strip out any <q> tags that SillyTavern uses for quotes
-    let cleaned = dataString.replace(/<\/?q>/g, '');
+    // First, strip out ALL HTML tags to prevent SillyTavern's markdown formatter from interfering
+    let cleaned = dataString.replace(/<[^>]*>/g, '');
     
     // Decode HTML entities (in case quotes were encoded as &quot;)
     const textarea = document.createElement('textarea');
