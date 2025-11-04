@@ -57,9 +57,14 @@ export function clearInlineTemplateCache() {
  */
 function parseInlineData(dataString) {
   try {
+    // Decode HTML entities first (in case quotes were encoded as &quot;)
+    const textarea = document.createElement('textarea');
+    textarea.innerHTML = dataString;
+    const decoded = textarea.value;
+    
     // Try to parse as JSON
     // Handle common issues like single quotes
-    const normalized = dataString
+    const normalized = decoded
       .trim()
       .replace(/'/g, '"') // Replace single quotes with double quotes
       .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":'); // Quote unquoted keys
