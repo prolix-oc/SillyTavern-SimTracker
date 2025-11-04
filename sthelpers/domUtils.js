@@ -803,7 +803,7 @@ const DOMUtils = {
    * DOMUtils.logElementMeasurements('.my-element', 'Test Element');
    */
   logElementMeasurements(target, label = 'Element') {
-    const element = typeof target === 'string' ? this.query(target) : target;
+    const element = typeof target === 'string' ? DOMUtils.query(target) : target;
     
     if (!element) {
       console.warn(`DOMUtils.logElementMeasurements: Element not found`);
@@ -812,7 +812,7 @@ const DOMUtils = {
     
     const rect = element.getBoundingClientRect();
     const computed = window.getComputedStyle(element);
-    const viewportDistance = this.getDistanceToViewport(element);
+    const viewportDistance = DOMUtils.getDistanceToViewport(element);
     
     const measurements = {
       selector: typeof target === 'string' ? target : element.tagName,
