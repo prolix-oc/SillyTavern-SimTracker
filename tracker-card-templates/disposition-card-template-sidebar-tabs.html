@@ -171,15 +171,28 @@
 
   .stat-bar-bg {
     height: 8px;
-    background: rgba(255, 255, 255, 0.1);
     border-radius: 4px;
-    overflow: hidden;
+    overflow: visible;
     position: relative;
   }
 
-  .stat-bar-fill {
-    height: 100%;
+  .stat-bar-gradient {
     position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 4px;
+    opacity: 0.25;
+  }
+
+  .stat-bar-fill {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 4px;
   }
 
   .stat-bar-center-mark {
@@ -355,12 +368,13 @@
             <span>Affinity</span>
             <span>{{stats.affinity}}</span>
           </div>
-          <div class="stat-bar-bg" style="background: linear-gradient(90deg, rgba(199, 69, 80, 0.3) 0%, rgba(238, 90, 111, 0.3) 12.5%, rgba(255, 107, 107, 0.3) 25%, rgba(255, 153, 153, 0.3) 37.5%, rgba(255, 255, 255, 0.1) 50%, rgba(143, 211, 244, 0.3) 62.5%, rgba(132, 250, 176, 0.3) 75%, rgba(90, 157, 122, 0.3) 87.5%, rgba(74, 141, 106, 0.3) 100%);">
+          <div class="stat-bar-bg">
+            <div class="stat-bar-gradient" style="background: linear-gradient(90deg, #c74550 0%, #ee5a6f 12.5%, #ff6b6b 25%, #ff9999 37.5%, rgba(255, 255, 255, 0.1) 50%, #8fd3f4 62.5%, #84fab0 75%, #5a9d7a 87.5%, #4a8d6a 100%);"></div>
             <div class="stat-bar-center-mark"></div>
             <div
               class="stat-bar-fill"
-              style="width: {{#if stats.affinity}}{{multiply (abs stats.affinity) 0.5}}{{else}}0{{/if}}%; 
-                     {{#if (gte stats.affinity 0)}}left: 50%; border-radius: 0 4px 4px 0; background: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 0%, #8fd3f4 25%, #84fab0 50%, #5a9d7a 75%, #4a8d6a 100%);{{else}}right: 50%; left: auto; border-radius: 4px 0 0 4px; background: linear-gradient(90deg, #4a8d6a 0%, #5a9d7a 25%, #84fab0 50%, #8fd3f4 75%, rgba(255, 255, 255, 0.1) 100%); background-position: right; direction: rtl;{{/if}}"
+              style="background: linear-gradient(90deg, #c74550 0%, #ee5a6f 12.5%, #ff6b6b 25%, #ff9999 37.5%, rgba(255, 255, 255, 0.1) 50%, #8fd3f4 62.5%, #84fab0 75%, #5a9d7a 87.5%, #4a8d6a 100%);
+                     {{#if (gte stats.affinity 0)}}clip-path: inset(0 {{subtract 50 (multiply (abs stats.affinity) 0.5)}}% 0 50% round 0 4px 4px 0);{{else}}clip-path: inset(0 50% 0 {{subtract 50 (multiply (abs stats.affinity) 0.5)}}% round 4px 0 0 4px);{{/if}}"
             ></div>
           </div>
         </div>
@@ -371,12 +385,13 @@
             <span>Desire</span>
             <span>{{stats.desire}}</span>
           </div>
-          <div class="stat-bar-bg" style="background: linear-gradient(90deg, rgba(84, 71, 184, 0.3) 0%, rgba(108, 92, 231, 0.3) 12.5%, rgba(162, 155, 254, 0.3) 25%, rgba(197, 192, 255, 0.3) 37.5%, rgba(255, 255, 255, 0.1) 50%, rgba(194, 233, 251, 0.3) 62.5%, rgba(161, 196, 253, 0.3) 75%, rgba(122, 142, 212, 0.3) 87.5%, rgba(106, 142, 196, 0.3) 100%);">
+          <div class="stat-bar-bg">
+            <div class="stat-bar-gradient" style="background: linear-gradient(90deg, #5447b8 0%, #6c5ce7 12.5%, #a29bfe 25%, #c5c0ff 37.5%, rgba(255, 255, 255, 0.1) 50%, #c2e9fb 62.5%, #a1c4fd 75%, #7a9ed4 87.5%, #6a8ec4 100%);"></div>
             <div class="stat-bar-center-mark"></div>
             <div
               class="stat-bar-fill"
-              style="width: {{#if stats.desire}}{{multiply (abs stats.desire) 0.5}}{{else}}0{{/if}}%; 
-                     {{#if (gte stats.desire 0)}}left: 50%; border-radius: 0 4px 4px 0; background: linear-gradient(90deg, rgba(255, 255, 255, 0.1) 0%, #c2e9fb 25%, #a1c4fd 50%, #7a9ed4 75%, #6a8ec4 100%);{{else}}right: 50%; left: auto; border-radius: 4px 0 0 4px; background: linear-gradient(90deg, #6a8ec4 0%, #7a9ed4 25%, #a1c4fd 50%, #c2e9fb 75%, rgba(255, 255, 255, 0.1) 100%); background-position: right; direction: rtl;{{/if}}"
+              style="background: linear-gradient(90deg, #5447b8 0%, #6c5ce7 12.5%, #a29bfe 25%, #c5c0ff 37.5%, rgba(255, 255, 255, 0.1) 50%, #c2e9fb 62.5%, #a1c4fd 75%, #7a9ed4 87.5%, #6a8ec4 100%);
+                     {{#if (gte stats.desire 0)}}clip-path: inset(0 {{subtract 50 (multiply (abs stats.desire) 0.5)}}% 0 50% round 0 4px 4px 0);{{else}}clip-path: inset(0 50% 0 {{subtract 50 (multiply (abs stats.desire) 0.5)}}% round 4px 0 0 4px);{{/if}}"
             ></div>
           </div>
         </div>
@@ -387,13 +402,12 @@
             <span>Health</span>
             <span>{{stats.health}}</span>
           </div>
-          <div class="stat-bar-bg" style="background: linear-gradient(90deg, rgba(139, 0, 0, 0.3) 0%, rgba(214, 48, 49, 0.3) 10%, rgba(255, 118, 117, 0.3) 20%, rgba(253, 203, 110, 0.3) 40%, rgba(255, 234, 167, 0.3) 60%, rgba(0, 184, 148, 0.3) 80%, rgba(85, 239, 196, 0.3) 100%);">
+          <div class="stat-bar-bg">
+            <div class="stat-bar-gradient" style="background: linear-gradient(90deg, #8b0000 0%, #d63031 10%, #ff7675 20%, #fdcb6e 40%, #ffeaa7 60%, #00b894 80%, #55efc4 100%);"></div>
             <div
               class="stat-bar-fill"
-              style="width: {{#if stats.health}}{{stats.health}}{{else}}0{{/if}}%; 
-                     left: 0;
-                     border-radius: 4px;
-                     background: linear-gradient(90deg, #8b0000 0%, #d63031 10%, #ff7675 20%, #fdcb6e 40%, #ffeaa7 60%, #00b894 80%, #55efc4 100%);"
+              style="background: linear-gradient(90deg, #8b0000 0%, #d63031 10%, #ff7675 20%, #fdcb6e 40%, #ffeaa7 60%, #00b894 80%, #55efc4 100%);
+                     clip-path: inset(0 {{subtract 100 stats.health}}% 0 0 round 4px);"
             ></div>
           </div>
         </div>
