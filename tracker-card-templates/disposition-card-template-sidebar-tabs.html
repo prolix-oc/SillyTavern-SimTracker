@@ -172,8 +172,9 @@
   .stat-bar-bg {
     height: 8px;
     border-radius: 4px;
-    overflow: visible;
+    overflow: hidden;
     position: relative;
+    background: rgba(255, 255, 255, 0.05);
   }
 
   .stat-bar-gradient {
@@ -183,7 +184,8 @@
     width: 100%;
     height: 100%;
     border-radius: 4px;
-    opacity: 0.25;
+    opacity: 0;
+    pointer-events: none;
   }
 
   .stat-bar-fill {
@@ -193,6 +195,8 @@
     width: 100%;
     height: 100%;
     border-radius: 4px;
+    opacity: 1;
+    z-index: 1;
   }
 
   .stat-bar-center-mark {
