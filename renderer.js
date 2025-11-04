@@ -1327,8 +1327,9 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
   // Remove all sidebars
   removeGlobalSidebars();
   
-  // Clear the DOM measurement cache to force fresh measurements
-  clearDomMeasurementCache();
+  // Note: We do NOT clear the DOM measurement cache here, as that would interfere
+  // with the viewport handler's ability to detect if templates use DOM helpers.
+  // Cache clearing happens in the viewport handler only.
 
   // Get all message divs currently in the chat DOM
   const visibleMessages = document.querySelectorAll("div#chat .mes");
