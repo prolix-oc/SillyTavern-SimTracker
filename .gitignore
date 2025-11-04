@@ -20,3 +20,4 @@ regex/*
 !docs/*
 tracker-card-templates/user_submitted.html
 potential_bundled_js_investigation.txt
+tracker-card-templates/example_import_file.json
