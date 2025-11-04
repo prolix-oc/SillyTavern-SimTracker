@@ -19,5 +19,7 @@ PLAN.md
 regex/*
 !docs/*
 tracker-card-templates/user_submitted.html
+tracker-card-templates/example-bundled-js-dead.html
+tracker-card-templates/bundled-js-example-template-dead.json
+prompts/bundled-js-example-prompt-dead.md
 potential_bundled_js_investigation.txt
-tracker-card-templates/example_import_file.json
