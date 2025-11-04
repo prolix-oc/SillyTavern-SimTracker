@@ -578,58 +578,71 @@ ${exampleJson}
     SlashCommandParser.addCommandObject(
       SlashCommand.fromProps({
         name: "sst-measure",
-        callback: () => {
-          // Measure some common elements
-          const elementsToMeasure = [
-            { selector: '.sheld', label: 'Sheld' },
-            { selector: '#chat', label: 'Chat Container' },
-            { selector: '#sst-sidebar-right-content', label: 'Right Sidebar' },
-            { selector: '#sst-sidebar-left-content', label: 'Left Sidebar' }
-          ];
+        callback: (namedArgs, selector) => {
+          const targetSelector = selector || '.sheld';
           
-          let measuredCount = 0;
+          const element = query(targetSelector);
           
-          elementsToMeasure.forEach(({ selector, label }) => {
-            const element = query(selector);
-            
-            if (element) {
-              // Log detailed measurements
-              logElementMeasurements(element, label);
-              
-              // Also log distance between element and viewport edges
-              const distances = getDistanceToViewport(element);
-              
-              console.group(`📐 ${label} - Distance to Viewport Edges`);
-              console.log(`Right edge: ${distances.right}px`);
-              console.log(`Left edge: ${distances.left}px`);
-              console.log(`Top edge: ${distances.top}px`);
-              console.log(`Bottom edge: ${distances.bottom}px`);
-              console.groupEnd();
-              
-              measuredCount++;
-            }
-          });
-          
-          if (measuredCount === 0) {
-            return "No measurable elements found on the page.";
+          if (!element) {
+            return `Element not found: ${targetSelector}`;
           }
           
-          return `Measurements logged to console for ${measuredCount} element(s). Check the browser console for details.`;
+          // Log detailed measurements
+          logElementMeasurements(element, `Measurements for: ${targetSelector}`);
+          
+          // Also log distance between element and viewport edges
+          const distances = getDistanceToViewport(element);
+          
+          console.group(`📐 Distance to Viewport Edges: ${targetSelector}`);
+          console.log(`Right edge: ${distances.right}px`);
+          console.log(`Left edge: ${distances.left}px`);
+          console.log(`Top edge: ${distances.top}px`);
+          console.log(`Bottom edge: ${distances.bottom}px`);
+          console.groupEnd();
+          
+          return `Measurements logged to console for: ${targetSelector}`;
         },
         returns: "status message",
-        unnamedArgumentList: [],
+        unnamedArgumentList: [
+          SlashCommandArgument.fromProps({
+            description: "CSS selector of element to measure",
+            typeList: [ARGUMENT_TYPE.STRING],
+            defaultValue: '.sheld',
+            enumList: [
+              '.sheld',
+              '#chat',
+              '#send_form',
+              '#send_textarea',
+              '#sst-sidebar-left-content',
+              '#sst-sidebar-right-content',
+              '.mes',
+              '.mes_text',
+              'body',
+              '#shadow_select_chat_popup',
+              '#left-nav-panel',
+              '#right-nav-panel'
+            ],
+          }),
+        ],
         helpString: `
                 <div>
-                    Logs detailed measurements of common DOM elements to the console.
+                    Logs detailed measurements of a DOM element to the console.
                     Includes dimensions, position, padding, margin, and distances to viewport edges.
-                    Measures: sheld, chat container, and sidebars.
                 </div>
                 <div>
-                    <strong>Example:</strong>
+                    <strong>Examples:</strong>
                     <ul>
                         <li>
                             <pre><code class="language-stscript">/sst-measure</code></pre>
-                            Logs measurements for all common SimTracker elements
+                            Logs measurements for the sheld element (default)
+                        </li>
+                        <li>
+                            <pre><code class="language-stscript">/sst-measure #chat</code></pre>
+                            Logs measurements for the chat element
+                        </li>
+                        <li>
+                            <pre><code class="language-stscript">/sst-measure #sst-sidebar-right-content</code></pre>
+                            Logs measurements for the right sidebar
                         </li>
                     </ul>
                 </div>
