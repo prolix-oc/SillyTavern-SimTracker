@@ -299,9 +299,14 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml) {
   const existingContainer = query(`#${CONTAINER_ID}`, existingSidebar);
   const newContainer = query(`#${CONTAINER_ID}`, tempDiv);
   
-  if (!existingContainer || !newContainer) {
-    // Fallback to innerHTML if structure doesn't match
-    console.log(`[SST] [${MODULE_NAME}]`, "Container structure mismatch, using innerHTML fallback");
+  // Check if the container structure has changed (different class names or structure)
+  // This indicates a template switch, so we should rebuild completely
+  const existingContainerClasses = existingContainer ? existingContainer.className : '';
+  const newContainerClasses = newContainer ? newContainer.className : '';
+  
+  if (!existingContainer || !newContainer || existingContainerClasses !== newContainerClasses) {
+    // Fallback to innerHTML if structure doesn't match or template has changed
+    console.log(`[SST] [${MODULE_NAME}]`, "Container structure mismatch or template change detected, rebuilding sidebar");
     existingSidebar.innerHTML = newContentHtml;
     attachTabEventListeners(existingSidebar);
     return;
@@ -1250,16 +1255,51 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
   
   console.log(`[SST] [${MODULE_NAME}]`, `Template position: ${templatePosition}`);
   
-  // Only remove containers and sidebars if we're NOT using sidebar templates
-  // For sidebar templates, we'll update them in place
+  // Check if we're switching template types by looking at existing sidebars
+  const hasLeftSidebar = globalLeftSidebar !== null;
+  const hasRightSidebar = globalRightSidebar !== null;
+  const isNowLeftSidebar = templatePosition === "LEFT";
+  const isNowRightSidebar = templatePosition === "RIGHT";
+  
+  // Force sidebar recreation if switching between left/right or to/from sidebar templates
+  const shouldRecreateLeftSidebar = isNowLeftSidebar && hasLeftSidebar;
+  const shouldRecreateRightSidebar = isNowRightSidebar && hasRightSidebar;
+  
+  // Remove old containers for non-sidebar templates, or when switching sidebar sides
   if (templatePosition !== "LEFT" && templatePosition !== "RIGHT") {
-    // Remove old containers for non-sidebar templates
+    // Switching away from sidebar templates - remove all containers and sidebars
     document.querySelectorAll(`#${CONTAINER_ID}`).forEach((container) => {
       container.remove();
     });
-    
-    // Remove sidebars if we're switching away from sidebar templates
     removeGlobalSidebars();
+  } else {
+    // For sidebar templates, remove the opposite sidebar if it exists
+    if (isNowLeftSidebar && hasRightSidebar) {
+      console.log(`[SST] [${MODULE_NAME}]`, "Switching from right to left sidebar, removing right sidebar");
+      if (globalRightSidebar) {
+        globalRightSidebar.remove();
+        globalRightSidebar = null;
+      }
+    } else if (isNowRightSidebar && hasLeftSidebar) {
+      console.log(`[SST] [${MODULE_NAME}]`, "Switching from left to right sidebar, removing left sidebar");
+      if (globalLeftSidebar) {
+        globalLeftSidebar.remove();
+        globalLeftSidebar = null;
+      }
+    }
+    
+    // Force recreation of sidebar to ensure clean state when switching templates
+    // This prevents layout issues from stale DOM state
+    if (shouldRecreateLeftSidebar) {
+      console.log(`[SST] [${MODULE_NAME}]`, "Forcing left sidebar recreation for clean template switch");
+      globalLeftSidebar.remove();
+      globalLeftSidebar = null;
+    }
+    if (shouldRecreateRightSidebar) {
+      console.log(`[SST] [${MODULE_NAME}]`, "Forcing right sidebar recreation for clean template switch");
+      globalRightSidebar.remove();
+      globalRightSidebar = null;
+    }
   }
   
   if (templatePosition === "LEFT" || templatePosition === "RIGHT" || templatePosition === "TOP" || templatePosition === "BOTTOM") {
