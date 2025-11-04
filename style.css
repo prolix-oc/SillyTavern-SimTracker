@@ -6,6 +6,439 @@
   pointer-events: none;
 }
 
+/* Organized Settings Styles */
+.sst-organized-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  contain: layout style;
+}
+
+.sst-settings-section {
+  background: linear-gradient(145deg, rgba(20, 20, 30, 0.6) 0%, rgba(10, 10, 20, 0.4) 100%);
+  border: 1px solid rgba(106, 90, 205, 0.2);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: transform 0.12s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.12s ease, box-shadow 0.12s ease;
+  will-change: transform;
+  contain: layout;
+}
+
+.sst-settings-section:hover {
+  transform: translateY(-1px);
+  border-color: rgba(106, 90, 205, 0.4);
+  box-shadow: 0 4px 12px rgba(106, 90, 205, 0.15);
+}
+
+.sst-section-header {
+  background: linear-gradient(135deg, rgba(106, 90, 205, 0.15) 0%, rgba(106, 90, 205, 0.05) 100%);
+  padding: 14px 18px !important;
+  cursor: pointer;
+  transition: background 0.12s ease;
+  border-bottom: 1px solid rgba(106, 90, 205, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.sst-section-header::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+  transition: left 0.5s ease;
+  pointer-events: none;
+}
+
+.sst-section-header:hover::before {
+  left: 100%;
+}
+
+.sst-section-header:hover {
+  background: linear-gradient(135deg, rgba(106, 90, 205, 0.25) 0%, rgba(106, 90, 205, 0.12) 100%);
+}
+
+.sst-section-header b {
+  font-size: 1.08em;
+  letter-spacing: 0.5px;
+  color: rgba(255, 255, 255, 0.95);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+  font-weight: 600;
+}
+
+.sst-section-content {
+  padding: 18px;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.1) 0%, transparent 100%);
+}
+
+.sst-section-content .setting {
+  margin-bottom: 12px;
+}
+
+.sst-section-content .setting:last-of-type {
+  margin-bottom: 8px;
+}
+
+.sst-section-content .description:last-child {
+  margin-bottom: 0;
+}
+
+/* Nested drawer styling */
+.sst-nested-drawer {
+  margin-top: 16px;
+  background: linear-gradient(135deg, rgba(70, 130, 180, 0.12) 0%, rgba(30, 144, 255, 0.08) 100%);
+  border: 1px solid rgba(70, 130, 180, 0.3);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2), 0 2px 8px rgba(70, 130, 180, 0.1);
+  transition: all 0.12s ease;
+  contain: layout;
+}
+
+.sst-nested-drawer:hover {
+  border-color: rgba(70, 130, 180, 0.5);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2), 0 3px 12px rgba(70, 130, 180, 0.2);
+}
+
+.sst-nested-drawer .inline-drawer-header {
+  background: linear-gradient(135deg, rgba(70, 130, 180, 0.2) 0%, rgba(70, 130, 180, 0.1) 100%);
+  padding: 12px 16px !important;
+  font-size: 0.95em;
+  border-bottom: 1px solid rgba(70, 130, 180, 0.25);
+  position: relative;
+}
+
+.sst-nested-drawer .inline-drawer-header::after {
+  content: '⚡';
+  position: absolute;
+  right: 50px;
+  opacity: 0.3;
+  font-size: 1.2em;
+}
+
+.sst-nested-drawer .inline-drawer-header:hover {
+  background: linear-gradient(135deg, rgba(70, 130, 180, 0.28) 0%, rgba(70, 130, 180, 0.15) 100%);
+}
+
+.sst-nested-drawer .inline-drawer-content {
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.sst-nested-drawer .setting {
+  margin-bottom: 12px;
+  padding: 8px;
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 6px;
+  border-left: 2px solid rgba(70, 130, 180, 0.4);
+  transition: all 0.1s ease;
+}
+
+.sst-nested-drawer .setting:hover {
+  background: rgba(255, 255, 255, 0.04);
+  border-left-color: rgba(70, 130, 180, 0.7);
+  transform: translateX(3px);
+}
+
+.sst-nested-drawer .description {
+  font-size: 0.85em;
+  margin-bottom: 12px;
+  padding-left: 10px;
+  border-left: 2px solid rgba(255, 215, 0, 0.3);
+  color: rgba(255, 255, 255, 0.6);
+}
+
+/* Special field setting layout */
+.sst-field-setting {
+  flex-direction: column;
+  align-items: flex-start !important;
+  gap: 10px;
+}
+
+.sst-field-setting label {
+  margin-bottom: 0;
+}
+
+.sst-field-setting button {
+  width: 100%;
+  max-width: 200px;
+}
+
+/* Danger zone styling */
+.sst-danger-zone {
+  border: 2px solid rgba(255, 69, 58, 0.4);
+  border-radius: 8px;
+  padding: 14px;
+  background: linear-gradient(135deg, rgba(192, 57, 43, 0.15) 0%, rgba(192, 57, 43, 0.08) 100%);
+  margin-top: 8px;
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.3), 0 0 20px rgba(255, 69, 58, 0.1);
+  position: relative;
+}
+
+.sst-danger-zone::before {
+  content: '⚠️';
+  position: absolute;
+  right: 14px;
+  top: 14px;
+  font-size: 1.5em;
+  opacity: 0.4;
+}
+
+.sst-danger-button {
+  background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%) !important;
+  color: white !important;
+  transition: all 0.12s ease !important;
+  box-shadow: 0 2px 8px rgba(192, 57, 43, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
+
+.sst-danger-button:hover {
+  background: linear-gradient(135deg, #ff5c4c 0%, #d63a2a 100%) !important;
+  box-shadow: 0 4px 12px rgba(192, 57, 43, 0.5);
+  transform: translateY(-1px);
+}
+
+.sst-danger-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 6px rgba(192, 57, 43, 0.4);
+}
+
+/* Tab styling for modal */
+.sst-tab-active {
+  border-bottom: 2px solid #fff !important;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .sst-section-content {
+    padding: 12px;
+  }
+  
+  .sst-section-header {
+    padding: 10px 12px !important;
+  }
+  
+  .sst-section-header b {
+    font-size: 1em;
+  }
+  
+  .sst-organized-settings {
+    gap: 10px;
+  }
+  
+  .sst-nested-drawer .inline-drawer-content {
+    padding: 10px;
+  }
+  
+  #silly-sim-tracker-settings .setting {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 8px;
+  }
+  
+  #silly-sim-tracker-settings .setting label {
+    width: 100%;
+  }
+  
+  #silly-sim-tracker-settings .setting .control,
+  #silly-sim-tracker-settings .setting select,
+  #silly-sim-tracker-settings .setting textarea {
+    width: 100%;
+  }
+  
+  #silly-sim-tracker-settings .flex-container {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  #silly-sim-tracker-settings .flex-container button {
+    width: 100%;
+  }
+  
+  .sst-field-setting button {
+    max-width: 100%;
+  }
+}
+
+@media (min-width: 769px) {
+  /* Better spacing for larger screens */
+  .sst-section-content {
+    padding: 20px;
+  }
+  
+  .sst-organized-settings {
+    gap: 14px;
+  }
+}
+
+/* Improved setting row layout */
+#silly-sim-tracker-settings .setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 0;
+}
+
+#silly-sim-tracker-settings .setting label {
+  flex: 1;
+  min-width: 0;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+#silly-sim-tracker-settings .setting .control {
+  flex-shrink: 0;
+}
+
+#silly-sim-tracker-settings .setting select,
+#silly-sim-tracker-settings .setting textarea {
+  flex: 1;
+  min-width: 0;
+}
+
+#silly-sim-tracker-settings .description {
+  font-size: 0.88em;
+  color: rgba(255, 255, 255, 0.55);
+  margin-top: 6px;
+  margin-bottom: 14px;
+  line-height: 1.5;
+  padding: 0;
+}
+
+#silly-sim-tracker-settings .description code {
+  background-color: rgba(255, 255, 255, 0.1);
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 0.9em;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Button styling improvements */
+#silly-sim-tracker-settings .flex-container {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+#silly-sim-tracker-settings .menu_button {
+  transition: all 0.12s cubic-bezier(0.4, 0, 0.2, 1);
+  border-radius: 8px;
+  padding: 10px 18px;
+  background: linear-gradient(135deg, rgba(106, 90, 205, 0.25) 0%, rgba(106, 90, 205, 0.15) 100%);
+  border: 1px solid rgba(106, 90, 205, 0.3);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  font-weight: 500;
+  position: relative;
+  overflow: hidden;
+}
+
+#silly-sim-tracker-settings .menu_button::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  transform: translate(-50%, -50%);
+  transition: width 0.4s, height 0.4s;
+  pointer-events: none;
+}
+
+#silly-sim-tracker-settings .menu_button:hover::before {
+  width: 300px;
+  height: 300px;
+}
+
+#silly-sim-tracker-settings .menu_button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(106, 90, 205, 0.4);
+  border-color: rgba(106, 90, 205, 0.5);
+  background: linear-gradient(135deg, rgba(106, 90, 205, 0.35) 0%, rgba(106, 90, 205, 0.25) 100%);
+}
+
+#silly-sim-tracker-settings .menu_button:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(106, 90, 205, 0.3);
+}
+
+/* Textarea improvements */
+#silly-sim-tracker-settings textarea.text_pole {
+  resize: vertical;
+  min-height: 100px;
+  font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+  font-size: 0.9em;
+  line-height: 1.5;
+  padding: 10px;
+}
+
+/* Input field improvements */
+#silly-sim-tracker-settings input[type="text"].text_pole,
+#silly-sim-tracker-settings input[type="number"].text_pole,
+#silly-sim-tracker-settings input[type="password"].text_pole,
+#silly-sim-tracker-settings select.text_pole {
+  padding: 9px 14px;
+  border-radius: 6px;
+  transition: all 0.12s ease;
+  border: 1px solid rgba(106, 90, 205, 0.2);
+  background: rgba(0, 0, 0, 0.2);
+}
+
+#silly-sim-tracker-settings input[type="text"].text_pole:focus,
+#silly-sim-tracker-settings input[type="number"].text_pole:focus,
+#silly-sim-tracker-settings input[type="password"].text_pole:focus,
+#silly-sim-tracker-settings select.text_pole:focus,
+#silly-sim-tracker-settings textarea.text_pole:focus {
+  outline: none;
+  border-color: rgba(106, 90, 205, 0.7);
+  box-shadow: 0 0 0 3px rgba(106, 90, 205, 0.2), 0 2px 8px rgba(106, 90, 205, 0.3);
+  background: rgba(0, 0, 0, 0.3);
+  transform: translateY(-1px);
+}
+
+/* Color input styling */
+#silly-sim-tracker-settings input[type="color"] {
+  width: 64px;
+  height: 40px;
+  border-radius: 8px;
+  border: 2px solid rgba(106, 90, 205, 0.3);
+  cursor: pointer;
+  transition: all 0.12s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+#silly-sim-tracker-settings input[type="color"]:hover {
+  border-color: rgba(106, 90, 205, 0.6);
+  transform: scale(1.05);
+  box-shadow: 0 4px 12px rgba(106, 90, 205, 0.3);
+}
+
+/* Checkbox styling improvements */
+#silly-sim-tracker-settings input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  cursor: pointer;
+  accent-color: #7b68ee;
+  transition: transform 0.1s ease;
+}
+
+#silly-sim-tracker-settings input[type="checkbox"]:hover {
+  transform: scale(1.1);
+}
+
+#silly-sim-tracker-settings input[type="checkbox"]:checked {
+  filter: drop-shadow(0 0 4px rgba(123, 104, 238, 0.6));
+}
+
+/* Number input improvements */
+#silly-sim-tracker-settings input[type="number"].text_pole {
+  max-width: 120px;
+}
+
 /* Modal Styles */
 .sst-modal {
   position: fixed;

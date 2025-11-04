@@ -7,313 +7,345 @@
       ></div>
     </div>
     <div class="inline-drawer-content">
-      <div class="silly-sim-tracker-settings-content">
-        <div class="setting">
-          <label for="isEnabled">Enable Tracker</label>
-          <div class="control"><input type="checkbox" id="isEnabled" /></div>
-        </div>
-        <p class="description">
-          The master switch to enable or disable the extension.
-        </p>
-        <hr />
-        <div class="setting">
-          <label for="codeBlockIdentifier">Code Block Identifier</label>
-          <div class="control">
-            <input type="text" id="codeBlockIdentifier" class="text_pole" />
-          </div>
-        </div>
-        <p class="description">
-          The keyword the extension looks for after the opening ``` (e.g.,
-          "sim").
-        </p>
-        <hr />
-        <div class="setting">
-          <label for="defaultBgColor">Default Card Color</label>
-          <div class="control"><input type="color" id="defaultBgColor" /></div>
-        </div>
-        <p class="description">
-          The background color used for cards when one isn't specified in the
-          JSON.
-        </p>
-        <hr />
-        <div class="setting">
-          <label for="showThoughtBubble">Show Thought Bubble</label>
-          <div class="control">
-            <input type="checkbox" id="showThoughtBubble" />
-          </div>
-        </div>
-        <p class="description">
-          Whether to display the 'thought' section at the bottom of the card.
-        </p>
-        <hr />
-
-        <div class="setting">
-          <label for="templateFile">Default Template</label>
-          <select id="templateFile" class="text_pole"></select>
-        </div>
-        <div class="description">
-          Select a built-in template. This is used when no custom template is
-          loaded. Templates define their own position.
-        </div>
-
-        <div class="setting">
-          <label>Custom Template</label>
-          <div class="flex-container">
-            <button
-              id="uploadCustomTemplateBtn"
-              class="menu_button"
-              title="Load a .html file from your computer to use as a custom template."
-            >
-              Load from File
-            </button>
-            <button
-              id="clearCustomTemplateBtn"
-              class="menu_button"
-              title="Clear the loaded custom template and revert to using the selected default template."
-            >
-              Clear Custom
-            </button>
-          </div>
-        </div>
-        <!-- This hidden input is used to open the file dialog -->
-        <input type="file" id="customTemplateUpload" hidden accept=".html" />
-
-        <p class="description">
-          Path to the HTML template file relative to tracker-card-templates/
-          directory. Default: default-card-template.html
-        </p>
-        <hr />
-        
-        <!-- Custom Fields Section -->
-        <h4>Custom Sim Data Fields</h4>
-        <div class="setting">
-            <label>Define the data fields for your sim tracker.</label>
-            <button id="manageCustomFieldsBtn" class="menu_button" style="margin-top: 5px;">Manage Fields</button>
-        </div>
-        <p class="description">
-          These fields define the structure of your sim data and are used by the <code>{{sim_format}}</code> macro in prompts.
-        </p>
-        <hr />
-        
-        <div class="setting">
-          <label for="hideSimBlocks">Hide Sim Blocks in Chat</label>
-          <div class="control"><input type="checkbox" id="hideSimBlocks" /></div>
-        </div>
-        <p class="description">
-          If enabled, the raw sim JSON code blocks will be hidden from the chat display, but the tracker cards will still be generated.
-        </p>
-        <hr />
-        
-        <div class="setting">
-          <label for="enableInlineTemplates">Enable Inline Templates</label>
-          <div class="control"><input type="checkbox" id="enableInlineTemplates" /></div>
-        </div>
-        <p class="description">
-          Enable rendering of inline template markers in messages. This allows templates to define accessories like phone messages, notes, emails, etc. that can be inserted mid-message using special syntax. Only works with templates that have <code>inlineTemplatesEnabled: true</code>.
-        </p>
-        <hr />
-        
-        <div class="setting">
-          <label for="trackerFormat">Tracker Format</label>
-          <select id="trackerFormat" class="text_pole">
-            <option value="json">JSON</option>
-            <option value="yaml">YAML</option>
-          </select>
-        </div>
-        <p class="description">
-          Choose the format for generated tracker blocks. Both JSON and YAML formats are supported.
-        </p>
-        <hr />
-        
-        <h4>Secondary LLM Generation (Optional)</h4>
-        <div class="setting">
-          <label for="useSecondaryLLM">Enable Secondary LLM</label>
-          <div class="control"><input type="checkbox" id="useSecondaryLLM" /></div>
-        </div>
-        <p class="description">
-          When enabled, after the primary AI finishes its response, a secondary LLM will be used to generate the tracker block based on the conversation history.
-        </p>
-        
-        <div class="inline-drawer">
-          <div class="inline-drawer-toggle inline-drawer-header">
-            <b>Secondary LLM Parameters</b>
+      <div class="silly-sim-tracker-settings-content sst-organized-settings">
+        <!-- Basic Settings Section -->
+        <div class="inline-drawer sst-settings-section">
+          <div class="inline-drawer-toggle inline-drawer-header sst-section-header">
+            <b>⚙️ Basic Settings</b>
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
           </div>
           <div class="inline-drawer-content">
-            <div class="setting">
-              <label for="secondaryLLMMessageCount">Messages to Include</label>
-              <div class="control">
-                <input type="number" id="secondaryLLMMessageCount" class="text_pole" min="1" max="50" value="5" />
+            <div class="sst-section-content">
+              <div class="setting">
+                <label for="isEnabled">Enable Tracker</label>
+                <div class="control"><input type="checkbox" id="isEnabled" /></div>
               </div>
-            </div>
-            <p class="description">
-              Number of recent messages to send to the secondary LLM for tracker generation (1-50).
-            </p>
-            
-            <div class="setting">
-              <label for="secondaryLLMAPI">Secondary API</label>
-              <select id="secondaryLLMAPI" class="text_pole">
-                <option value="openai">OpenAI</option>
-                <option value="claude">Claude</option>
-                <option value="custom">Custom</option>
-                <option value="full-manual">Full Manual</option>
-              </select>
-            </div>
-            <p class="description">
-              Choose which API to use for secondary tracker generation.
-            </p>
-            
-            <div class="setting">
-              <label for="secondaryLLMModel">Secondary Model</label>
-              <div class="control">
-                <input type="text" id="secondaryLLMModel" class="text_pole" placeholder="e.g., gpt-4o-mini" />
+              <p class="description">
+                The master switch to enable or disable the extension.
+              </p>
+              
+              <div class="setting">
+                <label for="codeBlockIdentifier">Code Block Identifier</label>
+                <div class="control">
+                  <input type="text" id="codeBlockIdentifier" class="text_pole" />
+                </div>
               </div>
-            </div>
-            <p class="description">
-              The model to use for secondary tracker generation.
-            </p>
-            
-            <div class="setting">
-              <label for="secondaryLLMEndpoint">Secondary Endpoint (Optional)</label>
-              <div class="control">
-                <input type="text" id="secondaryLLMEndpoint" class="text_pole" placeholder="https://api.example.com/v1/chat/completions" />
+              <p class="description">
+                The keyword the extension looks for after the opening ``` (e.g., "sim").
+              </p>
+              
+              <div class="setting">
+                <label for="defaultBgColor">Default Card Color</label>
+                <div class="control"><input type="color" id="defaultBgColor" /></div>
               </div>
-            </div>
-            <p class="description">
-              Custom endpoint for full-manual mode. Leave empty for standard APIs.
-            </p>
-            
-            <div class="setting">
-              <label for="secondaryLLMAPIKey">Secondary API Key (Optional)</label>
-              <div class="control">
-                <input type="password" id="secondaryLLMAPIKey" class="text_pole" placeholder="API key for full-manual mode" />
+              <p class="description">
+                The background color used for cards when one isn't specified in the JSON.
+              </p>
+              
+              <div class="setting">
+                <label for="showThoughtBubble">Show Thought Bubble</label>
+                <div class="control">
+                  <input type="checkbox" id="showThoughtBubble" />
+                </div>
               </div>
+              <p class="description">
+                Whether to display the 'thought' section at the bottom of the card.
+              </p>
             </div>
-            <p class="description">
-              API key for full-manual mode. Leave empty to use default credentials.
-            </p>
-            
-            <div class="setting">
-              <label for="secondaryLLMTemperature">Secondary Temperature</label>
-              <div class="control">
-                <input type="number" id="secondaryLLMTemperature" class="text_pole" min="0" max="2" step="0.1" value="0.7" />
-              </div>
-            </div>
-            <p class="description">
-              Temperature setting for the secondary LLM (0-2, lower is more deterministic).
-            </p>
-            
-            <div class="setting">
-              <label for="secondaryLLMTopP">Secondary Top P</label>
-              <div class="control">
-                <input type="number" id="secondaryLLMTopP" class="text_pole" min="0" max="1" step="0.05" value="1" />
-              </div>
-            </div>
-            <p class="description">
-              Top P (nucleus sampling) setting for the secondary LLM (0-1). Set to 1 to disable.
-            </p>
-            
-            <div class="setting">
-              <label for="secondaryLLMStreaming">Enable Streaming</label>
-              <div class="control">
-                <input type="checkbox" id="secondaryLLMStreaming" />
-              </div>
-            </div>
-            <p class="description">
-              Enable streaming for faster response processing. Disable if your API doesn't support streaming.
-            </p>
-            
-            <div class="setting">
-              <label for="secondaryLLMStripHTML">Strip HTML from Context</label>
-              <div class="control">
-                <input type="checkbox" id="secondaryLLMStripHTML" />
-              </div>
-            </div>
-            <p class="description">
-              Remove HTML tags and their contents (like &lt;div&gt;, &lt;details&gt;, etc.) from messages before sending to the secondary LLM. Helps reduce context usage.
-            </p>
           </div>
         </div>
-        <hr />
-        
-        <div class="setting">
-          <label for="maxSimBlocksInContext">Max Sim Blocks in LLM Context</label>
-          <div class="control">
-            <input type="number" id="maxSimBlocksInContext" class="text_pole" min="0" max="50" value="3" />
-          </div>
-        </div>
-        <p class="description">
-          Maximum number of sim blocks to include in the outgoing LLM context (0-50). Older sim blocks beyond this limit will be hidden from the LLM but remain in the chat history. Set to 0 to include all sim blocks.
-        </p>
-        <hr />
 
-        <div class="setting">
-          <label for="datingSimPrompt">Sim Tracker System Prompt</label>
-          <textarea id="datingSimPrompt" class="text_pole" rows="6"></textarea>
-        </div>
-        <p class="description">
-          The base prompt to be injected when you use the {{sim_tracker}} macro.
-        </p>
-        
-        <hr />
-        
-        <div class="setting">
-          <label for="displayInstructionsPrompt">Display Instructions Prompt</label>
-          <textarea id="displayInstructionsPrompt" class="text_pole" rows="8"></textarea>
-        </div>
-        <p class="description">
-          Custom instructions for using tracker displays, injected when you use the {{sim_displays}} macro. This is shown to the LLM alongside auto-generated documentation about available templates and inline displays.
-        </p>
-        
-        <hr />
-        
-        <div class="setting">
-          <label>JSON Format Migration</label>
-          <div class="flex-container">
-            <button id="migrateJsonFormatBtn" class="menu_button" title="Migrate all existing sim data to the new format with worldData and characters array.">
-              Migrate to New Format
-            </button>
+        <!-- Display & Formatting Section -->
+        <div class="inline-drawer sst-settings-section">
+          <div class="inline-drawer-toggle inline-drawer-header sst-section-header">
+            <b>🎨 Display & Formatting</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+          </div>
+          <div class="inline-drawer-content">
+            <div class="sst-section-content">
+              <div class="setting">
+                <label for="hideSimBlocks">Hide Sim Blocks in Chat</label>
+                <div class="control"><input type="checkbox" id="hideSimBlocks" /></div>
+              </div>
+              <p class="description">
+                If enabled, the raw sim JSON code blocks will be hidden from the chat display, but the tracker cards will still be generated.
+              </p>
+              
+              <div class="setting">
+                <label for="trackerFormat">Tracker Format</label>
+                <select id="trackerFormat" class="text_pole">
+                  <option value="json">JSON</option>
+                  <option value="yaml">YAML</option>
+                </select>
+              </div>
+              <p class="description">
+                Choose the format for generated tracker blocks. Both JSON and YAML formats are supported.
+              </p>
+              
+              <div class="setting">
+                <label for="enableInlineTemplates">Enable Inline Templates</label>
+                <div class="control"><input type="checkbox" id="enableInlineTemplates" /></div>
+              </div>
+              <p class="description">
+                Enable rendering of inline template markers in messages. This allows templates to define accessories like phone messages, notes, emails, etc. that can be inserted mid-message using special syntax. Only works with templates that have <code>inlineTemplatesEnabled: true</code>.
+              </p>
+            </div>
           </div>
         </div>
-        <p class="description">
-          Migrate all existing sim data to the new improved format with explicit worldData and characters array structure.
-        </p>
-        
-        <hr />
-        
-        <div class="setting">
-          <label>Template Preset Import/Export</label>
-          <div class="flex-container">
-            <button id="exportPresetBtn" class="menu_button" title="Export current template and settings as a preset file.">
-              Export Preset
-            </button>
-            <button id="importPresetBtn" class="menu_button" title="Import a template preset from a file.">
-              Import Preset
-            </button>
-            <button id="managePresetsBtn" class="menu_button" title="Manage your saved presets.">
-              Manage Presets
-            </button>
+
+        <!-- Template Configuration Section -->
+        <div class="inline-drawer sst-settings-section">
+          <div class="inline-drawer-toggle inline-drawer-header sst-section-header">
+            <b>📋 Template Configuration</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+          </div>
+          <div class="inline-drawer-content">
+            <div class="sst-section-content">
+              <div class="setting">
+                <label for="templateFile">Default Template</label>
+                <select id="templateFile" class="text_pole"></select>
+              </div>
+              <div class="description">
+                Select a built-in template. This is used when no custom template is loaded. Templates define their own position.
+              </div>
+
+              <div class="setting">
+                <label>Custom Template</label>
+                <div class="flex-container">
+                  <button
+                    id="uploadCustomTemplateBtn"
+                    class="menu_button"
+                    title="Load a .html file from your computer to use as a custom template."
+                  >
+                    Load from File
+                  </button>
+                  <button
+                    id="clearCustomTemplateBtn"
+                    class="menu_button"
+                    title="Clear the loaded custom template and revert to using the selected default template."
+                  >
+                    Clear Custom
+                  </button>
+                </div>
+              </div>
+              <!-- This hidden input is used to open the file dialog -->
+              <input type="file" id="customTemplateUpload" hidden accept=".html" />
+              <p class="description">
+                Path to the HTML template file relative to tracker-card-templates/ directory. Default: default-card-template.html
+              </p>
+              
+              <div class="setting sst-field-setting">
+                <label>Custom Sim Data Fields</label>
+                <button id="manageCustomFieldsBtn" class="menu_button">Manage Fields</button>
+              </div>
+              <p class="description">
+                These fields define the structure of your sim data and are used by the <code>{{sim_format}}</code> macro in prompts.
+              </p>
+            </div>
           </div>
         </div>
-        <p class="description">
-          Export your current template setup or import a preset from another user.
-        </p>
-        <!-- Hidden input for file import -->
-        <input type="file" id="presetImportInput" hidden accept=".json" />
-        
-        <hr />
-        
-        <div class="setting">
-          <label>Reset All Settings</label>
-          <div class="flex-container">
-            <button id="resetDefaultsBtn" class="menu_button" style="background-color: #c0392b; color: white;" title="Reset all settings to their default values.">
-              Reset Defaults
-            </button>
+
+        <!-- Secondary LLM Generation Section -->
+        <div class="inline-drawer sst-settings-section">
+          <div class="inline-drawer-toggle inline-drawer-header sst-section-header">
+            <b>🤖 Secondary LLM Generation</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+          </div>
+          <div class="inline-drawer-content">
+            <div class="sst-section-content">
+              <div class="setting">
+                <label for="useSecondaryLLM">Enable Secondary LLM</label>
+                <div class="control"><input type="checkbox" id="useSecondaryLLM" /></div>
+              </div>
+              <p class="description">
+                When enabled, after the primary AI finishes its response, a secondary LLM will be used to generate the tracker block based on the conversation history.
+              </p>
+              
+              <div class="inline-drawer sst-nested-drawer">
+                <div class="inline-drawer-toggle inline-drawer-header">
+                  <b>Advanced Parameters</b>
+                  <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+                </div>
+                <div class="inline-drawer-content">
+                  <div class="setting">
+                    <label for="secondaryLLMMessageCount">Messages to Include</label>
+                    <div class="control">
+                      <input type="number" id="secondaryLLMMessageCount" class="text_pole" min="1" max="50" value="5" />
+                    </div>
+                  </div>
+                  <p class="description">
+                    Number of recent messages to send to the secondary LLM for tracker generation (1-50).
+                  </p>
+                  
+                  <div class="setting">
+                    <label for="secondaryLLMAPI">Secondary API</label>
+                    <select id="secondaryLLMAPI" class="text_pole">
+                      <option value="openai">OpenAI</option>
+                      <option value="claude">Claude</option>
+                      <option value="custom">Custom</option>
+                      <option value="full-manual">Full Manual</option>
+                    </select>
+                  </div>
+                  <p class="description">
+                    Choose which API to use for secondary tracker generation.
+                  </p>
+                  
+                  <div class="setting">
+                    <label for="secondaryLLMModel">Secondary Model</label>
+                    <div class="control">
+                      <input type="text" id="secondaryLLMModel" class="text_pole" placeholder="e.g., gpt-4o-mini" />
+                    </div>
+                  </div>
+                  <p class="description">
+                    The model to use for secondary tracker generation.
+                  </p>
+                  
+                  <div class="setting">
+                    <label for="secondaryLLMEndpoint">Secondary Endpoint (Optional)</label>
+                    <div class="control">
+                      <input type="text" id="secondaryLLMEndpoint" class="text_pole" placeholder="https://api.example.com/v1/chat/completions" />
+                    </div>
+                  </div>
+                  <p class="description">
+                    Custom endpoint for full-manual mode. Leave empty for standard APIs.
+                  </p>
+                  
+                  <div class="setting">
+                    <label for="secondaryLLMAPIKey">Secondary API Key (Optional)</label>
+                    <div class="control">
+                      <input type="password" id="secondaryLLMAPIKey" class="text_pole" placeholder="API key for full-manual mode" />
+                    </div>
+                  </div>
+                  <p class="description">
+                    API key for full-manual mode. Leave empty to use default credentials.
+                  </p>
+                  
+                  <div class="setting">
+                    <label for="secondaryLLMTemperature">Secondary Temperature</label>
+                    <div class="control">
+                      <input type="number" id="secondaryLLMTemperature" class="text_pole" min="0" max="2" step="0.1" value="0.7" />
+                    </div>
+                  </div>
+                  <p class="description">
+                    Temperature setting for the secondary LLM (0-2, lower is more deterministic).
+                  </p>
+                  
+                  <div class="setting">
+                    <label for="secondaryLLMTopP">Secondary Top P</label>
+                    <div class="control">
+                      <input type="number" id="secondaryLLMTopP" class="text_pole" min="0" max="1" step="0.05" value="1" />
+                    </div>
+                  </div>
+                  <p class="description">
+                    Top P (nucleus sampling) setting for the secondary LLM (0-1). Set to 1 to disable.
+                  </p>
+                  
+                  <div class="setting">
+                    <label for="secondaryLLMStreaming">Enable Streaming</label>
+                    <div class="control">
+                      <input type="checkbox" id="secondaryLLMStreaming" />
+                    </div>
+                  </div>
+                  <p class="description">
+                    Enable streaming for faster response processing. Disable if your API doesn't support streaming.
+                  </p>
+                  
+                  <div class="setting">
+                    <label for="secondaryLLMStripHTML">Strip HTML from Context</label>
+                    <div class="control">
+                      <input type="checkbox" id="secondaryLLMStripHTML" />
+                    </div>
+                  </div>
+                  <p class="description">
+                    Remove HTML tags and their contents (like &lt;div&gt;, &lt;details&gt;, etc.) from messages before sending to the secondary LLM. Helps reduce context usage.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-        <p class="description">
-          This will reset all extension settings to their default values. This action cannot be undone.
-        </p>
+
+        <!-- Prompts & Instructions Section -->
+        <div class="inline-drawer sst-settings-section">
+          <div class="inline-drawer-toggle inline-drawer-header sst-section-header">
+            <b>📝 Prompts & Instructions</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+          </div>
+          <div class="inline-drawer-content">
+            <div class="sst-section-content">
+              <div class="setting">
+                <label for="datingSimPrompt">Sim Tracker System Prompt</label>
+                <textarea id="datingSimPrompt" class="text_pole" rows="6"></textarea>
+              </div>
+              <p class="description">
+                The base prompt to be injected when you use the {{sim_tracker}} macro.
+              </p>
+              
+              <div class="setting">
+                <label for="displayInstructionsPrompt">Display Instructions Prompt</label>
+                <textarea id="displayInstructionsPrompt" class="text_pole" rows="8"></textarea>
+              </div>
+              <p class="description">
+                Custom instructions for using tracker displays, injected when you use the {{sim_displays}} macro. This is shown to the LLM alongside auto-generated documentation about available templates and inline displays.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Import/Export & Management Section -->
+        <div class="inline-drawer sst-settings-section">
+          <div class="inline-drawer-toggle inline-drawer-header sst-section-header">
+            <b>💾 Import/Export & Management</b>
+            <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+          </div>
+          <div class="inline-drawer-content">
+            <div class="sst-section-content">
+              <div class="setting">
+                <label>Template Preset Import/Export</label>
+                <div class="flex-container">
+                  <button id="exportPresetBtn" class="menu_button" title="Export current template and settings as a preset file.">
+                    Export Preset
+                  </button>
+                  <button id="importPresetBtn" class="menu_button" title="Import a template preset from a file.">
+                    Import Preset
+                  </button>
+                  <button id="managePresetsBtn" class="menu_button" title="Manage your saved presets.">
+                    Manage Presets
+                  </button>
+                </div>
+              </div>
+              <!-- Hidden input for file import -->
+              <input type="file" id="presetImportInput" hidden accept=".json" />
+              <p class="description">
+                Export your current template setup or import a preset from another user.
+              </p>
+              
+              <div class="setting">
+                <label>JSON Format Migration</label>
+                <div class="flex-container">
+                  <button id="migrateJsonFormatBtn" class="menu_button" title="Migrate all existing sim data to the new format with worldData and characters array.">
+                    Migrate to New Format
+                  </button>
+                </div>
+              </div>
+              <p class="description">
+                Migrate all existing sim data to the new improved format with explicit worldData and characters array structure.
+              </p>
+              
+              <div class="setting sst-danger-zone">
+                <label>Reset All Settings</label>
+                <div class="flex-container">
+                  <button id="resetDefaultsBtn" class="menu_button sst-danger-button" title="Reset all settings to their default values.">
+                    Reset Defaults
+                  </button>
+                </div>
+              </div>
+              <p class="description">
+                This will reset all extension settings to their default values. This action cannot be undone.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
