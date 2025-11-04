@@ -888,12 +888,7 @@ const handlePresetImport = (event, loadTemplate, refreshAllCards) => {
       const content = e.target.result;
       const preset = JSON.parse(content);
 
-      // Validate preset structure
-      if (!preset.htmlTemplate) {
-        throw new Error("Invalid preset file: Missing HTML template");
-      }
-
-      // Check if this is an inline template pack
+      // Check if this is an inline template pack (has inlineTemplates array with items)
       const isPack = preset.inlineTemplates && Array.isArray(preset.inlineTemplates) && preset.inlineTemplates.length > 0;
 
       if (isPack) {
@@ -918,7 +913,12 @@ const handlePresetImport = (event, loadTemplate, refreshAllCards) => {
           `Inline template pack "${preset.templateName || "Unnamed"}" imported successfully!`
         );
       } else {
-        // This is a regular preset - apply it
+        // This is a regular preset - validate it has htmlTemplate
+        if (!preset.htmlTemplate) {
+          throw new Error("Invalid preset file: Missing HTML template");
+        }
+
+        // Apply the preset
         set_settings("customTemplateHtml", unescapeHtml(preset.htmlTemplate));
 
         if (preset.sysPrompt !== undefined) {

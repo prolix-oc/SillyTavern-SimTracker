@@ -1,9 +1,6 @@
 {
   "templateName": "Mystery Game Inline Pack",
   "templateAuthor": "Prolix OCs",
-  "templatePosition": "BOTTOM",
-  "inlineTemplatesEnabled": true,
-  "htmlTemplate": "",
   "inlineTemplates": [
     {
       "insertName": "phone",

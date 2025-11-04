@@ -21,9 +21,6 @@ An inline template pack is a JSON file with the following structure:
 {
   "templateName": "Mystery Game Inline Pack",
   "templateAuthor": "Your Name",
-  "templatePosition": "BOTTOM",
-  "inlineTemplatesEnabled": true,
-  "htmlTemplate": "",
   "inlineTemplates": [
     {
       "insertName": "phone",
@@ -39,8 +36,7 @@ An inline template pack is a JSON file with the following structure:
 
 - **templateName**: Display name for your pack
 - **templateAuthor**: Your name or organization
-- **inlineTemplatesEnabled**: Must be `true` for packs
-- **inlineTemplates**: Array of template definitions
+- **inlineTemplates**: Array of template definitions (must have at least one item)
 
 ### Template Definition Fields
 
@@ -203,11 +199,10 @@ You can define inline templates in two places:
 ```json
 {
   "templateName": "Mystery Game Pack",
-  "inlineTemplatesEnabled": true,
+  "templateAuthor": "Your Name",
   "inlineTemplates": [
     {"insertName": "evidence", ...}
-  ],
-  "htmlTemplate": ""
+  ]
 }
 ```
 - Templates available across all trackers
@@ -290,9 +285,6 @@ Use this template to start your own pack:
 {
   "templateName": "My Inline Pack",
   "templateAuthor": "Your Name",
-  "templatePosition": "BOTTOM",
-  "inlineTemplatesEnabled": true,
-  "htmlTemplate": "",
   "inlineTemplates": [
     {
       "insertName": "example",
