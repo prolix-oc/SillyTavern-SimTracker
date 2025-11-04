@@ -308,7 +308,111 @@ jQuery(async () => {
     MacrosParser.registerMacro("sim_tracker", () => {
       if (!get_settings("isEnabled")) return "";
       log("Processed {{sim_tracker}} macro.");
-      return get_settings("datingSimPrompt");
+      
+      let output = get_settings("datingSimPrompt");
+      
+      // If inline templates are enabled, merge the {{sim_displays}} content into this macro
+      const inlineEnabled = get_settings("enableInlineTemplates");
+      if (inlineEnabled) {
+        const templateConfig = getCurrentTemplateConfig();
+        const identifier = get_settings("codeBlockIdentifier") || "sim";
+        const customInstructions = get_settings("displayInstructionsPrompt") || "";
+        
+        let displayContent = "\n\n";
+        
+        // Add custom instructions first if provided
+        if (customInstructions && customInstructions.trim() !== "") {
+          displayContent += customInstructions.trim() + "\n\n";
+        }
+        
+        displayContent += "## Available Inline Display Add-ons\n\n";
+        displayContent += "### 1. Tracker Code Block\n\n";
+        displayContent += "Place tracker data at the END of your response in a code block:\n\n";
+        displayContent += "- Syntax: ```" + identifier + "\\n[data here]\\n```\n";
+        displayContent += "- Must be the LAST element in your message\n";
+        displayContent += "- Use the format specified in {{sim_format}} (see main tracker instructions)\n";
+        displayContent += "- Will render as visual tracker cards for the user\n\n";
+        
+        if (templateConfig) {
+          // Collect all available inline templates with their pack info
+          const allTemplates = [];
+          const packInstructions = [];
+          
+          // Add templates from current template config
+          if (templateConfig.inlineTemplates && Array.isArray(templateConfig.inlineTemplates)) {
+            allTemplates.push(...templateConfig.inlineTemplates);
+          }
+          
+          // Add display instructions from current template if available
+          if (templateConfig.displayInstructions && templateConfig.displayInstructions.trim() !== "") {
+            packInstructions.push({
+              source: templateConfig.templateName || "Current Template",
+              instructions: templateConfig.displayInstructions.trim()
+            });
+          }
+          
+          // Add templates from enabled packs
+          const inlinePacks = get_settings("inlinePacks") || [];
+          inlinePacks.forEach(pack => {
+            if (pack.enabled !== false && pack.inlineTemplates && Array.isArray(pack.inlineTemplates)) {
+              allTemplates.push(...pack.inlineTemplates.map(t => ({
+                ...t,
+                packName: pack.templateName
+              })));
+              
+              // Add pack-specific display instructions if available
+              if (pack.displayInstructions && pack.displayInstructions.trim() !== "") {
+                packInstructions.push({
+                  source: pack.templateName,
+                  instructions: pack.displayInstructions.trim()
+                });
+              }
+            }
+          });
+          
+          if (allTemplates.length > 0) {
+            displayContent += "### 2. Inline Display Templates\n\n";
+            displayContent += "Embed visual elements WITHIN narrative text using special syntax:\n\n";
+            displayContent += "- Syntax: `[[DISPLAY=templateName, DATA={param1: \"value1\", param2: \"value2\"}]]`\n";
+            displayContent += "- Short form: `[[D=templateName, DATA={...}]]`\n";
+            displayContent += "- Can appear anywhere in narrative text\n";
+            displayContent += "- Data must be valid JSON object with string values in quotes\n\n";
+            
+            // Add pack-specific instructions if available
+            if (packInstructions.length > 0) {
+              displayContent += "**Template Pack Guidelines:**\n\n";
+              packInstructions.forEach(packInfo => {
+                displayContent += `- **${packInfo.source}**: ${packInfo.instructions}\n`;
+              });
+              displayContent += "\n";
+            }
+            
+            displayContent += "**Available Templates:**\n\n";
+            
+            allTemplates.forEach(template => {
+              const packInfo = template.packName ? ` *(from ${template.packName})*` : "";
+              displayContent += `- **${template.insertName}**${packInfo}: ${template.insertPurpose}\n`;
+              
+              // List parameters with their descriptions
+              if (template.parameters && template.parameters.length > 0) {
+                displayContent += `  - Parameters:\n`;
+                template.parameters.forEach(param => {
+                  displayContent += `    - \`${param.name}\`: ${param.description}\n`;
+                });
+                
+                // Generate example with parameter names
+                const exampleParams = template.parameters.map(p => `${p.name}: "example"`).join(", ");
+                displayContent += `  - Example: \`[[D=${template.insertName}, DATA={${exampleParams}}]]\`\n`;
+              }
+            });
+          }
+        }
+        
+        output += displayContent;
+        log("Merged {{sim_displays}} content into {{sim_tracker}} (inline templates enabled)");
+      }
+      
+      return output;
     });
 
     MacrosParser.registerMacro("last_sim_stats", () => {
@@ -457,7 +561,7 @@ ${exampleJson}
         output += customInstructions.trim() + "\n\n";
       }
       
-      output += "## Available Display Methods\n\n";
+      output += "## Available Inline Display Add-ons\n\n";
       output += "### 1. Tracker Code Block\n\n";
       output += "Place tracker data at the END of your response in a code block:\n\n";
       output += "- Syntax: ```" + identifier + "\\n[data here]\\n```\n";
@@ -534,7 +638,7 @@ ${exampleJson}
               
               // Generate example with parameter names
               const exampleParams = template.parameters.map(p => `${p.name}: "example"`).join(", ");
-              output += `  - Example: \\\`[[D=${template.insertName}, DATA={${exampleParams}}]]\\\`\n`;
+              output += `  - Example: \`[[D=${template.insertName}, DATA={${exampleParams}}]]\`\n`;
             }
           });
         }
