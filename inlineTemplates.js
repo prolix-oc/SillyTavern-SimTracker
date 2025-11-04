@@ -66,10 +66,9 @@ function parseInlineData(dataString) {
     const decoded = textarea.value;
     
     // Try to parse as JSON
-    // Handle common issues like single quotes
+    // Quote unquoted keys
     const normalized = decoded
       .trim()
-      .replace(/'/g, '"') // Replace single quotes with double quotes
       .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":'); // Quote unquoted keys
     
     console.log(`[SST] [${MODULE_NAME}]`, `DEBUG - Normalized JSON:`, normalized);
