@@ -1432,6 +1432,7 @@ const getPendingRightSidebarContent = () => {
 /**
  * Initialize viewport change detection
  * This ensures templates re-render when viewport dimensions change
+ * Only re-renders if the template actually uses DOM measurement helpers
  */
 const initializeViewportChangeHandler = (get_settings) => {
   if (isViewportChangeHandlerInitialized) {
@@ -1455,13 +1456,16 @@ const initializeViewportChangeHandler = (get_settings) => {
       lastViewportWidth = currentWidth;
       lastViewportHeight = currentHeight;
       
-      // Clear DOM measurement cache to force fresh measurements
-      clearDomMeasurementCache();
+      // Check if the template actually uses DOM helpers by checking if cache has entries
+      // This way we only re-render templates that opt-in by using DOM measurement helpers
+      const wasCacheUsed = clearDomMeasurementCache(); // Returns true if cache had entries
       
-      // Re-render all cards with new measurements
-      if (get_settings && get_settings("isEnabled")) {
-        console.log(`[SST] [${MODULE_NAME}]`, "Refreshing cards after viewport change");
+      // Only re-render if the template was using DOM measurements
+      if (wasCacheUsed && get_settings && get_settings("isEnabled")) {
+        console.log(`[SST] [${MODULE_NAME}]`, "Template uses DOM helpers - refreshing cards after viewport change");
         refreshAllCards(get_settings, CONTAINER_ID, renderTrackerWithoutSim);
+      } else if (!wasCacheUsed) {
+        console.log(`[SST] [${MODULE_NAME}]`, "Template doesn't use DOM helpers - skipping refresh");
       }
     }
   }, 250); // Debounce for 250ms to avoid excessive re-renders

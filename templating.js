@@ -446,10 +446,13 @@ Handlebars.registerHelper("elementExists", function(selector) {
 
 /**
  * Clear the DOM measurement cache (useful for forcing re-measurement)
+ * @returns {boolean} True if the cache had entries (template was using DOM helpers)
  */
 function clearDomMeasurementCache() {
+  const hadEntries = domMeasurementCache.size > 0;
   domMeasurementCache.clear();
   cacheTimestamp = 0;
+  return hadEntries;
 }
 
 // Function to extract template position from HTML
