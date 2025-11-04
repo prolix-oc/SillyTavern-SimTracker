@@ -361,7 +361,7 @@
               class="stat-bar-fill"
               style="width: {{#if stats.affinity}}{{multiply (abs stats.affinity) 0.5}}{{else}}0{{/if}}%; 
                      {{#if (gte stats.affinity 0)}}left: 50%;{{else}}right: 50%; left: auto;{{/if}}
-                     background: {{#if (gte stats.affinity 0)}}linear-gradient(90deg, #84fab0, #8fd3f4){{else}}linear-gradient(90deg, #ff6b6b, #ee5a6f){{/if}};"
+                     background: {{#if (gte stats.affinity 0)}}linear-gradient(90deg, #5a9d7a, #84fab0, #8fd3f4, #b8f3ff){{else}}linear-gradient(90deg, #ff9999, #ff6b6b, #ee5a6f, #c74550){{/if}};"
             ></div>
           </div>
         </div>
@@ -378,7 +378,7 @@
               class="stat-bar-fill"
               style="width: {{#if stats.desire}}{{multiply (abs stats.desire) 0.5}}{{else}}0{{/if}}%; 
                      {{#if (gte stats.desire 0)}}left: 50%;{{else}}right: 50%; left: auto;{{/if}}
-                     background: {{#if (gte stats.desire 0)}}linear-gradient(90deg, #a1c4fd, #c2e9fb){{else}}linear-gradient(90deg, #a29bfe, #6c5ce7){{/if}};"
+                     background: {{#if (gte stats.desire 0)}}linear-gradient(90deg, #7a9ed4, #a1c4fd, #c2e9fb, #e0f7ff){{else}}linear-gradient(90deg, #c5c0ff, #a29bfe, #6c5ce7, #5447b8){{/if}};"
             ></div>
           </div>
         </div>
@@ -425,7 +425,7 @@
         <div class="section-title">Connections</div>
         <div class="connections-list">
           {{#each stats.connections}}
-          <div class="connection-item">
+          <div class="connection-item" style="background: {{#if (gte this.affinity 50)}}rgba(132, 250, 176, 0.08){{else if (gte this.affinity 20)}}rgba(132, 250, 176, 0.05){{else if (gte this.affinity -20)}}rgba(255, 255, 255, 0.03){{else if (gte this.affinity -50)}}rgba(255, 107, 107, 0.05){{else}}rgba(255, 107, 107, 0.08){{/if}};">
             <span>{{this.name}}</span>
             <span class="connection-affinity">{{this.affinity}}</span>
           </div>
