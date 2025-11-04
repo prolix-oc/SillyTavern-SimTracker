@@ -545,22 +545,18 @@ function attachTabEventListeners(sidebarElement) {
         tab.addEventListener("click", () => {
           // Check if this tab is already active
           const isActive = tab.classList.contains("active");
-          if (isActive) return; // Do nothing if already active
 
           // Cancel all pending animation timeouts to prevent race conditions
           cancelAllAnimations();
 
           // Remove active class from all tabs immediately
           tabs.forEach((t) => t.classList.remove("active"));
-          
-          // Activate the clicked tab immediately
-          tab.classList.add("active");
 
           // Handle card animations in a non-blocking way
           cards.forEach((card, cardIndex) => {
             const correspondingTab = tabs[cardIndex];
             
-            if (cardIndex === index) {
+            if (cardIndex === index && !isActive) {
               // Activate the selected card - make it visible immediately
               // Remove hidden state first so card can animate in
               card.classList.remove("tab-hidden", "sliding-out");
@@ -586,7 +582,7 @@ function attachTabEventListeners(sidebarElement) {
                 });
               });
             } else {
-              // Deactivate other cards
+              // Deactivate other cards (or the clicked card if it was already active)
               if (card.classList.contains("active") || card.classList.contains("sliding-in")) {
                 card.classList.remove("active", "sliding-in");
                 card.classList.add("sliding-out");
@@ -614,6 +610,11 @@ function attachTabEventListeners(sidebarElement) {
               }
             }
           });
+
+          // If the clicked tab wasn't already active, activate it
+          if (!isActive) {
+            tab.classList.add("active");
+          }
         });
       });
     }
