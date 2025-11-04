@@ -472,9 +472,9 @@ function attachTabEventListeners(sidebarElement) {
     if (tabs.length > 0 && cards.length > 0) {
       // Initially activate the first non-inactive tab and card
       let firstActiveIndex = 0;
-      // Find the first non-inactive card
+      // Find the first non-inactive card (check both "inactive" and "narrative-inactive" for compatibility)
       for (let i = 0; i < cards.length; i++) {
-        if (!cards[i].classList.contains("inactive")) {
+        if (!cards[i].classList.contains("inactive") && !cards[i].classList.contains("narrative-inactive")) {
           firstActiveIndex = i;
           break;
         }
