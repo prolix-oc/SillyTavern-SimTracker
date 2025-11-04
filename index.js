@@ -7,6 +7,7 @@ import {
 import { MacrosParser } from "../../../macros.js";
 import { SlashCommand } from "../../../slash-commands/SlashCommand.js";
 import { SlashCommandParser } from "../../../slash-commands/SlashCommandParser.js";
+import { SlashCommandArgument, ARGUMENT_TYPE } from "../../../slash-commands/SlashCommandArgument.js";
 
 // Import helper utilities
 import {
@@ -577,8 +578,8 @@ ${exampleJson}
     SlashCommandParser.addCommandObject(
       SlashCommand.fromProps({
         name: "sst-measure",
-        callback: (args) => {
-          const selector = args && args.length > 0 ? args[0] : null;
+        callback: (namedArgs, unnamedArgs) => {
+          const selector = unnamedArgs.toString();
           
           if (!selector) {
             return "Please provide a CSS selector. Example: /sst-measure .sheld";
@@ -607,13 +608,11 @@ ${exampleJson}
         },
         returns: "status message",
         unnamedArgumentList: [
-          {
-            name: "selector",
-            type: "string",
+          SlashCommandArgument.fromProps({
             description: "CSS selector of element to measure",
-            optional: true,
-            enumList: []
-          },
+            typeList: ARGUMENT_TYPE.STRING,
+            isRequired: true,
+          }),
         ],
         helpString: `
                 <div>
