@@ -49,8 +49,16 @@ import {
   handleCustomTemplateUpload,
   loadTemplate,
   extractTemplatePosition,
-  currentTemplatePosition
+  currentTemplatePosition,
+  getCurrentTemplateConfig
 } from "./templating.js";
+
+import {
+  processInlineTemplates,
+  processAllInlineTemplates,
+  setupInlineTemplateObserver,
+  clearInlineTemplateCache
+} from "./inlineTemplates.js";
 
 import {
   get_settings,
@@ -273,6 +281,28 @@ jQuery(async () => {
     }
 
     log("MutationObserver set up for in-flight sim block hiding.");
+    
+    // Set up inline templates MutationObserver
+    log("Setting up inline templates observer...");
+    const inlineTemplatesObserver = setupInlineTemplateObserver(get_settings, getCurrentTemplateConfig);
+    
+    // Start observing for inline templates (reuse chatElement if it exists, otherwise try again)
+    if (chatElement) {
+      inlineTemplatesObserver.observe(chatElement, {
+        childList: true,
+        subtree: true,
+        characterData: true
+      });
+      log("Inline templates observer started");
+    } else {
+      // Fallback to body if chat element not found yet
+      inlineTemplatesObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true
+      });
+      log("Inline templates observer started (fallback to body)");
+    }
 
     log("Registering macros...");
     MacrosParser.registerMacro("sim_tracker", () => {
@@ -796,6 +826,14 @@ characters:
       // Render the tracker (this will use existing sim block if present)
       renderTracker(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
       
+      // Process inline templates for this message
+      const messageElement = document.querySelector(`div[mesid="${mesId}"] .mes_text`);
+      if (messageElement) {
+        const templateConfig = getCurrentTemplateConfig();
+        const isEnabled = get_settings("enableInlineTemplates");
+        processInlineTemplates(messageElement, templateConfig, isEnabled);
+      }
+      
       // For sidebar templates, ensure they render even on first message
       // by forcing a re-render after a short delay if this is a positioned template
       const templatePosition = currentTemplatePosition;
@@ -861,16 +899,39 @@ characters:
       // Wrap sim blocks in the new chat
       wrapSimBlocksInChat();
       
+      // Clear inline template cache when switching chats
+      clearInlineTemplateCache();
+      
       // Just refresh all cards - this will update sidebars with new chat data
       // The refreshAllCards function will find the latest sim data in the new chat
       wrappedRefreshAllCards();
+      
+      // Process all inline templates in the new chat
+      processAllInlineTemplates(get_settings, getCurrentTemplateConfig);
     });
-    eventSource.on(event_types.MORE_MESSAGES_LOADED, wrappedRefreshAllCards);
-    eventSource.on(event_types.MESSAGE_UPDATED, wrappedRefreshAllCards);
+    eventSource.on(event_types.MORE_MESSAGES_LOADED, () => {
+      wrappedRefreshAllCards();
+      // Process inline templates for newly loaded messages
+      processAllInlineTemplates(get_settings, getCurrentTemplateConfig);
+    });
+    
+    eventSource.on(event_types.MESSAGE_UPDATED, () => {
+      wrappedRefreshAllCards();
+      // Process inline templates for updated messages
+      processAllInlineTemplates(get_settings, getCurrentTemplateConfig);
+    });
     
     eventSource.on(event_types.MESSAGE_EDITED, (mesId) => {
       log(`Message ${mesId} was edited. Re-rendering tracker card.`);
       renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+      
+      // Process inline templates for the edited message
+      const messageElement = document.querySelector(`div[mesid="${mesId}"] .mes_text`);
+      if (messageElement) {
+        const templateConfig = getCurrentTemplateConfig();
+        const isEnabled = get_settings("enableInlineTemplates");
+        processInlineTemplates(messageElement, templateConfig, isEnabled);
+      }
     });
     
     eventSource.on(event_types.MESSAGE_SWIPE, (mesId) => {
@@ -883,6 +944,14 @@ characters:
       }
       // Re-render the tracker for the swiped message (same as MESSAGE_EDITED)
       renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+      
+      // Process inline templates for the swiped message
+      const messageElement = document.querySelector(`div[mesid="${mesId}"] .mes_text`);
+      if (messageElement) {
+        const templateConfig = getCurrentTemplateConfig();
+        const isEnabled = get_settings("enableInlineTemplates");
+        processInlineTemplates(messageElement, templateConfig, isEnabled);
+      }
     });
 
     // Listen for generation ended event to update sidebars and trigger secondary LLM
@@ -1001,6 +1070,10 @@ characters:
     });
 
     wrappedRefreshAllCards();
+    
+    // Process all inline templates in the initial chat
+    processAllInlineTemplates(get_settings, getCurrentTemplateConfig);
+    
     log(`${MODULE_NAME} has been successfully loaded.`);
   } catch (error) {
     console.error(

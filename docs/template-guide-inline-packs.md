@@ -1,0 +1,311 @@
+# Inline Template Packs Guide
+
+## Overview
+
+Inline template packs are collections of reusable HTML templates that can be inserted into AI-generated messages using special syntax. Unlike tracker card templates, inline packs don't replace the entire tracker - they provide visual elements that can be embedded within narrative text.
+
+## What Are Inline Template Packs?
+
+Inline template packs allow you to:
+- Create reusable UI components (phone notifications, emails, notes, etc.)
+- Separate inline templates from tracker card templates
+- Enable/disable packs without affecting your tracker card
+- Share collections of inline templates with others
+- Mix templates from multiple packs simultaneously
+
+## Pack Structure
+
+An inline template pack is a JSON file with the following structure:
+
+```json
+{
+  "templateName": "Mystery Game Inline Pack",
+  "templateAuthor": "Your Name",
+  "templatePosition": "BOTTOM",
+  "inlineTemplatesEnabled": true,
+  "htmlTemplate": "",
+  "inlineTemplates": [
+    {
+      "insertName": "phone",
+      "insertPurpose": "Display a phone message notification",
+      "parameters": ["name", "textContent", "time"],
+      "htmlContent": "<div>...</div>"
+    }
+  ]
+}
+```
+
+### Required Fields
+
+- **templateName**: Display name for your pack
+- **templateAuthor**: Your name or organization
+- **inlineTemplatesEnabled**: Must be `true` for packs
+- **inlineTemplates**: Array of template definitions
+
+### Template Definition Fields
+
+Each inline template in the array must have:
+
+- **insertName**: Unique identifier used in the `[[DISPLAY=...]]` syntax
+- **insertPurpose**: Description of what this template displays (for documentation)
+- **parameters**: Array of parameter names this template accepts
+- **htmlContent**: Handlebars template string with inline CSS
+
+## Creating Inline Templates
+
+### Basic Template
+
+```json
+{
+  "insertName": "note",
+  "insertPurpose": "Display a handwritten note",
+  "parameters": ["content", "signature"],
+  "htmlContent": "<div style='background: #fef9e7; padding: 20px;'><div>{{content}}</div>{{#if signature}}<div>- {{signature}}</div>{{/if}}</div>"
+}
+```
+
+### Using in Messages
+
+```
+The detective found a crumpled note on the desk.
+
+[[DISPLAY=note, DATA={content: "Meet me at the docks at midnight. Come alone.", signature: "J"}]]
+
+What will you do?
+```
+
+### Styling Guidelines
+
+Since inline templates appear within message text, use inline CSS:
+
+```json
+{
+  "htmlContent": "<div style='background: #1a1a1a; border-radius: 12px; padding: 16px; margin: 12px 0; max-width: 400px;'>...</div>"
+}
+```
+
+**Best Practices:**
+- Use inline styles (no external CSS needed)
+- Set `max-width` to prevent templates from being too wide
+- Add `margin` for spacing from surrounding text
+- Use `border-radius` and `box-shadow` for visual depth
+- Consider both light and dark themes
+
+### Handlebars Features
+
+Inline templates support Handlebars syntax:
+
+**Conditional Content:**
+```handlebars
+{{#if time}}
+  <div>{{time}}</div>
+{{/if}}
+```
+
+**Variables:**
+```handlebars
+<div>{{name}}</div>
+<div>{{textContent}}</div>
+```
+
+**Escaping:**
+- Use `{{variab le}}` for HTML-escaped output (default)
+- Use `{{{variable}}}` for raw HTML (use cautiously)
+
+## Example Templates
+
+### Phone Notification
+
+```json
+{
+  "insertName": "phone",
+  "insertPurpose": "Display a phone message notification",
+  "parameters": ["name", "textContent", "time"],
+  "htmlContent": "<div style='background: #1a1a1a; border-radius: 12px; padding: 16px; margin: 12px 0; max-width: 400px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);'><div style='display: flex; align-items: center; margin-bottom: 8px;'><span style='font-size: 24px; margin-right: 12px;'>📱</span><div><div style='font-weight: bold; color: #fff;'>{{name}}</div>{{#if time}}<div style='font-size: 12px; color: #888;'>{{time}}</div>{{/if}}</div></div><div style='color: #ddd; line-height: 1.4;'>{{textContent}}</div></div>"
+}
+```
+
+**Usage:**
+```
+[[DISPLAY=phone, DATA={name: "Unknown Number", textContent: "I have what you're looking for.", time: "2:47 AM"}]]
+```
+
+### Email Preview
+
+```json
+{
+  "insertName": "email",
+  "insertPurpose": "Display an email preview",
+  "parameters": ["from", "subject", "preview"],
+  "htmlContent": "<div style='background: #f5f5f5; border-left: 4px solid #4285f4; padding: 16px; margin: 12px 0; max-width: 500px;'><div style='font-weight: bold; color: #202124; margin-bottom: 4px;'>{{from}}</div><div style='font-weight: 600; color: #5f6368; margin-bottom: 8px;'>{{subject}}</div><div style='color: #5f6368; font-size: 14px;'>{{preview}}</div></div>"
+}
+```
+
+### Evidence Card
+
+```json
+{
+  "insertName": "evidence",
+  "insertPurpose": "Display a piece of evidence or clue",
+  "parameters": ["title", "description", "tag"],
+  "htmlContent": "<div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; padding: 2px; margin: 12px 0; max-width: 400px;'><div style='background: #fff; border-radius: 6px; padding: 16px;'><div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'><div style='font-weight: bold; color: #333; font-size: 16px;'>🔍 {{title}}</div>{{#if tag}}<div style='background: #667eea; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px;'>{{tag}}</div>{{/if}}</div><div style='color: #666; line-height: 1.5; font-size: 14px;'>{{description}}</div></div></div>"
+}
+```
+
+## Managing Packs
+
+### Importing a Pack
+
+1. Open extension settings
+2. Click **"Import Preset"** button
+3. Select your pack JSON file
+4. The extension automatically detects it's a pack (has `inlineTemplates` array)
+5. Pack is added to your collection and enabled by default
+
+### Managing Packs
+
+1. Click **"Manage Presets"** button in settings
+2. Switch to **"Inline Template Packs"** tab
+3. View all imported packs
+
+**For each pack you can:**
+- **Enable/Disable**: Toggle the checkbox to enable or disable the entire pack
+- **Remove**: Delete the pack from your collection
+
+### How Packs Work
+
+- **Multiple packs can be active simultaneously**
+- Enabled packs merge with the current tracker template's inline templates
+- If multiple sources define the same `insertName`, the first one found is used
+- Disabled packs are ignored during rendering
+- Pack changes take effect immediately (no reload needed)
+
+## Pack vs. Template Inline Templates
+
+You can define inline templates in two places:
+
+### 1. Tracker Card Template
+```json
+{
+  "templateName": "Dating Sim Tracker",
+  "inlineTemplatesEnabled": true,
+  "inlineTemplates": [
+    {"insertName": "heart", ...}
+  ],
+  "htmlTemplate": "..."
+}
+```
+- Templates specific to this tracker
+- Only available when this tracker is active
+- Changes when you switch trackers
+
+### 2. Inline Pack
+```json
+{
+  "templateName": "Mystery Game Pack",
+  "inlineTemplatesEnabled": true,
+  "inlineTemplates": [
+    {"insertName": "evidence", ...}
+  ],
+  "htmlTemplate": ""
+}
+```
+- Templates available across all trackers
+- Stays active when you switch trackers
+- Can be shared independently
+
+**Best Practice:** Use tracker templates for tracker-specific elements and packs for general-purpose UI components.
+
+## Sharing Packs
+
+To share your pack:
+
+1. Create your pack JSON file
+2. Test all templates thoroughly
+3. Share the JSON file with others
+4. Others import using **"Import Preset"**
+
+**File Naming:** Use descriptive names like `mystery-game-inline-pack.json`
+
+## Troubleshooting
+
+### Template Not Found
+- Error: `[Unknown template: templateName]`
+- **Fix**: Ensure pack is imported and enabled in "Manage Presets"
+
+### Render Error
+- Error: `[Render error: templateName]`
+- **Fix**: Check Handlebars syntax in `htmlContent`
+- **Fix**: Ensure parameter names match between template and usage
+
+### Invalid Data
+- Error: `[Invalid inline template data: templateName]`
+- **Fix**: Check JSON syntax in `DATA={...}`
+- **Fix**: Ensure proper quotes around string values
+
+### Styling Issues
+- **Fix**: Use inline styles only (no external CSS)
+- **Fix**: Test in both light and dark themes
+- **Fix**: Set explicit `color` values, don't rely on inheritance
+
+## Advanced Techniques
+
+### Multi-line Content
+
+Use escape sequences or keep HTML compact:
+
+```json
+{
+  "htmlContent": "<div style='white-space: pre-wrap;'>{{content}}</div>"
+}
+```
+
+Then in usage:
+```
+[[DISPLAY=note, DATA={content: "Line 1\nLine 2\nLine 3"}]]
+```
+
+### Nested Elements
+
+```json
+{
+  "htmlContent": "<div style='...'>{{#if items}}<ul>{{#each items}}<li>{{this}}</li>{{/each}}</ul>{{/if}}</div>"
+}
+```
+
+### Emoji and Icons
+
+Use emoji directly in templates:
+```json
+{
+  "htmlContent": "<span style='font-size: 24px;'>📱</span>"
+}
+```
+
+## Pack Template
+
+Use this template to start your own pack:
+
+```json
+{
+  "templateName": "My Inline Pack",
+  "templateAuthor": "Your Name",
+  "templatePosition": "BOTTOM",
+  "inlineTemplatesEnabled": true,
+  "htmlTemplate": "",
+  "inlineTemplates": [
+    {
+      "insertName": "example",
+      "insertPurpose": "Example template",
+      "parameters": ["param1", "param2"],
+      "htmlContent": "<div style='padding: 16px;'>{{param1}} - {{param2}}</div>"
+    }
+  ]
+}
+```
+
+## See Also
+
+- [Inline Templates Proposal](inline-templates-proposal.md) - Original design document
+- [Template Guide - Bundled JavaScript](template-guide-bundled-javascript.md) - For tracker templates with JavaScript
+- Example pack: `tracker-card-templates/example-inline-pack.json`

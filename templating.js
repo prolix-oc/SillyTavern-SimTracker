@@ -9,6 +9,9 @@ let currentTemplatePosition = "BOTTOM";
 // Module-level variable to store the current template's bundled JavaScript logic
 let currentTemplateLogic = null;
 
+// Module-level variable to store the current template configuration (for inline templates, etc.)
+let currentTemplateConfig = null;
+
 // Module-level cache for DOM measurements to avoid repeated queries
 let domMeasurementCache = new Map();
 let cacheTimestamp = 0;
@@ -670,10 +673,17 @@ const loadTemplate = async (get_settings, set_settings) => {
         }
       }
 
-      // Extract bundled JavaScript logic from the custom template
-      currentTemplateLogic = extractTemplateLogic(customTemplateHtml);
-      
-      compiledCardTemplate = Handlebars.compile(cardTemplate);
+          // Extract bundled JavaScript logic from the custom template
+          currentTemplateLogic = extractTemplateLogic(customTemplateHtml);
+          
+          // Store template config (note: custom HTML templates loaded directly don't have a JSON config)
+          currentTemplateConfig = {
+            templatePosition: templatePosition,
+            inlineTemplatesEnabled: false, // Custom HTML templates don't support inline templates by default
+            inlineTemplates: []
+          };
+          
+          compiledCardTemplate = Handlebars.compile(cardTemplate);
       // Store the template position in a module-level variable for use during rendering
       currentTemplatePosition = templatePosition;
       console.log(`[SST] [${MODULE_NAME}]`,
@@ -748,6 +758,13 @@ const loadTemplate = async (get_settings, set_settings) => {
           // Extract bundled JavaScript logic from the user preset template
           currentTemplateLogic = extractTemplateLogic(unescapedHtmlTemplate);
           
+          // Store template config from preset data
+          currentTemplateConfig = {
+            templatePosition: templatePosition,
+            inlineTemplatesEnabled: presetData.inlineTemplatesEnabled || false,
+            inlineTemplates: presetData.inlineTemplates || []
+          };
+          
           compiledCardTemplate = Handlebars.compile(cardTemplate);
           // Store the template position in a module-level variable for use during rendering
           currentTemplatePosition = templatePosition;
@@ -821,6 +838,13 @@ const loadTemplate = async (get_settings, set_settings) => {
         // Extract bundled JavaScript logic from the default template
         currentTemplateLogic = extractTemplateLogic(unescapedHtmlTemplate);
         
+        // Store template config from JSON data
+        currentTemplateConfig = {
+          templatePosition: templatePosition,
+          inlineTemplatesEnabled: jsonData.inlineTemplatesEnabled || false,
+          inlineTemplates: jsonData.inlineTemplates || []
+        };
+        
         compiledCardTemplate = Handlebars.compile(cardTemplate);
         // Store the template position in a module-level variable for use during rendering
         currentTemplatePosition = templatePosition;
@@ -845,8 +869,22 @@ const loadTemplate = async (get_settings, set_settings) => {
   compiledCardTemplate = Handlebars.compile(fallbackTemplate);
   // Reset template logic for fallback template
   currentTemplateLogic = null;
+  // Reset template config for fallback template
+  currentTemplateConfig = {
+    templatePosition: "BOTTOM",
+    inlineTemplatesEnabled: false,
+    inlineTemplates: []
+  };
   // Store the template position in a module-level variable for use during rendering
   currentTemplatePosition = "BOTTOM";
+};
+
+/**
+ * Get the current template configuration
+ * Used by inline templates module to access template metadata
+ */
+const getCurrentTemplateConfig = () => {
+  return currentTemplateConfig;
 };
 
 // Export functions and variables
@@ -861,6 +899,8 @@ export {
   extractTemplatePosition,
   currentTemplatePosition,
   currentTemplateLogic,
+  currentTemplateConfig,
+  getCurrentTemplateConfig,
   unescapeHtml,
   clearDomMeasurementCache
 };

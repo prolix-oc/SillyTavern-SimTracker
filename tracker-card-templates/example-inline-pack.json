@@ -1,0 +1,39 @@
+{
+  "templateName": "Mystery Game Inline Pack",
+  "templateAuthor": "Prolix OCs",
+  "templatePosition": "BOTTOM",
+  "inlineTemplatesEnabled": true,
+  "htmlTemplate": "",
+  "inlineTemplates": [
+    {
+      "insertName": "phone",
+      "insertPurpose": "Display a phone message notification",
+      "parameters": ["name", "textContent", "time"],
+      "htmlContent": "<div class='sst-inline-phone' style='background: #1a1a1a; border-radius: 12px; padding: 16px; margin: 12px 0; max-width: 400px; box-shadow: 0 2px 8px rgba(0,0,0,0.3);'><div style='display: flex; align-items: center; margin-bottom: 8px;'><span style='font-size: 24px; margin-right: 12px;'>📱</span><div><div style='font-weight: bold; color: #fff;'>{{name}}</div>{{#if time}}<div style='font-size: 12px; color: #888;'>{{time}}</div>{{/if}}</div></div><div style='color: #ddd; line-height: 1.4;'>{{textContent}}</div></div>"
+    },
+    {
+      "insertName": "email",
+      "insertPurpose": "Display an email preview",
+      "parameters": ["from", "subject", "preview"],
+      "htmlContent": "<div class='sst-inline-email' style='background: #f5f5f5; border-left: 4px solid #4285f4; padding: 16px; margin: 12px 0; max-width: 500px;'><div style='font-weight: bold; color: #202124; margin-bottom: 4px;'>{{from}}</div><div style='font-weight: 600; color: #5f6368; margin-bottom: 8px;'>{{subject}}</div><div style='color: #5f6368; font-size: 14px;'>{{preview}}</div></div>"
+    },
+    {
+      "insertName": "note",
+      "insertPurpose": "Display a handwritten note or letter",
+      "parameters": ["content", "signature"],
+      "htmlContent": "<div class='sst-inline-note' style='background: #fef9e7; border: 1px solid #f4e7c3; padding: 20px; margin: 12px 0; max-width: 450px; font-family: \"Courier New\", monospace; box-shadow: 2px 2px 6px rgba(0,0,0,0.1);'><div style='white-space: pre-wrap; color: #2c3e50; margin-bottom: 16px;'>{{content}}</div>{{#if signature}}<div style='text-align: right; font-style: italic; color: #7f8c8d;'>- {{signature}}</div>{{/if}}</div>"
+    },
+    {
+      "insertName": "newspaper",
+      "insertPurpose": "Display a newspaper clipping",
+      "parameters": ["headline", "content", "date"],
+      "htmlContent": "<div class='sst-inline-newspaper' style='background: #f8f8f0; border: 2px solid #8b7355; padding: 20px; margin: 12px 0; max-width: 500px; font-family: Georgia, serif; box-shadow: 3px 3px 10px rgba(0,0,0,0.2);'><div style='border-bottom: 3px double #8b7355; margin-bottom: 12px; padding-bottom: 8px;'><div style='font-family: \"Times New Roman\", serif; font-size: 24px; font-weight: bold; color: #2c2c2c; text-transform: uppercase; letter-spacing: 1px;'>{{headline}}</div>{{#if date}}<div style='font-size: 11px; color: #666; margin-top: 4px; font-style: italic;'>{{date}}</div>{{/if}}</div><div style='color: #333; line-height: 1.6; font-size: 14px; columns: 1;'>{{content}}</div></div>"
+    },
+    {
+      "insertName": "evidence",
+      "insertPurpose": "Display a piece of evidence or clue",
+      "parameters": ["title", "description", "tag"],
+      "htmlContent": "<div class='sst-inline-evidence' style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; padding: 2px; margin: 12px 0; max-width: 400px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);'><div style='background: #fff; border-radius: 6px; padding: 16px;'><div style='display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;'><div style='font-weight: bold; color: #333; font-size: 16px;'>🔍 {{title}}</div>{{#if tag}}<div style='background: #667eea; color: #fff; padding: 2px 8px; border-radius: 4px; font-size: 11px;'>{{tag}}</div>{{/if}}</div><div style='color: #666; line-height: 1.5; font-size: 14px;'>{{description}}</div></div></div>"
+    }
+  ]
+}
