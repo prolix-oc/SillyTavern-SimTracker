@@ -164,7 +164,7 @@ const INLINE_TEMPLATE_START_REGEX = /\[\[(?:DISPLAY|D)?/g;
  */
 export function processInlineTemplates(messageElement, templateConfig, isEnabled, getSettings) {
   // Skip processing if disabled or no template config
-  if (!isEnabled || !templateConfig || !templateConfig.inlineTemplatesEnabled) {
+  if (!isEnabled || !templateConfig) {
     return;
   }
   
@@ -310,7 +310,7 @@ export function setupInlineTemplateObserver(getSettings, getCurrentTemplateConfi
     }
     
     const templateConfig = getCurrentTemplateConfig();
-    if (!templateConfig || !templateConfig.inlineTemplatesEnabled) {
+    if (!templateConfig) {
       return;
     }
     
@@ -356,8 +356,8 @@ export function processAllInlineTemplates(getSettings, getCurrentTemplateConfig)
   }
   
   const templateConfig = getCurrentTemplateConfig();
-  if (!templateConfig || !templateConfig.inlineTemplatesEnabled) {
-    console.log(`[SST] [${MODULE_NAME}]`, `Current template doesn't support inline templates`);
+  if (!templateConfig) {
+    console.log(`[SST] [${MODULE_NAME}]`, `No template configuration found`);
     return;
   }
   
