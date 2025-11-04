@@ -106,27 +106,27 @@
     pointer-events: auto !important;
   }
 
-  .disp-tracker-card.active {
+  .sim-tracker-card.active {
     transform: translateY(-50%) translateX(0) !important;
     opacity: 1;
     visibility: visible;
   }
 
-  .disp-tracker-card.sliding-out {
+  .sim-tracker-card.sliding-out {
     transform: translateY(-50%) translateX(100%) !important;
     opacity: 0;
     visibility: hidden;
   }
 
-  .disp-tracker-card.tab-hidden {
+  .sim-tracker-card.tab-hidden {
     display: none !important;
   }
 
-  .disp-tracker-card.narrative-inactive {
+  .sim-tracker-card.narrative-inactive {
     opacity: 1;
   }
 
-  .disp-tracker-card.narrative-inactive.active {
+  .sim-tracker-card.narrative-inactive.active {
     opacity: 1;
   }
 
@@ -284,30 +284,30 @@
   }
 
   /* Scrollbar styling */
-  .disp-tracker-card::-webkit-scrollbar {
+  .sim-tracker-card::-webkit-scrollbar {
     width: 6px;
   }
 
-  .disp-tracker-card::-webkit-scrollbar-track {
+  .sim-tracker-card::-webkit-scrollbar-track {
     background: rgba(255, 255, 255, 0.05);
     border-radius: 3px;
   }
 
-  .disp-tracker-card::-webkit-scrollbar-thumb {
+  .sim-tracker-card::-webkit-scrollbar-thumb {
     background: rgba(255, 255, 255, 0.2);
     border-radius: 3px;
   }
 
-  .disp-tracker-card::-webkit-scrollbar-thumb:hover {
+  .sim-tracker-card::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.3);
   }
 </style>
 
-<div class="disp-tracker-container">
-  <div class="disp-tracker-tabs">
+<div class="sim-tracker-container">
+  <div class="sim-tracker-tabs">
     {{#each characters}}
     <div
-      class="disp-tracker-tab"
+      class="sim-tracker-tab"
       data-character="{{@index}}"
       style="background: linear-gradient(145deg, {{adjustColorBrightness bgColor 70}} 0%, {{adjustColorBrightness darkerBgColor 60}} 50%, {{adjustColorBrightness darkerBgColor 50}} 100%);"
     >
@@ -321,10 +321,10 @@
     {{/each}}
   </div>
 
-  <div class="disp-tracker-cards-wrapper">
+  <div class="sim-tracker-cards-wrapper">
     {{#each characters}}
     <div
-      class="disp-tracker-card {{#if stats.inactive}}narrative-inactive{{/if}}"
+      class="sim-tracker-card {{#if stats.inactive}}narrative-inactive{{/if}}"
       data-character="{{@index}}"
       style="background: linear-gradient(145deg, {{adjustColorBrightness bgColor 70}} 0%, {{adjustColorBrightness darkerBgColor 60}} 50%, {{adjustColorBrightness darkerBgColor 50}} 100%);"
     >
