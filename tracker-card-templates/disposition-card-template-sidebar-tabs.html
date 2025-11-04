@@ -5,7 +5,7 @@
 <!-- CARD_TEMPLATE_START -->
 <style>
   /* The actual template styling */
-  .disp-tracker-container {
+  .sim-tracker-container {
     display: grid;
     grid-template-columns: 1fr;
     grid-template-rows: 1fr;
@@ -16,8 +16,8 @@
   }
 
   /* Both tabs and cards exist in the same grid cell, naturally layered */
-  .disp-tracker-tabs,
-  .disp-tracker-cards-wrapper {
+  .sim-tracker-tabs,
+  .sim-tracker-cards-wrapper {
     grid-column: 1;
     grid-row: 1;
     position: relative;
@@ -26,7 +26,7 @@
     pointer-events: none !important;
   }
 
-  .disp-tracker-tabs {
+  .sim-tracker-tabs {
     display: flex;
     flex-direction: column;
     gap: 12px;
@@ -39,7 +39,7 @@
     pointer-events: none !important;
   }
 
-  .disp-tracker-tab {
+  .sim-tracker-tab {
     width: 60px;
     height: 60px;
     border-radius: 8px;
