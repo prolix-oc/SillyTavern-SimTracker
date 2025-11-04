@@ -57,9 +57,12 @@ export function clearInlineTemplateCache() {
  */
 function parseInlineData(dataString) {
   try {
-    // Decode HTML entities first (in case quotes were encoded as &quot;)
+    // First, strip out any <q> tags that SillyTavern uses for quotes
+    let cleaned = dataString.replace(/<\/?q>/g, '');
+    
+    // Decode HTML entities (in case quotes were encoded as &quot;)
     const textarea = document.createElement('textarea');
-    textarea.innerHTML = dataString;
+    textarea.innerHTML = cleaned;
     const decoded = textarea.value;
     
     // Try to parse as JSON
@@ -68,6 +71,8 @@ function parseInlineData(dataString) {
       .trim()
       .replace(/'/g, '"') // Replace single quotes with double quotes
       .replace(/([{,]\s*)([a-zA-Z_][a-zA-Z0-9_]*)\s*:/g, '$1"$2":'); // Quote unquoted keys
+    
+    console.log(`[SST] [${MODULE_NAME}]`, `DEBUG - Normalized JSON:`, normalized);
     
     return JSON.parse(normalized);
   } catch (error) {
