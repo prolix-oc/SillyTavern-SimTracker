@@ -8,6 +8,14 @@ import { MacrosParser } from "../../../macros.js";
 import { SlashCommand } from "../../../slash-commands/SlashCommand.js";
 import { SlashCommandParser } from "../../../slash-commands/SlashCommandParser.js";
 
+// Import helper utilities
+import {
+  queryAll,
+  query,
+  createElement,
+  escapeHtml
+} from "./helpers.js";
+
 // Import from our new modules
 import {
   renderTracker,
@@ -145,7 +153,7 @@ jQuery(async () => {
       const identifier = get_settings("codeBlockIdentifier");
       
       // Find all code elements with the sim class pattern
-      const simCodeElements = document.querySelectorAll(`#chat code[class*="${identifier}"]`);
+      const simCodeElements = queryAll(`#chat code[class*="${identifier}"]`);
       
       simCodeElements.forEach((codeElement) => {
         // Find the parent pre element
@@ -172,7 +180,7 @@ jQuery(async () => {
           if (node.tagName === "CODE" && node.className.includes(identifier)) {
             codeElements = [node];
           } else {
-            codeElements = Array.from(node.querySelectorAll(`code[class*="${identifier}"]`));
+            codeElements = Array.from(queryAll(`code[class*="${identifier}"]`, node));
           }
           
           codeElements.forEach((codeElement) => {
@@ -442,7 +450,7 @@ ${exampleJson}
             lastCharMessage.mes = lastCharMessage.mes.replace(simRegex, "").trim();
 
             // Update the message UI to show it's being regenerated
-            const messageElement = document.querySelector(
+            const messageElement = query(
               `div[mesid="${lastCharMessageIndex}"] .mes_text`
             );
             if (messageElement) {
@@ -499,7 +507,7 @@ ${exampleJson}
               await context.saveChat();
               
               // Update the message in the UI
-              const messageElement = document.querySelector(
+              const messageElement = query(
                 `div[mesid="${lastCharMessageIndex}"] .mes_text`
               );
               if (messageElement) {
@@ -515,7 +523,7 @@ ${exampleJson}
               log("Updated message with force-regenerated tracker block");
               
               // Remove the preparing text
-              const preparingTextElement = document.querySelector(".sst-regen-preparing");
+              const preparingTextElement = query(".sst-regen-preparing");
               if (preparingTextElement) {
                 preparingTextElement.remove();
               }
@@ -526,7 +534,7 @@ ${exampleJson}
               return "Successfully regenerated tracker block for last character message.";
             } else {
               // Remove the preparing text even on failure
-              const preparingTextElement = document.querySelector(".sst-regen-preparing");
+              const preparingTextElement = query(".sst-regen-preparing");
               if (preparingTextElement) {
                 preparingTextElement.remove();
               }
@@ -535,7 +543,7 @@ ${exampleJson}
           } catch (error) {
             log(`Error in /sst-regen command: ${error.message}`);
             // Remove the preparing text on error
-            const preparingTextElement = document.querySelector(".sst-regen-preparing");
+            const preparingTextElement = query(".sst-regen-preparing");
             if (preparingTextElement) {
               preparingTextElement.remove();
             }
@@ -645,7 +653,7 @@ characters:
             lastCharMessage.mes += simBlock;
 
             // Update the message in the UI
-            const messageElement = document.querySelector(
+            const messageElement = query(
               `div[mesid="${lastCharMessageIndex}"] .mes_text`
             );
             if (messageElement) {
@@ -850,7 +858,7 @@ characters:
                 await context.saveChat();
                 
                 // Update the message in the UI
-                const messageElement = document.querySelector(
+                const messageElement = query(
                   `div[mesid="${mesId}"] .mes_text`
                 );
                 if (messageElement) {
@@ -885,7 +893,7 @@ characters:
         log("Applying pending left sidebar content after generation ended");
         updateLeftSidebar(leftContent);
         // Re-attach event listeners after updating
-        const leftSidebarElement = document.querySelector("#sst-sidebar-left-content");
+        const leftSidebarElement = query("#sst-sidebar-left-content");
         if (leftSidebarElement) {
           attachTabEventListeners(leftSidebarElement);
         }
@@ -897,14 +905,14 @@ characters:
         log("Applying pending right sidebar content after generation ended");
         updateRightSidebar(rightContent);
         // Re-attach event listeners after updating
-        const rightSidebarElement = document.querySelector("#sst-sidebar-right-content");
+        const rightSidebarElement = query("#sst-sidebar-right-content");
         if (rightSidebarElement) {
           attachTabEventListeners(rightSidebarElement);
         }
       }
 
       // Clear any remaining preparing text when generation ends
-      document.querySelectorAll(".sst-preparing-text").forEach((element) => {
+      queryAll(".sst-preparing-text").forEach((element) => {
         const mesText = element.previousElementSibling;
         if (mesText && mesText.classList.contains("mes_text")) {
           mesTextsWithPreparingText.delete(mesText);
