@@ -160,7 +160,6 @@
     display: flex;
     flex-direction: column;
     gap: 6px;
-    position: relative;
   }
 
   .stat-header {
@@ -173,7 +172,7 @@
   .stat-bar-bg {
     height: 8px;
     border-radius: 4px;
-    overflow: visible;
+    overflow: hidden;
     position: relative;
     background: rgba(255, 255, 255, 0.05);
   }
@@ -329,19 +328,16 @@
     text-align: center;
     line-height: 1.2;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    position: absolute;
-    top: -18px;
-    z-index: 10;
   }
 
   .change-indicator.positive {
     background: rgba(46, 204, 113, 0.9) !important;
-    left: calc(50% + 4px);
+    margin-left: 6px;
   }
 
   .change-indicator.negative {
     background: rgba(231, 76, 60, 0.9) !important;
-    right: calc(50% + 4px);
+    margin-right: 6px;
   }
 
   .health-change-indicator {
@@ -355,10 +351,7 @@
     text-align: center;
     line-height: 1.2;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
-    position: absolute;
-    top: -18px;
-    right: 0;
-    z-index: 10;
+    margin-left: 6px;
   }
 
   .health-change-indicator.positive {
@@ -422,7 +415,19 @@
         <div class="stat-item">
           <div class="stat-header">
             <span>Affinity</span>
-            <span>{{stats.affinity}}</span>
+            <span style="display: flex; align-items: center;">
+              {{#if stats.affinityChange}}{{#unless (eq stats.affinityChange 0)}}{{#if (lt stats.affinityChange 0)}}
+              <span class="change-indicator negative">
+                {{stats.affinityChange}}
+              </span>
+              {{/if}}{{/unless}}{{/if}}
+              <span>{{stats.affinity}}</span>
+              {{#if stats.affinityChange}}{{#unless (eq stats.affinityChange 0)}}{{#if (gt stats.affinityChange 0)}}
+              <span class="change-indicator positive">
+                +{{stats.affinityChange}}
+              </span>
+              {{/if}}{{/unless}}{{/if}}
+            </span>
           </div>
           <div class="stat-bar-bg">
             <div class="stat-bar-center-mark"></div>
@@ -431,11 +436,6 @@
               style="background: linear-gradient(90deg, #c74550 0%, #ee5a6f 12.5%, #ff6b6b 25%, #ff9999 37.5%, #c4d4d4 50%, #8fd3f4 62.5%, #84fab0 75%, #5a9d7a 87.5%, #4a8d6a 100%);
                      {{#if (gte stats.affinity 0)}}clip-path: inset(0 {{subtract 50 (multiply (abs stats.affinity) 0.5)}}% 0 50% round 0 4px 4px 0);{{else}}clip-path: inset(0 50% 0 {{subtract 50 (multiply (abs stats.affinity) 0.5)}}% round 4px 0 0 4px);{{/if}}"
             ></div>
-            {{#if stats.affinityChange}}{{#unless (eq stats.affinityChange 0)}}
-            <span class="change-indicator {{#if (gt stats.affinityChange 0)}}positive{{else}}negative{{/if}}">
-              {{#if (gt stats.affinityChange 0)}}+{{/if}}{{stats.affinityChange}}
-            </span>
-            {{/unless}}{{/if}}
           </div>
         </div>
 
@@ -443,7 +443,19 @@
         <div class="stat-item">
           <div class="stat-header">
             <span>Desire</span>
-            <span>{{stats.desire}}</span>
+            <span style="display: flex; align-items: center;">
+              {{#if stats.desireChange}}{{#unless (eq stats.desireChange 0)}}{{#if (lt stats.desireChange 0)}}
+              <span class="change-indicator negative">
+                {{stats.desireChange}}
+              </span>
+              {{/if}}{{/unless}}{{/if}}
+              <span>{{stats.desire}}</span>
+              {{#if stats.desireChange}}{{#unless (eq stats.desireChange 0)}}{{#if (gt stats.desireChange 0)}}
+              <span class="change-indicator positive">
+                +{{stats.desireChange}}
+              </span>
+              {{/if}}{{/unless}}{{/if}}
+            </span>
           </div>
           <div class="stat-bar-bg">
             <div class="stat-bar-center-mark"></div>
@@ -452,11 +464,6 @@
               style="background: linear-gradient(90deg, #5447b8 0%, #6c5ce7 12.5%, #a29bfe 25%, #c5c0ff 37.5%, #c4d4ec 50%, #c2e9fb 62.5%, #a1c4fd 75%, #7a9ed4 87.5%, #6a8ec4 100%);
                      {{#if (gte stats.desire 0)}}clip-path: inset(0 {{subtract 50 (multiply (abs stats.desire) 0.5)}}% 0 50% round 0 4px 4px 0);{{else}}clip-path: inset(0 50% 0 {{subtract 50 (multiply (abs stats.desire) 0.5)}}% round 4px 0 0 4px);{{/if}}"
             ></div>
-            {{#if stats.desireChange}}{{#unless (eq stats.desireChange 0)}}
-            <span class="change-indicator {{#if (gt stats.desireChange 0)}}positive{{else}}negative{{/if}}">
-              {{#if (gt stats.desireChange 0)}}+{{/if}}{{stats.desireChange}}
-            </span>
-            {{/unless}}{{/if}}
           </div>
         </div>
 
@@ -464,7 +471,14 @@
         <div class="stat-item">
           <div class="stat-header">
             <span>Health</span>
-            <span>{{stats.health}}</span>
+            <span style="display: flex; align-items: center;">
+              <span>{{stats.health}}</span>
+              {{#if stats.healthChange}}{{#unless (eq stats.healthChange 0)}}
+              <span class="health-change-indicator {{#if (gt stats.healthChange 0)}}positive{{else}}negative{{/if}}">
+                {{#if (gt stats.healthChange 0)}}+{{/if}}{{stats.healthChange}}
+              </span>
+              {{/unless}}{{/if}}
+            </span>
           </div>
           <div class="stat-bar-bg">
             <div
@@ -472,11 +486,6 @@
               style="background: linear-gradient(90deg, #8b0000 0%, #d63031 10%, #ff7675 20%, #fdcb6e 40%, #ffeaa7 60%, #00b894 80%, #55efc4 100%);
                      clip-path: inset(0 {{subtract 100 stats.health}}% 0 0 round 4px);"
             ></div>
-            {{#if stats.healthChange}}{{#unless (eq stats.healthChange 0)}}
-            <span class="health-change-indicator {{#if (gt stats.healthChange 0)}}positive{{else}}negative{{/if}}">
-              {{#if (gt stats.healthChange 0)}}+{{/if}}{{stats.healthChange}}
-            </span>
-            {{/unless}}{{/if}}
           </div>
         </div>
       </div>
