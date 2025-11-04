@@ -28,6 +28,24 @@ Handlebars.registerHelper("gt", function (a, b) {
   return a > b;
 });
 
+Handlebars.registerHelper("gte", function (a, b) {
+  return a >= b;
+});
+
+Handlebars.registerHelper("abs", function (a) {
+  if (typeof a !== "number") {
+    return 0;
+  }
+  return Math.abs(a);
+});
+
+Handlebars.registerHelper("multiply", function (a, b) {
+  if (typeof a !== "number" || typeof b !== "number") {
+    return 0;
+  }
+  return a * b;
+});
+
 Handlebars.registerHelper("divide", function (a, b) {
   if (typeof a !== "number" || typeof b !== "number" || b === 0) {
     return 0;
