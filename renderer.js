@@ -1,7 +1,7 @@
 // renderer.js - HTML card rendering code
 import { getContext } from "../../../extensions.js";
 import { messageFormatting } from "../../../../script.js";
-import { extractTemplatePosition, currentTemplatePosition, currentTemplateLogic } from "./templating.js";
+import { extractTemplatePosition, currentTemplatePosition, currentTemplateLogic, clearDomMeasurementCache } from "./templating.js";
 import { parseTrackerData } from "./formatUtils.js";
 import {
   createElement, 
@@ -12,9 +12,16 @@ import {
   removeClass, 
   hasClass 
 } from "./helpers.js";
+import DOMUtils from "./sthelpers/domUtils.js";
 
 const MODULE_NAME = "silly-sim-tracker";
 const CONTAINER_ID = "silly-sim-tracker-container";
+
+// Viewport change detection
+let viewportResizeTimeout = null;
+let lastViewportWidth = window.innerWidth;
+let lastViewportHeight = window.innerHeight;
+let isViewportChangeHandlerInitialized = false;
 
 // Global sidebar tracker elements
 let globalLeftSidebar = null;
@@ -1422,6 +1429,69 @@ const getPendingRightSidebarContent = () => {
   return content;
 };
 
+/**
+ * Initialize viewport change detection
+ * This ensures templates re-render when viewport dimensions change
+ */
+const initializeViewportChangeHandler = (get_settings) => {
+  if (isViewportChangeHandlerInitialized) {
+    console.log(`[SST] [${MODULE_NAME}]`, "Viewport change handler already initialized");
+    return;
+  }
+  
+  console.log(`[SST] [${MODULE_NAME}]`, "Initializing viewport change detection");
+  
+  // Use debounced handler to avoid excessive re-renders
+  const handleViewportChange = DOMUtils.debounce(() => {
+    const currentWidth = window.innerWidth;
+    const currentHeight = window.innerHeight;
+    
+    // Only re-render if dimensions actually changed
+    if (currentWidth !== lastViewportWidth || currentHeight !== lastViewportHeight) {
+      console.log(`[SST] [${MODULE_NAME}]`, 
+        `Viewport changed from ${lastViewportWidth}x${lastViewportHeight} to ${currentWidth}x${currentHeight}`
+      );
+      
+      lastViewportWidth = currentWidth;
+      lastViewportHeight = currentHeight;
+      
+      // Clear DOM measurement cache to force fresh measurements
+      clearDomMeasurementCache();
+      
+      // Re-render all cards with new measurements
+      if (get_settings && get_settings("isEnabled")) {
+        console.log(`[SST] [${MODULE_NAME}]`, "Refreshing cards after viewport change");
+        refreshAllCards(get_settings, CONTAINER_ID, renderTrackerWithoutSim);
+      }
+    }
+  }, 250); // Debounce for 250ms to avoid excessive re-renders
+  
+  // Listen for window resize
+  window.addEventListener('resize', handleViewportChange);
+  
+  // Listen for orientation change (mobile devices)
+  window.addEventListener('orientationchange', () => {
+    // Orientation change needs a slight delay for viewport to update
+    setTimeout(handleViewportChange, 100);
+  });
+  
+  isViewportChangeHandlerInitialized = true;
+  console.log(`[SST] [${MODULE_NAME}]`, "Viewport change detection initialized successfully");
+};
+
+/**
+ * Manually trigger DOM measurement cache clear and re-render
+ * Useful for external code that needs to force a layout update
+ */
+const forceLayoutUpdate = (get_settings) => {
+  console.log(`[SST] [${MODULE_NAME}]`, "Forcing layout update");
+  clearDomMeasurementCache();
+  
+  if (get_settings && get_settings("isEnabled")) {
+    refreshAllCards(get_settings, CONTAINER_ID, renderTrackerWithoutSim);
+  }
+};
+
 // Export functions
 export {
   updateLeftSidebar,
@@ -1439,5 +1509,7 @@ export {
   getPendingRightSidebarContent,
   setGenerationInProgress,
   getGenerationInProgress,
+  initializeViewportChangeHandler,
+  forceLayoutUpdate,
   CONTAINER_ID
 };

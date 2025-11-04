@@ -37,6 +37,8 @@ import {
   mesTextsWithPreparingText,
   setGenerationInProgress,
   getGenerationInProgress,
+  initializeViewportChangeHandler,
+  forceLayoutUpdate,
   CONTAINER_ID
 } from "./renderer.js";
 
@@ -75,19 +77,12 @@ import {
 } from "./utils.js";
 
 import {
-  parseTrackerData,
-  generateTrackerBlock
-} from "./formatUtils.js";
-
-import {
   generateTrackerWithSecondaryLLM
 } from "./secondaryLLM.js";
 
 const MODULE_NAME = "silly-sim-tracker";
 
 let lastSimJsonString = "";
-// Keep track of when we're expecting code blocks to be generated
-let isGeneratingCodeBlocks = false;
 
 // --- INTERCEPTOR ---
 globalThis.simTrackerGenInterceptor = async function (
@@ -147,6 +142,10 @@ jQuery(async () => {
     log("Settings UI refreshed with saved values.");
     
     await wrappedLoadTemplate();
+
+    // Initialize viewport change detection for dynamic layout updates
+    log("Initializing viewport change detection...");
+    initializeViewportChangeHandler(get_settings);
 
     // Set up MutationObserver to hide sim code blocks (both during streaming and in history)
     log("Setting up MutationObserver for sim block hiding...");

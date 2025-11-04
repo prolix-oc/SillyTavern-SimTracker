@@ -1,4 +1,6 @@
 // templating.js - Handlebar replacements and template parsing
+import DOMUtils from './sthelpers/domUtils.js';
+
 const MODULE_NAME = "silly-sim-tracker";
 
 // Module-level variable to store the current template position
@@ -6,6 +8,11 @@ let currentTemplatePosition = "BOTTOM";
 
 // Module-level variable to store the current template's bundled JavaScript logic
 let currentTemplateLogic = null;
+
+// Module-level cache for DOM measurements to avoid repeated queries
+let domMeasurementCache = new Map();
+let cacheTimestamp = 0;
+const CACHE_DURATION = 100; // Cache measurements for 100ms to avoid excessive queries
 
 const unescapeHtml = (safe) => {
   if (typeof safe !== "string") return safe;
@@ -128,6 +135,322 @@ Handlebars.registerHelper("unless", function (conditional, options) {
     return options.inverse(this);
   }
 });
+
+// === DOM MEASUREMENT HELPERS ===
+
+/**
+ * Helper to get cached measurement or compute new one
+ */
+function getCachedMeasurement(key, computeFn) {
+  const now = Date.now();
+  
+  // Clear cache if it's expired
+  if (now - cacheTimestamp > CACHE_DURATION) {
+    domMeasurementCache.clear();
+    cacheTimestamp = now;
+  }
+  
+  if (!domMeasurementCache.has(key)) {
+    domMeasurementCache.set(key, computeFn());
+  }
+  
+  return domMeasurementCache.get(key);
+}
+
+/**
+ * Get viewport width
+ * Usage: {{viewportWidth}}
+ */
+Handlebars.registerHelper("viewportWidth", function() {
+  return getCachedMeasurement('viewport-width', () => {
+    return window.innerWidth || document.documentElement.clientWidth;
+  });
+});
+
+/**
+ * Get viewport height
+ * Usage: {{viewportHeight}}
+ */
+Handlebars.registerHelper("viewportHeight", function() {
+  return getCachedMeasurement('viewport-height', () => {
+    return window.innerHeight || document.documentElement.clientHeight;
+  });
+});
+
+/**
+ * Get distance from element to viewport edge
+ * Usage: {{distanceToEdge "sheld" "left"}} or {{distanceToEdge "#my-element" "right"}}
+ * Edges: "left", "right", "top", "bottom"
+ */
+Handlebars.registerHelper("distanceToEdge", function(selector, edge) {
+  const cacheKey = `distance-${selector}-${edge}`;
+  
+  return getCachedMeasurement(cacheKey, () => {
+    const distances = DOMUtils.getDistanceToViewport(selector);
+    if (!distances) return 0;
+    
+    const edgeLower = String(edge).toLowerCase();
+    return distances[edgeLower] || 0;
+  });
+});
+
+/**
+ * Get distance between two elements
+ * Usage: {{distanceBetween "sheld" "#chat" "horizontal"}}
+ * Types: "horizontal", "vertical", "diagonal"
+ */
+Handlebars.registerHelper("distanceBetween", function(selector1, selector2, type) {
+  const cacheKey = `distance-between-${selector1}-${selector2}-${type}`;
+  
+  return getCachedMeasurement(cacheKey, () => {
+    const distance = DOMUtils.getDistanceBetween(selector1, selector2);
+    if (!distance) return 0;
+    
+    const typeLower = String(type).toLowerCase();
+    return distance[typeLower] || 0;
+  });
+});
+
+/**
+ * Get element width
+ * Usage: {{elementWidth "sheld"}} or {{elementWidth "#my-element"}}
+ */
+Handlebars.registerHelper("elementWidth", function(selector) {
+  const cacheKey = `width-${selector}`;
+  
+  return getCachedMeasurement(cacheKey, () => {
+    const rect = DOMUtils.getRect(selector);
+    return rect ? rect.width : 0;
+  });
+});
+
+/**
+ * Get element height
+ * Usage: {{elementHeight "sheld"}}
+ */
+Handlebars.registerHelper("elementHeight", function(selector) {
+  const cacheKey = `height-${selector}`;
+  
+  return getCachedMeasurement(cacheKey, () => {
+    const rect = DOMUtils.getRect(selector);
+    return rect ? rect.height : 0;
+  });
+});
+
+/**
+ * Get element position (top)
+ * Usage: {{elementTop "sheld"}}
+ */
+Handlebars.registerHelper("elementTop", function(selector) {
+  const cacheKey = `top-${selector}`;
+  
+  return getCachedMeasurement(cacheKey, () => {
+    const rect = DOMUtils.getRect(selector);
+    return rect ? rect.top : 0;
+  });
+});
+
+/**
+ * Get element position (left)
+ * Usage: {{elementLeft "sheld"}}
+ */
+Handlebars.registerHelper("elementLeft", function(selector) {
+  const cacheKey = `left-${selector}`;
+  
+  return getCachedMeasurement(cacheKey, () => {
+    const rect = DOMUtils.getRect(selector);
+    return rect ? rect.left : 0;
+  });
+});
+
+/**
+ * Get element position (right)
+ * Usage: {{elementRight "sheld"}}
+ */
+Handlebars.registerHelper("elementRight", function(selector) {
+  const cacheKey = `right-${selector}`;
+  
+  return getCachedMeasurement(cacheKey, () => {
+    const rect = DOMUtils.getRect(selector);
+    return rect ? rect.right : 0;
+  });
+});
+
+/**
+ * Get element position (bottom)
+ * Usage: {{elementBottom "sheld"}}
+ */
+Handlebars.registerHelper("elementBottom", function(selector) {
+  const cacheKey = `bottom-${selector}`;
+  
+  return getCachedMeasurement(cacheKey, () => {
+    const rect = DOMUtils.getRect(selector);
+    return rect ? rect.bottom : 0;
+  });
+});
+
+/**
+ * Get element offset from document top
+ * Usage: {{elementOffsetTop "sheld"}}
+ */
+Handlebars.registerHelper("elementOffsetTop", function(selector) {
+  const cacheKey = `offset-top-${selector}`;
+  
+  return getCachedMeasurement(cacheKey, () => {
+    const offset = DOMUtils.getOffset(selector);
+    return offset ? offset.top : 0;
+  });
+});
+
+/**
+ * Get element offset from document left
+ * Usage: {{elementOffsetLeft "sheld"}}
+ */
+Handlebars.registerHelper("elementOffsetLeft", function(selector) {
+  const cacheKey = `offset-left-${selector}`;
+  
+  return getCachedMeasurement(cacheKey, () => {
+    const offset = DOMUtils.getOffset(selector);
+    return offset ? offset.left : 0;
+  });
+});
+
+/**
+ * Get computed style property of an element
+ * Usage: {{elementStyle "sheld" "backgroundColor"}}
+ */
+Handlebars.registerHelper("elementStyle", function(selector, property) {
+  const cacheKey = `style-${selector}-${property}`;
+  
+  return getCachedMeasurement(cacheKey, () => {
+    return DOMUtils.getStyle(selector, property) || '';
+  });
+});
+
+/**
+ * Get space between sheld and viewport edge
+ * Usage: {{sheldSpaceLeft}} or {{sheldSpaceRight}}
+ */
+Handlebars.registerHelper("sheldSpaceLeft", function() {
+  return getCachedMeasurement('sheld-space-left', () => {
+    const distances = DOMUtils.getDistanceToViewport('sheld');
+    return distances ? distances.left : 0;
+  });
+});
+
+Handlebars.registerHelper("sheldSpaceRight", function() {
+  return getCachedMeasurement('sheld-space-right', () => {
+    const distances = DOMUtils.getDistanceToViewport('sheld');
+    return distances ? distances.right : 0;
+  });
+});
+
+Handlebars.registerHelper("sheldSpaceTop", function() {
+  return getCachedMeasurement('sheld-space-top', () => {
+    const distances = DOMUtils.getDistanceToViewport('sheld');
+    return distances ? distances.top : 0;
+  });
+});
+
+Handlebars.registerHelper("sheldSpaceBottom", function() {
+  return getCachedMeasurement('sheld-space-bottom', () => {
+    const distances = DOMUtils.getDistanceToViewport('sheld');
+    return distances ? distances.bottom : 0;
+  });
+});
+
+/**
+ * Get space between chat and viewport edge
+ * Usage: {{chatSpaceLeft}} or {{chatSpaceRight}}
+ */
+Handlebars.registerHelper("chatSpaceLeft", function() {
+  return getCachedMeasurement('chat-space-left', () => {
+    const distances = DOMUtils.getDistanceToViewport('#chat');
+    return distances ? distances.left : 0;
+  });
+});
+
+Handlebars.registerHelper("chatSpaceRight", function() {
+  return getCachedMeasurement('chat-space-right', () => {
+    const distances = DOMUtils.getDistanceToViewport('#chat');
+    return distances ? distances.right : 0;
+  });
+});
+
+Handlebars.registerHelper("chatSpaceTop", function() {
+  return getCachedMeasurement('chat-space-top', () => {
+    const distances = DOMUtils.getDistanceToViewport('#chat');
+    return distances ? distances.top : 0;
+  });
+});
+
+Handlebars.registerHelper("chatSpaceBottom", function() {
+  return getCachedMeasurement('chat-space-bottom', () => {
+    const distances = DOMUtils.getDistanceToViewport('#chat');
+    return distances ? distances.bottom : 0;
+  });
+});
+
+/**
+ * Calculate width of space beside chat/sheld
+ * Usage: {{sidebarAvailableWidth "left"}} or {{sidebarAvailableWidth "right"}}
+ */
+Handlebars.registerHelper("sidebarAvailableWidth", function(side) {
+  const cacheKey = `sidebar-available-${side}`;
+  
+  return getCachedMeasurement(cacheKey, () => {
+    const sideLower = String(side).toLowerCase();
+    
+    // Get sheld and chat positions
+    const sheldRect = DOMUtils.getRect('sheld');
+    const chatRect = DOMUtils.getRect('#chat');
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+    
+    if (!sheldRect && !chatRect) return 0;
+    
+    if (sideLower === 'left') {
+      // Space to the left of both sheld and chat
+      const sheldLeft = sheldRect ? sheldRect.left : viewportWidth;
+      const chatLeft = chatRect ? chatRect.left : viewportWidth;
+      return Math.min(sheldLeft, chatLeft);
+    } else if (sideLower === 'right') {
+      // Space to the right of both sheld and chat
+      const sheldRight = sheldRect ? sheldRect.right : 0;
+      const chatRight = chatRect ? chatRect.right : 0;
+      const rightEdge = Math.max(sheldRight, chatRight);
+      return viewportWidth - rightEdge;
+    }
+    
+    return 0;
+  });
+});
+
+/**
+ * Get available height for sidebar (viewport height)
+ * Usage: {{sidebarAvailableHeight}}
+ */
+Handlebars.registerHelper("sidebarAvailableHeight", function() {
+  return getCachedMeasurement('sidebar-available-height', () => {
+    return window.innerHeight || document.documentElement.clientHeight;
+  });
+});
+
+/**
+ * Check if element exists in DOM
+ * Usage: {{#if (elementExists "sheld")}}...{{/if}}
+ */
+Handlebars.registerHelper("elementExists", function(selector) {
+  const element = DOMUtils.query(selector);
+  return element !== null;
+});
+
+/**
+ * Clear the DOM measurement cache (useful for forcing re-measurement)
+ */
+function clearDomMeasurementCache() {
+  domMeasurementCache.clear();
+  cacheTimestamp = 0;
+}
 
 // Function to extract template position from HTML
 const extractTemplatePosition = (templateHtml) => {
@@ -535,5 +858,6 @@ export {
   extractTemplatePosition,
   currentTemplatePosition,
   currentTemplateLogic,
-  unescapeHtml
+  unescapeHtml,
+  clearDomMeasurementCache
 };
