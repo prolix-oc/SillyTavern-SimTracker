@@ -1314,6 +1314,22 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
 const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) => {
   console.log(`[SST] [${MODULE_NAME}]`, "Refreshing all tracker cards on screen.");
 
+  // ALWAYS clear all existing containers and sidebars first when refreshing
+  // This ensures a clean state when switching templates and prevents duplicate cards
+  console.log(`[SST] [${MODULE_NAME}]`, "Clearing all existing tracker containers and sidebars");
+  
+  // Remove all container elements from the DOM
+  document.querySelectorAll(`#${CONTAINER_ID}`).forEach((container) => {
+    console.log(`[SST] [${MODULE_NAME}]`, "Removing container:", container);
+    container.remove();
+  });
+  
+  // Remove all sidebars
+  removeGlobalSidebars();
+  
+  // Clear the DOM measurement cache to force fresh measurements
+  clearDomMeasurementCache();
+
   // Get all message divs currently in the chat DOM
   const visibleMessages = document.querySelectorAll("div#chat .mes");
   
@@ -1322,53 +1338,6 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
   const templatePosition = currentTemplatePosition;
   
   console.log(`[SST] [${MODULE_NAME}]`, `Template position: ${templatePosition}`);
-  
-  // Check if we're switching template types by looking at existing sidebars
-  const hasLeftSidebar = globalLeftSidebar !== null;
-  const hasRightSidebar = globalRightSidebar !== null;
-  const isNowLeftSidebar = templatePosition === "LEFT";
-  const isNowRightSidebar = templatePosition === "RIGHT";
-  
-  // Force sidebar recreation if switching between left/right or to/from sidebar templates
-  const shouldRecreateLeftSidebar = isNowLeftSidebar && hasLeftSidebar;
-  const shouldRecreateRightSidebar = isNowRightSidebar && hasRightSidebar;
-  
-  // Remove old containers for non-sidebar templates, or when switching sidebar sides
-  if (templatePosition !== "LEFT" && templatePosition !== "RIGHT") {
-    // Switching away from sidebar templates - remove all containers and sidebars
-    document.querySelectorAll(`#${CONTAINER_ID}`).forEach((container) => {
-      container.remove();
-    });
-    removeGlobalSidebars();
-  } else {
-    // For sidebar templates, remove the opposite sidebar if it exists
-    if (isNowLeftSidebar && hasRightSidebar) {
-      console.log(`[SST] [${MODULE_NAME}]`, "Switching from right to left sidebar, removing right sidebar");
-      if (globalRightSidebar) {
-        globalRightSidebar.remove();
-        globalRightSidebar = null;
-      }
-    } else if (isNowRightSidebar && hasLeftSidebar) {
-      console.log(`[SST] [${MODULE_NAME}]`, "Switching from left to right sidebar, removing left sidebar");
-      if (globalLeftSidebar) {
-        globalLeftSidebar.remove();
-        globalLeftSidebar = null;
-      }
-    }
-    
-    // Force recreation of sidebar to ensure clean state when switching templates
-    // This prevents layout issues from stale DOM state
-    if (shouldRecreateLeftSidebar) {
-      console.log(`[SST] [${MODULE_NAME}]`, "Forcing left sidebar recreation for clean template switch");
-      globalLeftSidebar.remove();
-      globalLeftSidebar = null;
-    }
-    if (shouldRecreateRightSidebar) {
-      console.log(`[SST] [${MODULE_NAME}]`, "Forcing right sidebar recreation for clean template switch");
-      globalRightSidebar.remove();
-      globalRightSidebar = null;
-    }
-  }
   
   if (templatePosition === "LEFT" || templatePosition === "RIGHT" || templatePosition === "TOP" || templatePosition === "BOTTOM") {
     // Find the last message with sim data by checking the context.chat array directly
