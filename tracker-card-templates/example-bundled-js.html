@@ -40,7 +40,11 @@ if (data.stats) {
   
   // 5. Add character initials for avatar
   if (data.characterName) {
-    data.initials = data.characterName.split(' ').map(n => n[0].toUpperCase()).join('');
+    data.initials = data.characterName
+      .split(' ')
+      .filter(n => n.length > 0)
+      .map(n => n[0].toUpperCase())
+      .join('');
   }
 }
 </script>
