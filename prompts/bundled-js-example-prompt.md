@@ -37,15 +37,9 @@ You must track and update the following fields in ```sim code blocks after each 
 
 ## Code Block Format
 
-Always wrap your tracker updates in a code block with the identifier "sim":
+Always wrap your tracker updates in a code block with the identifier "sim", using the following format:
 
-```sim
-health: 85
-fatigue: 45
-internal_thought: This has been an exhausting day, but I'm managing to push through. I wonder what comes next.
-bg: #4a5f7d
-reactionEmoji: 😊
-```
+{{sim_format}}
 
 ## Notes
 
