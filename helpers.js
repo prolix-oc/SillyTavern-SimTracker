@@ -17,7 +17,10 @@ export {
   debounce,
   throttle,
   createQueryCache,
-  isVisible
+  isVisible,
+  getDistanceToViewport,
+  getDistanceBetween,
+  logElementMeasurements
 } from './sthelpers/domUtils.js';
 
 // Re-export commonly used String functions for convenience

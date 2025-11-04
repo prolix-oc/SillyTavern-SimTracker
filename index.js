@@ -13,7 +13,10 @@ import {
   queryAll,
   query,
   createElement,
-  escapeHtml
+  escapeHtml,
+  getDistanceToViewport,
+  getDistanceBetween,
+  logElementMeasurements
 } from "./helpers.js";
 
 // Import from our new modules
@@ -563,6 +566,73 @@ ${exampleJson}
                         <li>
                             <pre><code class="language-stscript">/sst-regen</code></pre>
                             Regenerates the tracker block for the last character message
+                        </li>
+                    </ul>
+                </div>
+            `,
+      })
+    );
+
+    // Register the slash command for DOM measurements testing
+    SlashCommandParser.addCommandObject(
+      SlashCommand.fromProps({
+        name: "sst-measure",
+        callback: (args) => {
+          const selector = args && args.length > 0 ? args[0] : null;
+          
+          if (!selector) {
+            return "Please provide a CSS selector. Example: /sst-measure .sheld";
+          }
+          
+          const element = query(selector);
+          
+          if (!element) {
+            return `Element not found: ${selector}`;
+          }
+          
+          // Log detailed measurements
+          logElementMeasurements(element, `Measurements for: ${selector}`);
+          
+          // Also log distance between element and viewport edges
+          const distances = getDistanceToViewport(element);
+          
+          console.group(`📐 Additional Details for: ${selector}`);
+          console.log(`Distance to right edge of viewport: ${distances.right}px`);
+          console.log(`Distance to left edge of viewport: ${distances.left}px`);
+          console.log(`Distance to top edge of viewport: ${distances.top}px`);
+          console.log(`Distance to bottom edge of viewport: ${distances.bottom}px`);
+          console.groupEnd();
+          
+          return `Measurements logged to console for: ${selector}`;
+        },
+        returns: "status message",
+        unnamedArgumentList: [
+          {
+            name: "selector",
+            type: "string",
+            description: "CSS selector of element to measure",
+            optional: false,
+          },
+        ],
+        helpString: `
+                <div>
+                    Logs detailed measurements of a DOM element to the console.
+                    Includes dimensions, position, padding, margin, and distances to viewport edges.
+                </div>
+                <div>
+                    <strong>Examples:</strong>
+                    <ul>
+                        <li>
+                            <pre><code class="language-stscript">/sst-measure .sheld</code></pre>
+                            Logs measurements for the element with class "sheld"
+                        </li>
+                        <li>
+                            <pre><code class="language-stscript">/sst-measure #chat</code></pre>
+                            Logs measurements for the chat element
+                        </li>
+                        <li>
+                            <pre><code class="language-stscript">/sst-measure #sst-sidebar-right-content</code></pre>
+                            Logs measurements for the right sidebar
                         </li>
                     </ul>
                 </div>

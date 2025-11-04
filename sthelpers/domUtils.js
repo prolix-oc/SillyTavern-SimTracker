@@ -715,6 +715,151 @@ const DOMUtils = {
         cache.clear();
       }
     };
+  },
+
+  /**
+   * Get distance from element to viewport edges
+   * 
+   * @param {HTMLElement|string} target - Target element or selector
+   * @returns {Object|null} Object with distances to all viewport edges
+   * 
+   * @example
+   * const distances = DOMUtils.getDistanceToViewport(element);
+   * console.log(distances.right, distances.left, distances.top, distances.bottom);
+   */
+  getDistanceToViewport(target) {
+    const element = typeof target === 'string' ? this.query(target) : target;
+    
+    if (!element) return null;
+    
+    const rect = element.getBoundingClientRect();
+    const viewportWidth = window.innerWidth || document.documentElement.clientWidth;
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight;
+    
+    return {
+      top: rect.top,
+      right: viewportWidth - rect.right,
+      bottom: viewportHeight - rect.bottom,
+      left: rect.left
+    };
+  },
+
+  /**
+   * Get distance between two elements
+   * 
+   * @param {HTMLElement|string} element1 - First element or selector
+   * @param {HTMLElement|string} element2 - Second element or selector
+   * @returns {Object|null} Object with horizontal and vertical distances
+   * 
+   * @example
+   * const distance = DOMUtils.getDistanceBetween(elem1, elem2);
+   * console.log(distance.horizontal, distance.vertical);
+   */
+  getDistanceBetween(element1, element2) {
+    const elem1 = typeof element1 === 'string' ? this.query(element1) : element1;
+    const elem2 = typeof element2 === 'string' ? this.query(element2) : element2;
+    
+    if (!elem1 || !elem2) return null;
+    
+    const rect1 = elem1.getBoundingClientRect();
+    const rect2 = elem2.getBoundingClientRect();
+    
+    // Calculate horizontal distance (negative if overlapping)
+    let horizontal;
+    if (rect1.right < rect2.left) {
+      horizontal = rect2.left - rect1.right;
+    } else if (rect2.right < rect1.left) {
+      horizontal = rect1.left - rect2.right;
+    } else {
+      horizontal = 0; // Overlapping horizontally
+    }
+    
+    // Calculate vertical distance (negative if overlapping)
+    let vertical;
+    if (rect1.bottom < rect2.top) {
+      vertical = rect2.top - rect1.bottom;
+    } else if (rect2.bottom < rect1.top) {
+      vertical = rect1.top - rect2.bottom;
+    } else {
+      vertical = 0; // Overlapping vertically
+    }
+    
+    return {
+      horizontal,
+      vertical,
+      diagonal: Math.sqrt(horizontal * horizontal + vertical * vertical)
+    };
+  },
+
+  /**
+   * Log detailed element measurements to console
+   * Useful for debugging and testing layout
+   * 
+   * @param {HTMLElement|string} target - Target element or selector
+   * @param {string} label - Optional label for the log entry
+   * @returns {Object|null} Measurement data object
+   * 
+   * @example
+   * DOMUtils.logElementMeasurements('.my-element', 'Test Element');
+   */
+  logElementMeasurements(target, label = 'Element') {
+    const element = typeof target === 'string' ? this.query(target) : target;
+    
+    if (!element) {
+      console.warn(`DOMUtils.logElementMeasurements: Element not found`);
+      return null;
+    }
+    
+    const rect = element.getBoundingClientRect();
+    const computed = window.getComputedStyle(element);
+    const viewportDistance = this.getDistanceToViewport(element);
+    
+    const measurements = {
+      selector: typeof target === 'string' ? target : element.tagName,
+      dimensions: {
+        width: rect.width,
+        height: rect.height,
+        computedWidth: computed.width,
+        computedHeight: computed.height
+      },
+      position: {
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        left: rect.left,
+        x: rect.x,
+        y: rect.y
+      },
+      distanceToViewport: viewportDistance,
+      viewport: {
+        width: window.innerWidth,
+        height: window.innerHeight
+      },
+      padding: {
+        top: computed.paddingTop,
+        right: computed.paddingRight,
+        bottom: computed.paddingBottom,
+        left: computed.paddingLeft
+      },
+      margin: {
+        top: computed.marginTop,
+        right: computed.marginRight,
+        bottom: computed.marginBottom,
+        left: computed.marginLeft
+      }
+    };
+    
+    console.group(`📏 ${label} Measurements`);
+    console.log('Element:', element);
+    console.log('Dimensions:', measurements.dimensions);
+    console.log('Position:', measurements.position);
+    console.log('Distance to Viewport Edges:', measurements.distanceToViewport);
+    console.log('Viewport Size:', measurements.viewport);
+    console.log('Padding:', measurements.padding);
+    console.log('Margin:', measurements.margin);
+    console.groupEnd();
+    
+    return measurements;
   }
 };
 
@@ -746,7 +891,10 @@ export const {
   attr,
   removeAttr,
   ready,
-  createQueryCache
+  createQueryCache,
+  getDistanceToViewport,
+  getDistanceBetween,
+  logElementMeasurements
 } = DOMUtils;
 
 // Export module (ES6) - keep default export for backward compatibility
