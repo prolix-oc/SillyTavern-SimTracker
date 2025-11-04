@@ -265,12 +265,44 @@ If your JavaScript throws an error:
 
 To debug, check the browser console for error messages.
 
+## Unicode and Special Characters
+
+When using Unicode characters (emojis, special symbols) in bundled JavaScript:
+
+**Best Practice - Use in Handlebars HTML, Not JavaScript:**
+```html
+<script type="text/x-handlebars-template-logic">
+// GOOD: Use ASCII in JavaScript
+data.stats.statusIcon = "OK";
+data.stats.warningIcon = "!";
+data.stats.infoIcon = "~";
+</script>
+
+<!-- Then use Unicode emojis in the HTML template -->
+<div>
+  {{#if (eq stats.statusIcon "OK")}}✓{{/if}}
+  {{#if (eq stats.statusIcon "!")}}⚠{{/if}}
+  {{#if (eq stats.statusIcon "~")}}◐{{/if}}
+  {{stats.status}}
+</div>
+```
+
+**Why?** When JavaScript code is JSON-escaped for storage in template files, Unicode characters can sometimes get mangled during the escape/unescape process. The HTML part of the template doesn't have this issue.
+
+**Alternative - Unicode Escapes:**
+If you must use Unicode in JavaScript, use escape sequences:
+```javascript
+data.stats.statusIcon = "\u2713";  // ✓ checkmark
+data.stats.warningIcon = "\u26A0"; // ⚠ warning
+```
+
 ## Security
 
 The bundled JavaScript runs in a sandboxed `Function()` context with:
 - No access to global variables (except standard JavaScript globals)
 - No ability to manipulate the DOM directly
 - No network access capabilities
+- Executes in strict mode for better error detection
 
 This makes it safe to share templates, but also means you can't:
 - Access SillyTavern functions directly

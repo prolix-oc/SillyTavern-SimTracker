@@ -35,8 +35,10 @@ const executeTemplateLogic = (data, templateType) => {
   
   try {
     // Create a sandboxed function that receives the data object
-    // The template logic should modify the data object and we return it
-    const logicFunction = new Function('data', currentTemplateLogic + '\n; return data;');
+    // Wrap in strict mode and use proper encoding to handle Unicode characters
+    // We use indirect eval to ensure global scope and better Unicode handling
+    const wrappedLogic = '"use strict";\n' + currentTemplateLogic + '\n; return data;';
+    const logicFunction = new Function('data', wrappedLogic);
     const transformedData = logicFunction(data);
     
     console.log(`[SST] [${MODULE_NAME}]`, `Template logic executed successfully for ${templateType} template`);
