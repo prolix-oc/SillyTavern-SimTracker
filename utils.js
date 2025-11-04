@@ -102,7 +102,7 @@ const updateLastSimStatsOnRegenerateOrSwipe = (currentMesId = null, get_settings
   }
 };
 
-// Function to filter sim blocks in prompt (keep only last 3)
+// Function to filter sim blocks in prompt (keep only the last N as configured)
 const filterSimBlocksInPrompt = (chat, get_settings) => {
   try {
     if (!chat || !Array.isArray(chat)) {
@@ -110,8 +110,18 @@ const filterSimBlocksInPrompt = (chat, get_settings) => {
       return;
     }
 
+    // Get the maximum number of sim blocks to keep in context
+    const maxSimBlocks = parseInt(get_settings("maxSimBlocksInContext")) || 3;
+    
+    // If maxSimBlocks is 0, include all sim blocks (no filtering)
+    if (maxSimBlocks === 0) {
+      log("maxSimBlocksInContext is 0, including all sim blocks in LLM context");
+      return;
+    }
+
     // Find all messages with sim data
     const identifier = get_settings("codeBlockIdentifier");
+    // Pattern to match both wrapped and unwrapped sim blocks
     const simRegexPattern = "```" + identifier + "[\\s\\S]*?```";
 
     // Collect all messages with sim data along with their positions
@@ -126,22 +136,35 @@ const filterSimBlocksInPrompt = (chat, get_settings) => {
       }
     });
 
-    // If we have more than 3 messages with sim data, remove the older ones from the prompt context
-    if (messagesWithSim.length > 3) {
-      // Get the messages to remove from prompt (all except the last 3)
+    // If we have more than maxSimBlocks messages with sim data, remove the older ones from the prompt context
+    if (messagesWithSim.length > maxSimBlocks) {
+      // Get the messages to remove from prompt (all except the last N)
       const messagesToRemove = messagesWithSim.slice(
         0,
-        messagesWithSim.length - 3
+        messagesWithSim.length - maxSimBlocks
       );
+
+      log(`Filtering sim blocks: keeping last ${maxSimBlocks} of ${messagesWithSim.length} sim blocks in LLM context`);
 
       messagesToRemove.forEach(({ index, message }) => {
         // Remove sim blocks entirely from the prompt context
         if (message.mes) {
-          // Create a new regex for replacement to avoid state issues
-          const replaceRegex = new RegExp(simRegexPattern, "gm");
-          // Remove the sim blocks completely from the prompt context
           const originalMes = message.mes;
-          const filteredMes = originalMes.replace(replaceRegex, "");
+          
+          // First, try to remove wrapped sim blocks (with hidden div and newlines)
+          // Pattern: <div style="display: none;">\n```identifier...```\n</div>
+          const wrappedRegex = new RegExp(
+            `<div style="display: none;">\\s*\`\`\`${identifier}[\\s\\S]*?\`\`\`\\s*</div>`,
+            "gm"
+          );
+          let filteredMes = originalMes.replace(wrappedRegex, "");
+          
+          // Then, remove any remaining unwrapped sim blocks
+          const unwrappedRegex = new RegExp(simRegexPattern, "gm");
+          filteredMes = filteredMes.replace(unwrappedRegex, "");
+          
+          // Clean up extra whitespace
+          filteredMes = filteredMes.trim();
 
           // Only modify if we actually made changes
           if (filteredMes !== originalMes) {
