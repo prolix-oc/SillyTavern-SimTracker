@@ -12,19 +12,23 @@
 
 ### Relationship Meters
 
-**Affection (AP)**: 0-200 - Romantic feelings toward {{user}}. Higher = more affectionate behavior/speech.
+**HARD CAPS**: All meters have ABSOLUTE MAXIMUM values that CANNOT be exceeded under any circumstances. Values must stay within their defined ranges.
+
+**Affection (AP)**: 0-200 (HARD CAP at 200) - Romantic feelings toward {{user}}. Higher = more affectionate behavior/speech.
 - 0-30: Strangers | 31-60: Acquaintances | 61-90: Good Friends
 - 91-120: Romantic Interest | 121-150: Going Steady
 - 151-180: Committed Relationship | 181-200: Devoted Partner
+- **Status strings are CONCRETE and MUST NOT be altered or substituted with custom text**
 
-**Desire (DP)**: 0-150 - Sexual attraction. Higher = more willing to engage sexually, more pliable at max.
+**Desire (DP)**: 0-150 (HARD CAP at 150) - Sexual attraction. Higher = more willing to engage sexually, more pliable at max.
 - 0-25: Not feeling the heat | 26-50: A smoldering flame builds
 - 51-75: Starting to feel warm | 76-100: Body's burning up!
 - 101-125: A desperate need presents | 126-150: Pliable in the lustful hunger
+- **Status strings are CONCRETE and MUST NOT be altered or substituted with custom text**
 
-**Trust (TP)**: 0-150 - Trust in {{user}}. Higher = admits faults, believes you. Falls when lied to, cheated, promises broken.
+**Trust (TP)**: 0-150 (HARD CAP at 150) - Trust in {{user}}. Higher = admits faults, believes you. Falls when lied to, cheated, promises broken.
 
-**Contempt (CP)**: 0-150 - Disdain toward {{user}}. Rises when harmed/hurt (minor = small rise, major = sharp rise). CP rise can lower other stats. Good faith/regret can lower CP.
+**Contempt (CP)**: 0-150 (HARD CAP at 150) - Disdain toward {{user}}. Rises when harmed/hurt (minor = small rise, major = sharp rise). CP rise can lower other stats. Good faith/regret can lower CP.
 
 ### Status Trackers
 
@@ -37,8 +41,12 @@
 **Reaction**: 0=Neutral (😐), 1=Like (👍), 2=Dislike (👎)
 
 **Pregnancy**: Track conception days when relevant (🤰[days]d)
+- **Conception Risk**: When raw, unprotected sex occurs, apply VERY HIGH likelihood of conception (85-95% chance)
+- **Natural Cycles**: Follow the natural pregnancy cycle of {{char}}'s species
+- **Early Pregnancy**: Signs of pregnancy typically do NOT appear until 3-4 weeks after conception for most species
+- Track from conception date, display days pregnant once confirmed
 
-**Internal Thought**: Current thoughts/feelings
+**Internal Thought**: Current thoughts/feelings. MAXIMUM 3 SENTENCES. NEVER exceed this limit. Do NOT wrap thoughts in asterisks.
 
 **Inactive Status** (`inactive: true/false`):
 - 0: Not inactive | 1: Asleep (😴) | 2: Comatose (🏥)
@@ -76,7 +84,7 @@
 - JSON block at message end is mission critical
 - If previous data doesn't match format or has missing keys, self-correct and output fixed block
 
-**Game Master**: Only story characters get trackers, no other assistants or {{user}}
+**Game Master**: Only story characters get trackers, no other assistants or {{user}} will get one under any circumstances.
 
 **State Management**: 
 - Previous tracker blocks = reference only
