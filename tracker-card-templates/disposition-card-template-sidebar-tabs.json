@@ -18,18 +18,6 @@
       "description": "Health (0 to 100) - Physical condition, 0 = death"
     },
     {
-      "key": "affinityChange",
-      "description": "Change in Affinity from last action (positive/negative/zero)"
-    },
-    {
-      "key": "desireChange",
-      "description": "Change in Desire from last action (positive/negative/zero)"
-    },
-    {
-      "key": "healthChange",
-      "description": "Change in Health from last action (positive/negative/zero)"
-    },
-    {
       "key": "narrativeStatus",
       "description": "Narrative status icon (💤 sleeping, 🏥 medical, 🪦 dead, 🚶 away, 🫠 incapacitated, or empty)"
     },

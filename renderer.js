@@ -59,6 +59,116 @@ const executeTemplateLogic = (data, templateType) => {
   }
 };
 
+/**
+ * Calculate stat changes by comparing current and previous character data
+ * @param {Array} currentCharacters - Current character list
+ * @param {String} previousSimData - Previous sim block data (raw string)
+ * @returns {Object} - Map of character names to their calculated changes
+ */
+const calculateStatChanges = (currentCharacters, previousSimData) => {
+  const changes = {};
+
+  // If no previous data, all changes are 0
+  if (!previousSimData || previousSimData.trim() === '' || previousSimData === '{}') {
+    currentCharacters.forEach(char => {
+      changes[char.name] = {};
+    });
+    return changes;
+  }
+
+  try {
+    // Parse previous sim data
+    const previousData = parseTrackerData(previousSimData);
+
+    // Handle both old and new JSON formats for previous data
+    let previousCharacters = [];
+    if (previousData.worldData && Array.isArray(previousData.characters)) {
+      previousCharacters = previousData.characters;
+    } else {
+      // Convert old format to array
+      const worldDataFields = ["current_date", "current_time"];
+      Object.keys(previousData).forEach((key) => {
+        if (!worldDataFields.includes(key)) {
+          previousCharacters.push({
+            name: key,
+            ...previousData[key],
+          });
+        }
+      });
+    }
+
+    // Build a map of previous character data by name
+    const previousCharMap = {};
+    previousCharacters.forEach(char => {
+      previousCharMap[char.name] = char;
+    });
+
+    // Calculate changes for each current character
+    currentCharacters.forEach(currentChar => {
+      const charName = currentChar.name;
+      const previousChar = previousCharMap[charName];
+
+      // If character didn't exist before, all changes are 0
+      if (!previousChar) {
+        changes[charName] = {};
+        return;
+      }
+
+      // Calculate numeric stat differences
+      const charChanges = {};
+
+      // List of stats to track changes for (covers both dating sim and disposition templates)
+      const numericStats = [
+        'affection', 'desire', 'trust', 'contempt',  // Dating sim stats
+        'affinity', 'health'  // Disposition stats
+      ];
+
+      numericStats.forEach(stat => {
+        const currentValue = currentChar[stat];
+        const previousValue = previousChar[stat];
+
+        // Only calculate change if both values exist and are numeric
+        if (typeof currentValue === 'number' && typeof previousValue === 'number') {
+          charChanges[stat + 'Change'] = currentValue - previousValue;
+        }
+      });
+
+      // Handle connection affinity changes (for disposition template)
+      if (currentChar.connections && Array.isArray(currentChar.connections)) {
+        charChanges.connectionChanges = {};
+
+        currentChar.connections.forEach(currentConn => {
+          const connName = currentConn.name;
+
+          // Find matching connection in previous data
+          if (previousChar.connections && Array.isArray(previousChar.connections)) {
+            const previousConn = previousChar.connections.find(c => c.name === connName);
+
+            if (previousConn && typeof currentConn.affinity === 'number' && typeof previousConn.affinity === 'number') {
+              charChanges.connectionChanges[connName] = currentConn.affinity - previousConn.affinity;
+            } else {
+              charChanges.connectionChanges[connName] = 0;
+            }
+          } else {
+            charChanges.connectionChanges[connName] = 0;
+          }
+        });
+      }
+
+      changes[charName] = charChanges;
+    });
+
+  } catch (error) {
+    console.warn(`[SST] [${MODULE_NAME}]`, `Error calculating stat changes: ${error.message}`);
+    // Return empty changes on error
+    currentCharacters.forEach(char => {
+      changes[char.name] = {};
+    });
+  }
+
+  return changes;
+};
+
 // State management functions
 const setGenerationInProgress = (value) => {
   isGenerationInProgress = value;
@@ -843,6 +953,9 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
 
       if (!characterList.length) return;
 
+      // Calculate stat changes for all characters
+      const statChanges = calculateStatChanges(characterList, lastSimJsonString);
+
       // For tabbed templates, we need to pass all characters to the template
       const templateFile = get_settings("templateFile");
       const customTemplateHtml = get_settings("customTemplateHtml");
@@ -863,12 +976,14 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
               return null;
             }
             const bgColor = stats.bg || get_settings("defaultBgColor");
+            const changes = statChanges[name] || {};
             return {
               characterName: name,
               currentDate: currentDate,
               currentTime: currentTime,
               stats: {
                 ...stats,
+                ...changes,
                 internal_thought:
                   stats.internal_thought ||
                   stats.thought ||
@@ -912,12 +1027,14 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
               return "";
             }
             const bgColor = stats.bg || get_settings("defaultBgColor");
+            const changes = statChanges[name] || {};
             let cardData = {
               characterName: name,
               currentDate: currentDate,
               currentTime: currentTime,
               stats: {
                 ...stats,
+                ...changes,
                 internal_thought:
                   stats.internal_thought ||
                   stats.thought ||
@@ -1144,6 +1261,9 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
 
       if (!characterList.length) return;
 
+      // Calculate stat changes for all characters
+      const statChanges = calculateStatChanges(characterList, lastSimJsonString);
+
       // For tabbed templates, we need to pass all characters to the template
       const templateFile = get_settings("templateFile");
       const customTemplateHtml = get_settings("customTemplateHtml");
@@ -1164,12 +1284,14 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
               return null;
             }
             const bgColor = stats.bg || get_settings("defaultBgColor");
+            const changes = statChanges[name] || {};
             return {
               characterName: name,
               currentDate: currentDate,
               currentTime: currentTime,
               stats: {
                 ...stats,
+                ...changes,
                 internal_thought:
                   stats.internal_thought ||
                   stats.thought ||
@@ -1213,12 +1335,14 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
               return "";
             }
             const bgColor = stats.bg || get_settings("defaultBgColor");
+            const changes = statChanges[name] || {};
             let cardData = {
               characterName: name,
               currentDate: currentDate,
               currentTime: currentTime,
               stats: {
                 ...stats,
+                ...changes,
                 internal_thought:
                   stats.internal_thought ||
                   stats.thought ||

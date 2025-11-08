@@ -32,9 +32,6 @@
 
 ### Status Trackers
 
-**Change Tracking** (from user's most recent action):
-- apChange, dpChange, tpChange, cpChange: Numeric change (+/-/0)
-
 **Health**: 0=Unharmed, 1=Injured, 2=Critical
 - If critical wounds untreated: Character dies, becomes inactive (5), STOP dialog/roleplay
 
