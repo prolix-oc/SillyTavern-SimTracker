@@ -410,12 +410,16 @@ async function generateTrackerWithSecondaryLLM(get_settings) {
     return null;
   }
 
-  // Get the actual system prompt
-  const systemPrompt = get_settings("datingSimPrompt") || "";
-  
+  // Get the system prompt from template data first, fall back to settings
+  // This ensures template-specific prompts are used when a template is selected
+  const systemPrompt = templateData?.sysPrompt || get_settings("datingSimPrompt") || "";
+
   // Build the format example to replace {{sim_format}} - WITHOUT code fences
-  const trackerFormat = get_settings("trackerFormat") || "json";
-  const customFields = get_settings("customFields") || [];
+  // Get tracker format from template data first (if it has extSettings), fall back to settings
+  const trackerFormat = templateData?.extSettings?.trackerFormat || get_settings("trackerFormat") || "json";
+  // Get custom fields from template data first, fall back to settings
+  // This ensures template-specific fields are used when a template is selected
+  const customFields = templateData?.customFields || get_settings("customFields") || [];
   const codeBlockIdentifier = get_settings("codeBlockIdentifier") || "sim";
 
   let formatExample = "";
