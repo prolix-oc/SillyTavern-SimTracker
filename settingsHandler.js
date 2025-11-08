@@ -79,6 +79,7 @@ const default_settings = {
   templatePosition: "BOTTOM", // Default template position
   datingSimPrompt:
     "Default prompt could not be loaded. Please check file path.",
+  displayInstructionsPrompt: "", // Custom instructions for display methods
   customFields: [...defaultSimFields], // Clone the default fields
   hideSimBlocks: true, // New setting to hide sim blocks in message text
   userPresets: [], // New setting to store user presets
@@ -93,7 +94,8 @@ const default_settings = {
   secondaryLLMTopP: 1, // Top P for secondary generation
   secondaryLLMStreaming: true, // Enable streaming for secondary LLM
   secondaryLLMStripHTML: true, // Strip HTML from context for secondary LLM
-  maxSimBlocksInContext: 3, // Maximum number of sim blocks to include in LLM context
+  enableInlineTemplates: false, // Enable inline template rendering
+  inlinePacks: [], // Imported inline template packs
 };
 
 let settings = {};
@@ -240,6 +242,7 @@ const initialize_settings_listeners = (
   bind_setting("#hideSimBlocks", "hideSimBlocks", "boolean");
   bind_setting("#trackerFormat", "trackerFormat", "text");
   bind_setting("#datingSimPrompt", "datingSimPrompt", "textarea");
+  bind_setting("#displayInstructionsPrompt", "displayInstructionsPrompt", "textarea");
   
   // Secondary LLM settings
   bind_setting("#useSecondaryLLM", "useSecondaryLLM", "boolean");
@@ -252,7 +255,9 @@ const initialize_settings_listeners = (
   bind_setting("#secondaryLLMTopP", "secondaryLLMTopP", "text");
   bind_setting("#secondaryLLMStreaming", "secondaryLLMStreaming", "boolean");
   bind_setting("#secondaryLLMStripHTML", "secondaryLLMStripHTML", "boolean");
-  bind_setting("#maxSimBlocksInContext", "maxSimBlocksInContext", "text");
+  
+  // Inline templates setting
+  bind_setting("#enableInlineTemplates", "enableInlineTemplates", "boolean");
 
   // Listener for the default template dropdown
   const $templateSelect = $("#templateFile");
@@ -813,7 +818,6 @@ const handlePresetExport = (loadTemplate, refreshAllCards) => {
           showThoughtBubble: get_settings("showThoughtBubble"),
           hideSimBlocks: get_settings("hideSimBlocks"),
           templateFile: get_settings("templateFile"),
-          trackerFormat: get_settings("trackerFormat"),
         };
       }
 
@@ -886,46 +890,69 @@ const handlePresetImport = (event, loadTemplate, refreshAllCards) => {
       const content = e.target.result;
       const preset = JSON.parse(content);
 
-      // Validate preset structure
-      if (!preset.htmlTemplate) {
-        throw new Error("Invalid preset file: Missing HTML template");
+      // Check if this is an inline template pack (has inlineTemplates array with items)
+      const isPack = preset.inlineTemplates && Array.isArray(preset.inlineTemplates) && preset.inlineTemplates.length > 0;
+
+      if (isPack) {
+        // This is a pack - store it in inlinePacks
+        const inlinePacks = get_settings("inlinePacks") || [];
+        
+        // Check if pack with same name already exists
+        const existingPackIndex = inlinePacks.findIndex(p => p.templateName === preset.templateName);
+        if (existingPackIndex >= 0) {
+          if (!confirm(`A pack named "${preset.templateName}" already exists. Replace it?`)) {
+            event.target.value = "";
+            return;
+          }
+          inlinePacks[existingPackIndex] = { ...preset, enabled: true };
+        } else {
+          inlinePacks.push({ ...preset, enabled: true });
+        }
+        
+        set_settings("inlinePacks", inlinePacks);
+        
+        toastr.success(
+          `Inline template pack "${preset.templateName || "Unnamed"}" imported successfully!`
+        );
+      } else {
+        // This is a regular preset - validate it has htmlTemplate
+        if (!preset.htmlTemplate) {
+          throw new Error("Invalid preset file: Missing HTML template");
+        }
+
+        // Apply the preset
+        set_settings("customTemplateHtml", unescapeHtml(preset.htmlTemplate));
+
+        if (preset.sysPrompt !== undefined) {
+          set_settings("datingSimPrompt", preset.sysPrompt);
+        }
+
+        if (preset.customFields !== undefined) {
+          set_settings("customFields", preset.customFields);
+        }
+
+        if (preset.extSettings) {
+          Object.keys(preset.extSettings).forEach((key) => {
+            set_settings(key, preset.extSettings[key]);
+          });
+        }
+
+        // Add to user presets
+        const userPresets = get_settings("userPresets") || [];
+        userPresets.push(preset);
+        set_settings("userPresets", userPresets);
+
+        // Reload template and refresh cards
+        await loadTemplate();
+        refreshAllCards();
+
+        // Repopulate template dropdown to include the new preset
+        await populateTemplateDropdown(get_settings);
+
+        toastr.success(
+          `Preset "${preset.templateName || "Unnamed"}" imported successfully!`
+        );
       }
-
-      // Apply HTML template, unescaping if needed
-      set_settings("customTemplateHtml", unescapeHtml(preset.htmlTemplate));
-
-      // Apply system prompt if included
-      if (preset.sysPrompt !== undefined) {
-        set_settings("datingSimPrompt", preset.sysPrompt);
-      }
-
-      // Apply custom fields if included
-      if (preset.customFields !== undefined) {
-        set_settings("customFields", preset.customFields);
-      }
-
-      // Apply extension settings if included
-      if (preset.extSettings) {
-        Object.keys(preset.extSettings).forEach((key) => {
-          set_settings(key, preset.extSettings[key]);
-        });
-      }
-
-      // Add to user presets
-      const userPresets = get_settings("userPresets") || [];
-      userPresets.push(preset);
-      set_settings("userPresets", userPresets);
-
-      // Reload template and refresh cards
-      await loadTemplate();
-      refreshAllCards();
-
-      // Repopulate template dropdown to include the new preset
-      await populateTemplateDropdown(get_settings);
-
-      toastr.success(
-        `Preset "${preset.templateName || "Unnamed"}" imported successfully!`
-      );
     } catch (error) {
       console.error(`[SST] [${MODULE_NAME}]`, "Error importing preset:", error);
       toastr.error(`Failed to import preset: ${error.message}`);
@@ -945,15 +972,22 @@ const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
   // Remove any existing modal
   $("#sst-manage-presets-modal").remove();
 
-  // Create modal HTML using SillyTavern's built-in classes with dialog element
+  // Create modal HTML with tabs for presets and packs
   const modalHtml = `
     <dialog id="sst-manage-presets-modal" class="popup wide_dialogue_popup large_dialogue_popup vertical_scrolling_dialogue_popup popup--animation-fast">
       <div class="popup-header">
-        <h3 style="margin: 0; padding: 10px 0;">Manage Presets</h3>
+        <h3 style="margin: 0; padding: 10px 0;">Manage Presets & Packs</h3>
       </div>
       <div class="popup-content" style="padding: 15px; flex: 1; display: flex; flex-direction: column;">
+        <div style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #444;">
+          <button id="sst-tab-presets" class="menu_button sst-tab-active" style="flex: 1; border-bottom: 2px solid #fff;">Tracker Card Presets</button>
+          <button id="sst-tab-packs" class="menu_button" style="flex: 1;">Inline Template Packs</button>
+        </div>
         <div id="userPresetsList" style="flex: 1; overflow-y: auto;">
           <!-- User presets will be populated here -->
+        </div>
+        <div id="inlinePacksList" style="flex: 1; overflow-y: auto; display: none;">
+          <!-- Inline packs will be populated here -->
         </div>
       </div>
       <div class="popup-footer" style="display: flex; justify-content: center; padding: 15px;">
@@ -967,14 +1001,32 @@ const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
 
   const $modal = $("#sst-manage-presets-modal");
   const $presetsList = $modal.find("#userPresetsList");
+  const $packsList = $modal.find("#inlinePacksList");
   const $closeBtn = $modal.find("#sst-manage-presets-close");
+  const $tabPresets = $modal.find("#sst-tab-presets");
+  const $tabPacks = $modal.find("#sst-tab-packs");
+
+  // Tab switching
+  $tabPresets.on("click", () => {
+    $tabPresets.addClass("sst-tab-active").css("border-bottom", "2px solid #fff");
+    $tabPacks.removeClass("sst-tab-active").css("border-bottom", "none");
+    $presetsList.show();
+    $packsList.hide();
+  });
+
+  $tabPacks.on("click", () => {
+    $tabPacks.addClass("sst-tab-active").css("border-bottom", "2px solid #fff");
+    $tabPresets.removeClass("sst-tab-active").css("border-bottom", "none");
+    $packsList.show();
+    $presetsList.hide();
+  });
 
   // Populate the presets list
   const userPresets = get_settings("userPresets") || [];
   $presetsList.empty();
 
   if (userPresets.length === 0) {
-    $presetsList.append("<p>No user presets found.</p>");
+    $presetsList.append("<p>No tracker card presets found.</p>");
   } else {
     userPresets.forEach((preset, index) => {
       const presetElement = $(`
@@ -984,7 +1036,7 @@ const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
                 <strong>${
                   preset.templateName || `User Preset ${index + 1}`
                 }</strong>
-                <div>by ${preset.templateAuthor || "Unknown"}</div>
+                <div style="font-size: 0.9em; color: #888;">by ${preset.templateAuthor || "Unknown"}</div>
               </div>
               <div>
                 <button class="sst-apply-preset menu_button" data-index="${index}" style="margin-right: 5px;">Apply</button>
@@ -1053,6 +1105,75 @@ const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
         showManagePresetsModal(loadTemplate, refreshAllCards);
 
         toastr.success("Preset deleted successfully!");
+      }
+    });
+  }
+
+  // Populate the packs list
+  const inlinePacks = get_settings("inlinePacks") || [];
+  $packsList.empty();
+
+  if (inlinePacks.length === 0) {
+    $packsList.append("<p>No inline template packs found. Import a pack using the 'Import Preset' button.</p>");
+  } else {
+    inlinePacks.forEach((pack, index) => {
+      const inlineCount = pack.inlineTemplates ? pack.inlineTemplates.length : 0;
+      const isEnabled = pack.enabled !== false; // Default to true
+      
+      const packElement = $(`
+          <div class="sst-pack-item" style="margin-bottom: 15px; padding: 10px; border: 1px solid #444; border-radius: 8px; ${!isEnabled ? 'opacity: 0.6;' : ''}">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div style="flex: 1;">
+                <strong>${pack.templateName || `Pack ${index + 1}`}</strong>
+                <div style="font-size: 0.9em; color: #888;">by ${pack.templateAuthor || "Unknown"}</div>
+                <div style="font-size: 0.85em; color: #666; margin-top: 4px;">${inlineCount} inline template${inlineCount !== 1 ? 's' : ''}</div>
+              </div>
+              <div style="display: flex; gap: 5px; align-items: center;">
+                <label style="display: flex; align-items: center; margin-right: 10px; cursor: pointer;">
+                  <input type="checkbox" class="sst-pack-toggle" data-index="${index}" ${isEnabled ? 'checked' : ''} style="margin-right: 5px;" />
+                  <span>Enabled</span>
+                </label>
+                <button class="sst-delete-pack menu_button" data-index="${index}">Remove</button>
+              </div>
+            </div>
+          </div>
+        `);
+      $packsList.append(packElement);
+    });
+
+    // Add event listeners for pack toggles
+    $packsList.find(".sst-pack-toggle").on("change", function () {
+      const index = $(this).data("index");
+      const isEnabled = $(this).is(":checked");
+      
+      inlinePacks[index].enabled = isEnabled;
+      set_settings("inlinePacks", inlinePacks);
+      
+      // Update the opacity
+      $(this).closest(".sst-pack-item").css("opacity", isEnabled ? "1" : "0.6");
+      
+      toastr.info(`Pack "${inlinePacks[index].templateName}" ${isEnabled ? 'enabled' : 'disabled'}`);
+    });
+
+    // Add event listeners for delete buttons
+    $packsList.find(".sst-delete-pack").on("click", function () {
+      const index = $(this).data("index");
+
+      if (
+        confirm(
+          `Are you sure you want to remove the pack "${
+            inlinePacks[index].templateName || `Pack ${index + 1}`
+          }"?`
+        )
+      ) {
+        // Remove the pack
+        inlinePacks.splice(index, 1);
+        set_settings("inlinePacks", inlinePacks);
+
+        // Show the modal again to refresh the list
+        showManagePresetsModal(loadTemplate, refreshAllCards);
+
+        toastr.success("Pack removed successfully!");
       }
     });
   }

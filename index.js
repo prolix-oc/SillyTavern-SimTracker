@@ -7,6 +7,18 @@ import {
 import { MacrosParser } from "../../../macros.js";
 import { SlashCommand } from "../../../slash-commands/SlashCommand.js";
 import { SlashCommandParser } from "../../../slash-commands/SlashCommandParser.js";
+import { SlashCommandArgument, ARGUMENT_TYPE } from "../../../slash-commands/SlashCommandArgument.js";
+
+// Import helper utilities
+import {
+  queryAll,
+  query,
+  createElement,
+  escapeHtml,
+  getDistanceToViewport,
+  getDistanceBetween,
+  logElementMeasurements
+} from "./helpers.js";
 
 // Import from our new modules
 import {
@@ -25,6 +37,8 @@ import {
   mesTextsWithPreparingText,
   setGenerationInProgress,
   getGenerationInProgress,
+  initializeViewportChangeHandler,
+  forceLayoutUpdate,
   CONTAINER_ID
 } from "./renderer.js";
 
@@ -35,8 +49,16 @@ import {
   handleCustomTemplateUpload,
   loadTemplate,
   extractTemplatePosition,
-  currentTemplatePosition
+  currentTemplatePosition,
+  getCurrentTemplateConfig
 } from "./templating.js";
+
+import {
+  processInlineTemplates,
+  processAllInlineTemplates,
+  setupInlineTemplateObserver,
+  clearInlineTemplateCache
+} from "./inlineTemplates.js";
 
 import {
   get_settings,
@@ -63,19 +85,12 @@ import {
 } from "./utils.js";
 
 import {
-  parseTrackerData,
-  generateTrackerBlock
-} from "./formatUtils.js";
-
-import {
   generateTrackerWithSecondaryLLM
 } from "./secondaryLLM.js";
 
 const MODULE_NAME = "silly-sim-tracker";
 
 let lastSimJsonString = "";
-// Keep track of when we're expecting code blocks to be generated
-let isGeneratingCodeBlocks = false;
 
 // --- INTERCEPTOR ---
 globalThis.simTrackerGenInterceptor = async function (
@@ -143,6 +158,10 @@ jQuery(async () => {
     
     await wrappedLoadTemplate();
 
+    // Initialize viewport change detection for dynamic layout updates
+    log("Initializing viewport change detection...");
+    initializeViewportChangeHandler(get_settings);
+
     // Set up MutationObserver to hide sim code blocks (both during streaming and in history)
     log("Setting up MutationObserver for sim block hiding...");
     
@@ -152,7 +171,7 @@ jQuery(async () => {
       const identifier = get_settings("codeBlockIdentifier");
       
       // Find all code elements with the sim class pattern
-      const simCodeElements = document.querySelectorAll(`#chat code[class*="${identifier}"]`);
+      const simCodeElements = queryAll(`#chat code[class*="${identifier}"]`);
       
       simCodeElements.forEach((codeElement) => {
         // Find the parent pre element
@@ -179,7 +198,7 @@ jQuery(async () => {
           if (node.tagName === "CODE" && node.className.includes(identifier)) {
             codeElements = [node];
           } else {
-            codeElements = Array.from(node.querySelectorAll(`code[class*="${identifier}"]`));
+            codeElements = Array.from(queryAll(`code[class*="${identifier}"]`, node));
           }
           
           codeElements.forEach((codeElement) => {
@@ -269,12 +288,138 @@ jQuery(async () => {
     }
 
     log("MutationObserver set up for in-flight sim block hiding.");
+    
+    // Set up inline templates MutationObserver
+    log("Setting up inline templates observer...");
+    const inlineTemplatesObserver = setupInlineTemplateObserver(get_settings, getCurrentTemplateConfig);
+    
+    // Start observing for inline templates (reuse chatElement if it exists, otherwise try again)
+    if (chatElement) {
+      inlineTemplatesObserver.observe(chatElement, {
+        childList: true,
+        subtree: true,
+        characterData: true
+      });
+      log("Inline templates observer started");
+    } else {
+      // Fallback to body if chat element not found yet
+      inlineTemplatesObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+        characterData: true
+      });
+      log("Inline templates observer started (fallback to body)");
+    }
 
     log("Registering macros...");
     MacrosParser.registerMacro("sim_tracker", () => {
       if (!get_settings("isEnabled")) return "";
       log("Processed {{sim_tracker}} macro.");
-      return get_settings("datingSimPrompt");
+      
+      let output = get_settings("datingSimPrompt");
+      
+      // If inline templates are enabled, merge the {{sim_displays}} content into this macro
+      const inlineEnabled = get_settings("enableInlineTemplates");
+      if (inlineEnabled) {
+        const templateConfig = getCurrentTemplateConfig();
+        const identifier = get_settings("codeBlockIdentifier") || "sim";
+        const customInstructions = get_settings("displayInstructionsPrompt") || "";
+        
+        let displayContent = "\n\n";
+        
+        // Add custom instructions first if provided
+        if (customInstructions && customInstructions.trim() !== "") {
+          displayContent += customInstructions.trim() + "\n\n";
+        }
+        
+        displayContent += "## Available Inline Display Add-ons\n\n";
+        displayContent += "### 1. Tracker Code Block\n\n";
+        displayContent += "Place tracker data at the END of your response in a code block:\n\n";
+        displayContent += "- Syntax: ```" + identifier + "\\n[data here]\\n```\n";
+        displayContent += "- Must be the LAST element in your message\n";
+        displayContent += "- Use the format specified in {{sim_format}} (see main tracker instructions)\n";
+        displayContent += "- Will render as visual tracker cards for the user\n\n";
+        
+        if (templateConfig) {
+          // Collect all available inline templates with their pack info
+          const allTemplates = [];
+          const packInstructions = [];
+          
+          // Add templates from current template config
+          if (templateConfig.inlineTemplates && Array.isArray(templateConfig.inlineTemplates)) {
+            allTemplates.push(...templateConfig.inlineTemplates);
+          }
+          
+          // Add display instructions from current template if available
+          if (templateConfig.displayInstructions && templateConfig.displayInstructions.trim() !== "") {
+            packInstructions.push({
+              source: templateConfig.templateName || "Current Template",
+              instructions: templateConfig.displayInstructions.trim()
+            });
+          }
+          
+          // Add templates from enabled packs
+          const inlinePacks = get_settings("inlinePacks") || [];
+          inlinePacks.forEach(pack => {
+            if (pack.enabled !== false && pack.inlineTemplates && Array.isArray(pack.inlineTemplates)) {
+              allTemplates.push(...pack.inlineTemplates.map(t => ({
+                ...t,
+                packName: pack.templateName
+              })));
+              
+              // Add pack-specific display instructions if available
+              if (pack.displayInstructions && pack.displayInstructions.trim() !== "") {
+                packInstructions.push({
+                  source: pack.templateName,
+                  instructions: pack.displayInstructions.trim()
+                });
+              }
+            }
+          });
+          
+          if (allTemplates.length > 0) {
+            displayContent += "### 2. Inline Display Templates\n\n";
+            displayContent += "Embed visual elements WITHIN narrative text using special syntax:\n\n";
+            displayContent += "- Syntax: `[[DISPLAY=templateName, DATA={param1: \"value1\", param2: \"value2\"}]]`\n";
+            displayContent += "- Short form: `[[D=templateName, DATA={...}]]`\n";
+            displayContent += "- Can appear anywhere in narrative text\n";
+            displayContent += "- Data must be valid JSON object with string values in quotes\n\n";
+            
+            // Add pack-specific instructions if available
+            if (packInstructions.length > 0) {
+              displayContent += "**Template Pack Guidelines:**\n\n";
+              packInstructions.forEach(packInfo => {
+                displayContent += `- **${packInfo.source}**: ${packInfo.instructions}\n`;
+              });
+              displayContent += "\n";
+            }
+            
+            displayContent += "**Available Templates:**\n\n";
+            
+            allTemplates.forEach(template => {
+              const packInfo = template.packName ? ` *(from ${template.packName})*` : "";
+              displayContent += `- **${template.insertName}**${packInfo}: ${template.insertPurpose}\n`;
+              
+              // List parameters with their descriptions
+              if (template.parameters && template.parameters.length > 0) {
+                displayContent += `  - Parameters:\n`;
+                template.parameters.forEach(param => {
+                  displayContent += `    - \`${param.name}\`: ${param.description}\n`;
+                });
+                
+                // Generate example with parameter names
+                const exampleParams = template.parameters.map(p => `${p.name}: "example"`).join(", ");
+                displayContent += `  - Example: \`[[D=${template.insertName}, DATA={${exampleParams}}]]\`\n`;
+              }
+            });
+          }
+        }
+        
+        output += displayContent;
+        log("Merged {{sim_displays}} content into {{sim_tracker}} (inline templates enabled)");
+      }
+      
+      return output;
     });
 
     MacrosParser.registerMacro("last_sim_stats", () => {
@@ -406,6 +551,179 @@ ${exampleJson}
 \`\`\``;
       }
     });
+
+    MacrosParser.registerMacro("sim_displays", () => {
+      if (!get_settings("isEnabled")) return "";
+      log("Processed {{sim_displays}} macro.");
+      
+      const identifier = get_settings("codeBlockIdentifier") || "sim";
+      const inlineEnabled = get_settings("enableInlineTemplates");
+      const templateConfig = getCurrentTemplateConfig();
+      const customInstructions = get_settings("displayInstructionsPrompt") || "";
+      
+      let output = "";
+      
+      // Add custom instructions first if provided
+      if (customInstructions && customInstructions.trim() !== "") {
+        output += customInstructions.trim() + "\n\n";
+      }
+      
+      output += "## Available Inline Display Add-ons\n\n";
+      output += "### 1. Tracker Code Block\n\n";
+      output += "Place tracker data at the END of your response in a code block:\n\n";
+      output += "- Syntax: ```" + identifier + "\\n[data here]\\n```\n";
+      output += "- Must be the LAST element in your message\n";
+      output += "- Use the format specified in {{sim_format}} (see main tracker instructions)\n";
+      output += "- Will render as visual tracker cards for the user\n\n";
+      
+      if (inlineEnabled && templateConfig) {
+        // Collect all available inline templates with their pack info
+        const allTemplates = [];
+        const packInstructions = [];
+        
+        // Add templates from current template config
+        if (templateConfig.inlineTemplates && Array.isArray(templateConfig.inlineTemplates)) {
+          allTemplates.push(...templateConfig.inlineTemplates);
+        }
+        
+        // Add display instructions from current template if available
+        if (templateConfig.displayInstructions && templateConfig.displayInstructions.trim() !== "") {
+          packInstructions.push({
+            source: templateConfig.templateName || "Current Template",
+            instructions: templateConfig.displayInstructions.trim()
+          });
+        }
+        
+        // Add templates from enabled packs
+        const inlinePacks = get_settings("inlinePacks") || [];
+        inlinePacks.forEach(pack => {
+          if (pack.enabled !== false && pack.inlineTemplates && Array.isArray(pack.inlineTemplates)) {
+            allTemplates.push(...pack.inlineTemplates.map(t => ({
+              ...t,
+              packName: pack.templateName
+            })));
+            
+            // Add pack-specific display instructions if available
+            if (pack.displayInstructions && pack.displayInstructions.trim() !== "") {
+              packInstructions.push({
+                source: pack.templateName,
+                instructions: pack.displayInstructions.trim()
+              });
+            }
+          }
+        });
+        
+        if (allTemplates.length > 0) {
+          output += "### 2. Inline Display Templates\n\n";
+          output += "Embed visual elements WITHIN narrative text using special syntax:\n\n";
+          output += "- Syntax: `[[DISPLAY=templateName, DATA={param1: \"value1\", param2: \"value2\"}]]`\n";
+          output += "- Short form: `[[D=templateName, DATA={...}]]`\n";
+          output += "- Can appear anywhere in narrative text\n";
+          output += "- Data must be valid JSON object with string values in quotes\n\n";
+          
+          // Add pack-specific instructions if available
+          if (packInstructions.length > 0) {
+            output += "**Template Pack Guidelines:**\n\n";
+            packInstructions.forEach(packInfo => {
+              output += `- **${packInfo.source}**: ${packInfo.instructions}\n`;
+            });
+            output += "\n";
+          }
+          
+          output += "**Available Templates:**\n\n";
+          
+          allTemplates.forEach(template => {
+            const packInfo = template.packName ? ` *(from ${template.packName})*` : "";
+            output += `- **${template.insertName}**${packInfo}: ${template.insertPurpose}\n`;
+            
+            // List parameters with their descriptions
+            if (template.parameters && template.parameters.length > 0) {
+              output += `  - Parameters:\n`;
+              template.parameters.forEach(param => {
+                output += `    - \`${param.name}\`: ${param.description}\n`;
+              });
+              
+              // Generate example with parameter names
+              const exampleParams = template.parameters.map(p => `${p.name}: "example"`).join(", ");
+              output += `  - Example: \`[[D=${template.insertName}, DATA={${exampleParams}}]]\`\n`;
+            }
+          });
+        }
+      }
+      
+      return output;
+    });
+
+    MacrosParser.registerMacro("sim_display_format", () => {
+      if (!get_settings("isEnabled")) return "";
+      log("Processed {{sim_display_format}} macro.");
+      
+      const inlineEnabled = get_settings("enableInlineTemplates");
+      const templateConfig = getCurrentTemplateConfig();
+      
+      if (!inlineEnabled || !templateConfig) {
+        return "Inline templates are not currently enabled.";
+      }
+      
+      // Collect all available inline templates
+      const allTemplates = [];
+      
+      // Add templates from current template config
+      if (templateConfig.inlineTemplates && Array.isArray(templateConfig.inlineTemplates)) {
+        allTemplates.push(...templateConfig.inlineTemplates);
+      }
+      
+      // Add templates from enabled packs
+      const inlinePacks = get_settings("inlinePacks") || [];
+      inlinePacks.forEach(pack => {
+        if (pack.enabled !== false && pack.inlineTemplates && Array.isArray(pack.inlineTemplates)) {
+          allTemplates.push(...pack.inlineTemplates.map(t => ({
+            ...t,
+            packName: pack.templateName
+          })));
+        }
+      });
+      
+      if (allTemplates.length === 0) {
+        return "No inline display templates are currently available.";
+      }
+      
+      let output = "## Inline Display Format Reference\n\n";
+      output += "Use inline displays to embed visual elements within your narrative text.\n\n";
+      output += "**Syntax:**\n";
+      output += "- Full: `[[DISPLAY=templateName, DATA={param1: \"value1\", param2: \"value2\"}]]`\n";
+      output += "- Short: `[[D=templateName, DATA={...}]]`\n\n";
+      output += "**Rules:**\n";
+      output += "- Can appear anywhere in narrative text (unlike tracker code blocks)\n";
+      output += "- DATA must be valid JSON with string values in quotes\n";
+      output += "- Use double quotes for JSON, single quotes may cause errors\n";
+      output += "- All parameter values should be strings (e.g., `time: \"2:30 PM\"` not `time: 2:30`)\n\n";
+      output += "**Available Templates:**\n\n";
+      
+      allTemplates.forEach(template => {
+        const packInfo = template.packName ? ` *(from ${template.packName})*` : "";
+        output += `### ${template.insertName}${packInfo}\n\n`;
+        output += `**Purpose:** ${template.insertPurpose}\n\n`;
+        
+        // List parameters with descriptions
+        if (template.parameters && template.parameters.length > 0) {
+          output += `**Parameters:**\n`;
+          template.parameters.forEach(param => {
+            output += `- \`${param.name}\`: ${param.description}\n`;
+          });
+          output += `\n`;
+          
+          output += `**Example:**\n`;
+          output += "```\n";
+          output += `[[D=${template.insertName}, DATA={`;
+          const exampleParams = template.parameters.map(p => `${p.name}: "example value"`).join(", ");
+          output += exampleParams;
+          output += "}]]\n```\n\n";
+        }
+      });
+      
+      return output;
+    });
     log("Macros registered successfully.");
 
     // Register the slash command for force-regenerating tracker blocks
@@ -449,7 +767,7 @@ ${exampleJson}
             lastCharMessage.mes = lastCharMessage.mes.replace(simRegex, "").trim();
 
             // Update the message UI to show it's being regenerated
-            const messageElement = document.querySelector(
+            const messageElement = query(
               `div[mesid="${lastCharMessageIndex}"] .mes_text`
             );
             if (messageElement) {
@@ -506,7 +824,7 @@ ${exampleJson}
               await context.saveChat();
               
               // Update the message in the UI
-              const messageElement = document.querySelector(
+              const messageElement = query(
                 `div[mesid="${lastCharMessageIndex}"] .mes_text`
               );
               if (messageElement) {
@@ -522,7 +840,7 @@ ${exampleJson}
               log("Updated message with force-regenerated tracker block");
               
               // Remove the preparing text
-              const preparingTextElement = document.querySelector(".sst-regen-preparing");
+              const preparingTextElement = query(".sst-regen-preparing");
               if (preparingTextElement) {
                 preparingTextElement.remove();
               }
@@ -533,7 +851,7 @@ ${exampleJson}
               return "Successfully regenerated tracker block for last character message.";
             } else {
               // Remove the preparing text even on failure
-              const preparingTextElement = document.querySelector(".sst-regen-preparing");
+              const preparingTextElement = query(".sst-regen-preparing");
               if (preparingTextElement) {
                 preparingTextElement.remove();
               }
@@ -542,7 +860,7 @@ ${exampleJson}
           } catch (error) {
             log(`Error in /sst-regen command: ${error.message}`);
             // Remove the preparing text on error
-            const preparingTextElement = document.querySelector(".sst-regen-preparing");
+            const preparingTextElement = query(".sst-regen-preparing");
             if (preparingTextElement) {
               preparingTextElement.remove();
             }
@@ -562,6 +880,82 @@ ${exampleJson}
                         <li>
                             <pre><code class="language-stscript">/sst-regen</code></pre>
                             Regenerates the tracker block for the last character message
+                        </li>
+                    </ul>
+                </div>
+            `,
+      })
+    );
+
+    // Register the slash command for DOM measurements testing
+    SlashCommandParser.addCommandObject(
+      SlashCommand.fromProps({
+        name: "sst-measure",
+        callback: (namedArgs, selector) => {
+          const targetSelector = selector || '.sheld';
+          
+          const element = query(targetSelector);
+          
+          if (!element) {
+            return `Element not found: ${targetSelector}`;
+          }
+          
+          // Log detailed measurements
+          logElementMeasurements(element, `Measurements for: ${targetSelector}`);
+          
+          // Also log distance between element and viewport edges
+          const distances = getDistanceToViewport(element);
+          
+          console.group(`📐 Distance to Viewport Edges: ${targetSelector}`);
+          console.log(`Right edge: ${distances.right}px`);
+          console.log(`Left edge: ${distances.left}px`);
+          console.log(`Top edge: ${distances.top}px`);
+          console.log(`Bottom edge: ${distances.bottom}px`);
+          console.groupEnd();
+          
+          return `Measurements logged to console for: ${targetSelector}`;
+        },
+        returns: "status message",
+        unnamedArgumentList: [
+          SlashCommandArgument.fromProps({
+            description: "CSS selector of element to measure",
+            typeList: [ARGUMENT_TYPE.STRING],
+            defaultValue: '.sheld',
+            enumList: [
+              '.sheld',
+              '#chat',
+              '#send_form',
+              '#send_textarea',
+              '#sst-sidebar-left-content',
+              '#sst-sidebar-right-content',
+              '.mes',
+              '.mes_text',
+              'body',
+              '#shadow_select_chat_popup',
+              '#left-nav-panel',
+              '#right-nav-panel'
+            ],
+          }),
+        ],
+        helpString: `
+                <div>
+                    Logs detailed measurements of a DOM element to the console.
+                    Includes dimensions, position, padding, margin, and distances to viewport edges.
+                </div>
+                <div>
+                    <strong>Examples:</strong>
+                    <ul>
+                        <li>
+                            <pre><code class="language-stscript">/sst-measure</code></pre>
+                            Logs measurements for the sheld element (default)
+                        </li>
+                        <li>
+                            <pre><code class="language-stscript">/sst-measure #chat</code></pre>
+                            Logs measurements for the chat element
+                        </li>
+                        <li>
+                            <pre><code class="language-stscript">/sst-measure #sst-sidebar-right-content</code></pre>
+                            Logs measurements for the right sidebar
                         </li>
                     </ul>
                 </div>
@@ -652,7 +1046,7 @@ characters:
             lastCharMessage.mes += simBlock;
 
             // Update the message in the UI
-            const messageElement = document.querySelector(
+            const messageElement = query(
               `div[mesid="${lastCharMessageIndex}"] .mes_text`
             );
             if (messageElement) {
@@ -715,6 +1109,14 @@ characters:
       
       // Render the tracker (this will use existing sim block if present)
       renderTracker(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+      
+      // Process inline templates for this message
+      const messageElement = document.querySelector(`div[mesid="${mesId}"] .mes_text`);
+      if (messageElement) {
+        const templateConfig = getCurrentTemplateConfig();
+        const isEnabled = get_settings("enableInlineTemplates");
+        processInlineTemplates(messageElement, templateConfig, isEnabled);
+      }
       
       // For sidebar templates, ensure they render even on first message
       // by forcing a re-render after a short delay if this is a positioned template
@@ -804,16 +1206,39 @@ characters:
       // Wrap sim blocks in the new chat
       wrapSimBlocksInChat();
       
+      // Clear inline template cache when switching chats
+      clearInlineTemplateCache();
+      
       // Just refresh all cards - this will update sidebars with new chat data
       // The refreshAllCards function will find the latest sim data in the new chat
       wrappedRefreshAllCards();
+      
+      // Process all inline templates in the new chat
+      processAllInlineTemplates(get_settings, getCurrentTemplateConfig);
     });
-    eventSource.on(event_types.MORE_MESSAGES_LOADED, wrappedRefreshAllCards);
-    eventSource.on(event_types.MESSAGE_UPDATED, wrappedRefreshAllCards);
+    eventSource.on(event_types.MORE_MESSAGES_LOADED, () => {
+      wrappedRefreshAllCards();
+      // Process inline templates for newly loaded messages
+      processAllInlineTemplates(get_settings, getCurrentTemplateConfig);
+    });
+    
+    eventSource.on(event_types.MESSAGE_UPDATED, () => {
+      wrappedRefreshAllCards();
+      // Process inline templates for updated messages
+      processAllInlineTemplates(get_settings, getCurrentTemplateConfig);
+    });
     
     eventSource.on(event_types.MESSAGE_EDITED, (mesId) => {
       log(`Message ${mesId} was edited. Re-rendering tracker card.`);
       renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+      
+      // Process inline templates for the edited message
+      const messageElement = document.querySelector(`div[mesid="${mesId}"] .mes_text`);
+      if (messageElement) {
+        const templateConfig = getCurrentTemplateConfig();
+        const isEnabled = get_settings("enableInlineTemplates");
+        processInlineTemplates(messageElement, templateConfig, isEnabled);
+      }
     });
     
     eventSource.on(event_types.MESSAGE_SWIPE, (mesId) => {
@@ -827,26 +1252,13 @@ characters:
       // Re-render the tracker for the swiped message (same as MESSAGE_EDITED)
       renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
       
-      // For positioned templates (sidebars/top/bottom), also refresh all cards to revert display
-      const templatePosition = currentTemplatePosition;
-      if (templatePosition === "LEFT" || templatePosition === "RIGHT" || templatePosition === "TOP" || templatePosition === "BOTTOM") {
-        log("Swipe detected with positioned template - refreshing all cards to revert display to last tracker block");
-        wrappedRefreshAllCards();
+      // Process inline templates for the swiped message
+      const messageElement = document.querySelector(`div[mesid="${mesId}"] .mes_text`);
+      if (messageElement) {
+        const templateConfig = getCurrentTemplateConfig();
+        const isEnabled = get_settings("enableInlineTemplates");
+        processInlineTemplates(messageElement, templateConfig, isEnabled);
       }
-    });
-    
-    // Listen for MESSAGE_DELETED to revert display on delete
-    eventSource.on(event_types.MESSAGE_DELETED, (mesId) => {
-      log(`Message ${mesId} was deleted. Refreshing cards to revert to last tracker block.`);
-      
-      // Update the last sim stats macro
-      const updatedStats = updateLastSimStatsOnRegenerateOrSwipe(null, get_settings);
-      if (updatedStats) {
-        lastSimJsonString = updatedStats;
-      }
-      
-      // Refresh all cards to show the reverted state
-      wrappedRefreshAllCards();
     });
 
     // Listen for generation ended event to update sidebars and trigger secondary LLM
@@ -864,12 +1276,11 @@ characters:
       }
 
       // Check if we should use secondary LLM generation
-      const isEnabled = get_settings("isEnabled");
       const useSecondaryLLM = get_settings("useSecondaryLLM");
       const context = getContext();
-
-      // Only proceed if extension is enabled, secondary LLM is enabled, and we have a valid message ID
-      if (isEnabled && useSecondaryLLM && lastRenderedMessageId !== null) {
+      
+      // Only proceed if we have a valid message ID from the last render
+      if (useSecondaryLLM && lastRenderedMessageId !== null) {
         const mesId = lastRenderedMessageId;
         const message = context.chat[mesId];
         
@@ -911,7 +1322,7 @@ characters:
                 await context.saveChat();
                 
                 // Update the message in the UI
-                const messageElement = document.querySelector(
+                const messageElement = query(
                   `div[mesid="${mesId}"] .mes_text`
                 );
                 if (messageElement) {
@@ -946,7 +1357,7 @@ characters:
         log("Applying pending left sidebar content after generation ended");
         updateLeftSidebar(leftContent);
         // Re-attach event listeners after updating
-        const leftSidebarElement = document.querySelector("#sst-sidebar-left-content");
+        const leftSidebarElement = query("#sst-sidebar-left-content");
         if (leftSidebarElement) {
           attachTabEventListeners(leftSidebarElement);
         }
@@ -958,14 +1369,14 @@ characters:
         log("Applying pending right sidebar content after generation ended");
         updateRightSidebar(rightContent);
         // Re-attach event listeners after updating
-        const rightSidebarElement = document.querySelector("#sst-sidebar-right-content");
+        const rightSidebarElement = query("#sst-sidebar-right-content");
         if (rightSidebarElement) {
           attachTabEventListeners(rightSidebarElement);
         }
       }
 
       // Clear any remaining preparing text when generation ends
-      document.querySelectorAll(".sst-preparing-text").forEach((element) => {
+      queryAll(".sst-preparing-text").forEach((element) => {
         const mesText = element.previousElementSibling;
         if (mesText && mesText.classList.contains("mes_text")) {
           mesTextsWithPreparingText.delete(mesText);
@@ -975,6 +1386,10 @@ characters:
     });
 
     wrappedRefreshAllCards();
+    
+    // Process all inline templates in the initial chat
+    processAllInlineTemplates(get_settings, getCurrentTemplateConfig);
+    
     log(`${MODULE_NAME} has been successfully loaded.`);
   } catch (error) {
     console.error(
