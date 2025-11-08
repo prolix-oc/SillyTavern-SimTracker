@@ -259,6 +259,16 @@
                   <p class="description">
                     Remove HTML tags and their contents (like &lt;div&gt;, &lt;details&gt;, etc.) from messages before sending to the secondary LLM. Helps reduce context usage.
                   </p>
+
+                  <div class="setting">
+                    <label for="maxSimBlocksInContext">Max Sim Blocks in Context</label>
+                    <div class="control">
+                      <input type="number" id="maxSimBlocksInContext" class="text_pole" min="0" max="50" value="3" />
+                    </div>
+                  </div>
+                  <p class="description">
+                    Maximum number of sim tracker blocks to keep in the LLM context during generation. Older blocks are filtered out to reduce token usage. Set to 0 to include all blocks (unlimited).
+                  </p>
                 </div>
               </div>
             </div>

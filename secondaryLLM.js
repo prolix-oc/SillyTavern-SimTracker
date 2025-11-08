@@ -398,7 +398,7 @@ async function generateTrackerWithSecondaryLLM(get_settings) {
     return null;
   }
 
-  // Load template data to get trackerDesc
+  // Load template data to get trackerDesc and other template-specific settings
   const templateData = await loadCurrentTemplateData(get_settings);
   const trackerDesc = templateData?.trackerDesc || "general tracker";
 
@@ -410,13 +410,14 @@ async function generateTrackerWithSecondaryLLM(get_settings) {
     return null;
   }
 
-  // Get the actual system prompt
-  const systemPrompt = get_settings("datingSimPrompt") || "";
-  
-  // Build the format example to replace {{sim_format}} - WITHOUT code fences
-  const trackerFormat = get_settings("trackerFormat") || "json";
-  const customFields = get_settings("customFields") || [];
-  const codeBlockIdentifier = get_settings("codeBlockIdentifier") || "sim";
+  // Get settings, preferring template data values over global settings
+  // This ensures that when you switch templates, the template's specific fields/format/instructions are used
+  const systemPrompt = templateData?.sysPrompt || get_settings("datingSimPrompt") || "";
+  const customFields = templateData?.customFields || get_settings("customFields") || [];
+  const trackerFormat = templateData?.extSettings?.trackerFormat || get_settings("trackerFormat") || "json";
+  const codeBlockIdentifier = templateData?.extSettings?.codeBlockIdentifier || get_settings("codeBlockIdentifier") || "sim";
+
+  console.log(`[SST] [${MODULE_NAME}]`, `Using template-specific settings: ${customFields.length} custom fields, format: ${trackerFormat}`);
 
   let formatExample = "";
   

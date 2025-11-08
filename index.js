@@ -731,7 +731,8 @@ ${exampleJson}
       SlashCommand.fromProps({
         name: "sst-regen",
         callback: async () => {
-          if (!get_settings("isEnabled")) {
+          const isEnabled = get_settings("isEnabled");
+          if (!isEnabled) {
             return "Silly Sim Tracker is not enabled.";
           }
 
@@ -1276,11 +1277,12 @@ characters:
       }
 
       // Check if we should use secondary LLM generation
+      const isEnabled = get_settings("isEnabled");
       const useSecondaryLLM = get_settings("useSecondaryLLM");
       const context = getContext();
-      
-      // Only proceed if we have a valid message ID from the last render
-      if (useSecondaryLLM && lastRenderedMessageId !== null) {
+
+      // Only proceed if extension is enabled, secondary LLM is enabled, and we have a valid message ID
+      if (isEnabled && useSecondaryLLM && lastRenderedMessageId !== null) {
         const mesId = lastRenderedMessageId;
         const message = context.chat[mesId];
         

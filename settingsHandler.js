@@ -94,6 +94,7 @@ const default_settings = {
   secondaryLLMTopP: 1, // Top P for secondary generation
   secondaryLLMStreaming: true, // Enable streaming for secondary LLM
   secondaryLLMStripHTML: true, // Strip HTML from context for secondary LLM
+  maxSimBlocksInContext: 3, // Maximum number of sim blocks to include in LLM context (0 = unlimited)
   enableInlineTemplates: false, // Enable inline template rendering
   inlinePacks: [], // Imported inline template packs
 };
@@ -255,7 +256,8 @@ const initialize_settings_listeners = (
   bind_setting("#secondaryLLMTopP", "secondaryLLMTopP", "text");
   bind_setting("#secondaryLLMStreaming", "secondaryLLMStreaming", "boolean");
   bind_setting("#secondaryLLMStripHTML", "secondaryLLMStripHTML", "boolean");
-  
+  bind_setting("#maxSimBlocksInContext", "maxSimBlocksInContext", "text");
+
   // Inline templates setting
   bind_setting("#enableInlineTemplates", "enableInlineTemplates", "boolean");
 
