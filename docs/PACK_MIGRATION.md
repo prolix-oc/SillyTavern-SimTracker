@@ -128,6 +128,45 @@ When a user switches tabs, the exiting tab and card animate **simultaneously**:
 
 This ensures the tab button and card slide back together as a unified panel.
 
+## Tab Interaction Types
+
+Templates can specify how tabs behave using the `tabsType` field in the JSON config:
+
+### Toggle Mode (default)
+```json
+{
+  "tabsType": "toggle"
+}
+```
+
+- **Click inactive tab** → Activates that panel (tab + card slide out)
+- **Click active tab** → Deactivates that panel (tab + card retract)
+- All panels start **inactive** (collapsed)
+- Best for: Sidebar templates where users want to inspect one character at a time
+
+### Switching Mode
+```json
+{
+  "tabsType": "switching"
+}
+```
+
+- **Click inactive tab** → Activates that panel, deactivates previous active
+- **Click active tab** → Does nothing (already active)
+- First panel starts **active** by default
+- Best for: Traditional tab interfaces where one panel is always visible
+
+### For Custom HTML Templates
+
+Add an HTML comment to specify tab type:
+```html
+<!-- TABS_TYPE: toggle -->
+```
+or
+```html
+<!-- TABS_TYPE: switching -->
+```
+
 ## Future: Grouped Panel Structure (Optional)
 
 For cleaner templates, you can group tab+card pairs together. This is optional but recommended for new templates:
@@ -153,6 +192,7 @@ The extension will detect and support this structure in future versions.
 - [ ] Ensure CSS handles `.active` class on tabs
 - [ ] Verify transition duration is ~300ms for smooth animations
 - [ ] Test tab switching to confirm both tab and card animate together
+- [ ] (Optional) Add `"tabsType": "toggle"` or `"tabsType": "switching"` to template JSON
 
 ## Troubleshooting
 

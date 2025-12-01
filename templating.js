@@ -12,6 +12,11 @@ let currentTemplateLogic = null;
 // Module-level variable to store the current template configuration (for inline templates, etc.)
 let currentTemplateConfig = null;
 
+// Module-level variable to store the tabs interaction type for tabbed templates
+// 'toggle' = click same tab to expand/retract (default for sidebars)
+// 'switching' = click different tabs to switch between them
+let currentTabsType = "toggle";
+
 // Module-level cache for DOM measurements to avoid repeated queries
 let domMeasurementCache = new Map();
 let cacheTimestamp = 0;
@@ -675,14 +680,20 @@ const loadTemplate = async (get_settings, set_settings) => {
 
           // Extract bundled JavaScript logic from the custom template
           currentTemplateLogic = extractTemplateLogic(customTemplateHtml);
-          
+
+          // Extract tabsType from HTML comment if present (<!-- TABS_TYPE: toggle -->)
+          const tabsTypeRegex = /<!--\s*TABS_TYPE\s*:\s*(toggle|switching)\s*-->/i;
+          const tabsTypeMatch = customTemplateHtml.match(tabsTypeRegex);
+          currentTabsType = tabsTypeMatch ? tabsTypeMatch[1].toLowerCase() : "toggle";
+
           // Store template config (note: custom HTML templates loaded directly don't have a JSON config)
           currentTemplateConfig = {
             templatePosition: templatePosition,
+            tabsType: currentTabsType,
             inlineTemplatesEnabled: false, // Custom HTML templates don't support inline templates by default
             inlineTemplates: []
           };
-          
+
           compiledCardTemplate = Handlebars.compile(cardTemplate);
       // Store the template position in a module-level variable for use during rendering
       currentTemplatePosition = templatePosition;
@@ -757,19 +768,23 @@ const loadTemplate = async (get_settings, set_settings) => {
           
           // Extract bundled JavaScript logic from the user preset template
           currentTemplateLogic = extractTemplateLogic(unescapedHtmlTemplate);
-          
+
+          // Get tabsType from preset data or default to 'toggle'
+          currentTabsType = presetData.tabsType || "toggle";
+
           // Store template config from preset data
           currentTemplateConfig = {
             templatePosition: templatePosition,
+            tabsType: currentTabsType,
             inlineTemplatesEnabled: presetData.inlineTemplatesEnabled || false,
             inlineTemplates: presetData.inlineTemplates || []
           };
-          
+
           compiledCardTemplate = Handlebars.compile(cardTemplate);
           // Store the template position in a module-level variable for use during rendering
           currentTemplatePosition = templatePosition;
           console.log(`[SST] [${MODULE_NAME}]`,
-            `User preset '${templateFile}' compiled successfully. Position: ${templatePosition}`
+            `User preset '${templateFile}' compiled successfully. Position: ${templatePosition}, TabsType: ${currentTabsType}`
           );
           return; // Exit successfully
         }
@@ -837,19 +852,23 @@ const loadTemplate = async (get_settings, set_settings) => {
         
         // Extract bundled JavaScript logic from the default template
         currentTemplateLogic = extractTemplateLogic(unescapedHtmlTemplate);
-        
+
+        // Get tabsType from JSON data or default to 'toggle'
+        currentTabsType = jsonData.tabsType || "toggle";
+
         // Store template config from JSON data
         currentTemplateConfig = {
           templatePosition: templatePosition,
+          tabsType: currentTabsType,
           inlineTemplatesEnabled: jsonData.inlineTemplatesEnabled || false,
           inlineTemplates: jsonData.inlineTemplates || []
         };
-        
+
         compiledCardTemplate = Handlebars.compile(cardTemplate);
         // Store the template position in a module-level variable for use during rendering
         currentTemplatePosition = templatePosition;
         console.log(`[SST] [${MODULE_NAME}]`,
-          `Default template '${templateFile}' compiled successfully. Position: ${templatePosition}`
+          `Default template '${templateFile}' compiled successfully. Position: ${templatePosition}, TabsType: ${currentTabsType}`
         );
         return; // Exit successfully
       } catch (error) {
@@ -869,9 +888,12 @@ const loadTemplate = async (get_settings, set_settings) => {
   compiledCardTemplate = Handlebars.compile(fallbackTemplate);
   // Reset template logic for fallback template
   currentTemplateLogic = null;
+  // Reset tabsType for fallback template
+  currentTabsType = "toggle";
   // Reset template config for fallback template
   currentTemplateConfig = {
     templatePosition: "BOTTOM",
+    tabsType: "toggle",
     inlineTemplatesEnabled: false,
     inlineTemplates: []
   };
@@ -900,6 +922,7 @@ export {
   currentTemplatePosition,
   currentTemplateLogic,
   currentTemplateConfig,
+  currentTabsType,
   getCurrentTemplateConfig,
   unescapeHtml,
   clearDomMeasurementCache

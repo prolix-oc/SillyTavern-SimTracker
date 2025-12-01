@@ -1,7 +1,7 @@
 // renderer.js - HTML card rendering code
 import { getContext } from "../../../extensions.js";
 import { messageFormatting } from "../../../../script.js";
-import { extractTemplatePosition, currentTemplatePosition, currentTemplateLogic, clearDomMeasurementCache } from "./templating.js";
+import { extractTemplatePosition, currentTemplatePosition, currentTemplateLogic, currentTabsType, clearDomMeasurementCache } from "./templating.js";
 import { parseTrackerData } from "./formatUtils.js";
 import {
   createElement,
@@ -268,6 +268,7 @@ function applyPanelState(panel, state) {
  */
 function initializePanelState(sidebarElement, side) {
   const state = sidebarPanelState[side];
+  const tabsType = currentTabsType || 'toggle';
 
   // Clear any pending exit timeouts
   state.exitTimeouts.forEach(timeout => clearTimeout(timeout));
@@ -281,22 +282,34 @@ function initializePanelState(sidebarElement, side) {
     return;
   }
 
-  // Find first non-inactive card to activate
-  let firstActiveIndex = 0;
-  for (let i = 0; i < state.panels.length; i++) {
-    const card = state.panels[i].card;
-    if (card && !card.classList.contains('inactive') && !card.classList.contains('narrative-inactive')) {
-      firstActiveIndex = i;
-      break;
+  // Determine initial active panel based on tabsType
+  if (tabsType === 'toggle') {
+    // Toggle mode: all panels start inactive (collapsed)
+    // User must click a tab to expand it
+    state.activeIndex = -1;
+
+    // Apply inactive state to all panels
+    state.panels.forEach((panel) => {
+      applyPanelState(panel, 'inactive');
+    });
+  } else {
+    // Switching mode: first non-inactive panel starts active
+    let firstActiveIndex = 0;
+    for (let i = 0; i < state.panels.length; i++) {
+      const card = state.panels[i].card;
+      if (card && !card.classList.contains('inactive') && !card.classList.contains('narrative-inactive')) {
+        firstActiveIndex = i;
+        break;
+      }
     }
+
+    state.activeIndex = firstActiveIndex;
+
+    // Apply initial states to all panels
+    state.panels.forEach((panel, i) => {
+      applyPanelState(panel, i === firstActiveIndex ? 'active' : 'inactive');
+    });
   }
-
-  state.activeIndex = firstActiveIndex;
-
-  // Apply initial states to all panels
-  state.panels.forEach((panel, i) => {
-    applyPanelState(panel, i === firstActiveIndex ? 'active' : 'inactive');
-  });
 
   // Apply container styles
   const container = query('#silly-sim-tracker-container', sidebarElement);
@@ -313,52 +326,91 @@ function initializePanelState(sidebarElement, side) {
 }
 
 /**
- * Activate a panel by index, deactivating the current one with animation
+ * Handle panel click based on current tabsType mode
+ *
+ * Toggle mode (default for sidebars):
+ * - Click inactive tab → activate it (and deactivate any other active panel)
+ * - Click active tab → deactivate it (toggle off, no panel active)
+ *
+ * Switching mode:
+ * - Click inactive tab → activate it (and deactivate any other active panel)
+ * - Click active tab → do nothing (already active)
+ *
  * @param {string} side - 'left' or 'right'
- * @param {number} newIndex - Index of panel to activate
+ * @param {number} panelIndex - Index of panel that was clicked
  */
-function activatePanel(side, newIndex) {
+function activatePanel(side, panelIndex) {
   const state = sidebarPanelState[side];
+  const tabsType = currentTabsType || 'toggle';
 
-  if (newIndex < 0 || newIndex >= state.panels.length) return;
-  if (newIndex === state.activeIndex && state.panels[newIndex]?.state === 'active') return;
-
-  const previousIndex = state.activeIndex;
-
-  // Cancel any pending exit timeout for the panel we're activating
-  if (state.exitTimeouts.has(newIndex)) {
-    clearTimeout(state.exitTimeouts.get(newIndex));
-    state.exitTimeouts.delete(newIndex);
+  if (panelIndex < 0 || panelIndex >= state.panels.length) {
+    return;
   }
 
-  // Start exit animation for previously active panel
-  if (previousIndex >= 0 && previousIndex < state.panels.length && previousIndex !== newIndex) {
+  const targetPanel = state.panels[panelIndex];
+  const isCurrentlyActive = targetPanel.state === 'active';
+
+  // Handle click on currently active panel
+  if (isCurrentlyActive) {
+    if (tabsType === 'switching') {
+      // Switching mode: clicking active tab does nothing
+      return;
+    }
+
+    // Toggle mode: clicking active tab deactivates it
+    startPanelExitAnimation(state, panelIndex);
+    state.activeIndex = -1; // No panel is active now
+    return;
+  }
+
+  // Clicking an inactive panel - activate it
+
+  // Cancel any pending exit timeout for the panel we're activating
+  if (state.exitTimeouts.has(panelIndex)) {
+    clearTimeout(state.exitTimeouts.get(panelIndex));
+    state.exitTimeouts.delete(panelIndex);
+  }
+
+  // Deactivate the previously active panel (if any and different)
+  const previousIndex = state.activeIndex;
+  if (previousIndex >= 0 && previousIndex < state.panels.length && previousIndex !== panelIndex) {
     const previousPanel = state.panels[previousIndex];
 
     if (previousPanel.state === 'active' || previousPanel.state === 'exiting') {
-      // Cancel any existing exit timeout
-      if (state.exitTimeouts.has(previousIndex)) {
-        clearTimeout(state.exitTimeouts.get(previousIndex));
-      }
-
-      // Start exit animation
-      applyPanelState(previousPanel, 'exiting');
-
-      // After animation completes, set to fully inactive
-      const timeoutId = setTimeout(() => {
-        if (previousPanel.state === 'exiting') {
-          applyPanelState(previousPanel, 'inactive');
-        }
-        state.exitTimeouts.delete(previousIndex);
-      }, PANEL_ANIMATION_DURATION_MS);
-
-      state.exitTimeouts.set(previousIndex, timeoutId);
+      startPanelExitAnimation(state, previousIndex);
     }
   }
 
-  // Activate the new panel
-  state.activeIndex = newIndex;
-  applyPanelState(state.panels[newIndex], 'active');
+  // Activate the target panel
+  state.activeIndex = panelIndex;
+  applyPanelState(targetPanel, 'active');
+}
+
+/**
+ * Start exit animation for a panel
+ * @param {SidebarPanelState} state - The sidebar panel state
+ * @param {number} panelIndex - Index of panel to animate out
+ */
+function startPanelExitAnimation(state, panelIndex) {
+  const panel = state.panels[panelIndex];
+
+  // Cancel any existing exit timeout
+  if (state.exitTimeouts.has(panelIndex)) {
+    clearTimeout(state.exitTimeouts.get(panelIndex));
+  }
+
+  // Start exit animation
+  applyPanelState(panel, 'exiting');
+
+  // After animation completes, set to fully inactive
+  const timeoutId = setTimeout(() => {
+    if (panel.state === 'exiting') {
+      applyPanelState(panel, 'inactive');
+    }
+    state.exitTimeouts.delete(panelIndex);
+  }, PANEL_ANIMATION_DURATION_MS);
+
+  state.exitTimeouts.set(panelIndex, timeoutId);
 }
 
 /**
@@ -382,9 +434,30 @@ function setupPanelClickHandler(sidebarElement, side) {
 
     const state = sidebarPanelState[side];
 
-    // Find which panel this tab belongs to
-    const panelIndex = state.panels.findIndex(p => p.tab === tab);
-    if (panelIndex === -1) return;
+    // Find which panel this tab belongs to by data-character attribute
+    // This is more reliable than DOM element reference comparison
+    const clickedCharacterId = tab.getAttribute('data-character');
+    let panelIndex = -1;
+
+    if (clickedCharacterId !== null) {
+      // Match by data-character attribute
+      panelIndex = state.panels.findIndex(p => p.characterId === clickedCharacterId);
+    }
+
+    // Fallback: try to match by DOM element reference
+    if (panelIndex === -1) {
+      panelIndex = state.panels.findIndex(p => p.tab === tab);
+    }
+
+    // Last resort: find by index in DOM
+    if (panelIndex === -1) {
+      const allTabs = queryAll('.sim-tracker-tab', sidebarElement);
+      panelIndex = allTabs.indexOf(tab);
+    }
+
+    if (panelIndex === -1) {
+      return;
+    }
 
     activatePanel(side, panelIndex);
   };
