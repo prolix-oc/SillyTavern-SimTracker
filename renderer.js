@@ -575,7 +575,7 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml, side = 'le
 
       // Apply base classes from new card then overlay cached state
       existingCard.className = newCard.className;
-      applyTabState(existingCard, state);
+      applyCardState(existingCard, state);
     }
   });
 
@@ -593,42 +593,70 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml, side = 'le
         }
       });
 
+      // Apply base classes from new tab, then set active state
       existingTab.className = newTab.className;
-      applyTabState(existingTab, state);
+      applyTabButtonState(existingTab, state === 'active');
     }
   });
 }
 
 /**
- * Apply a tab state to an element (card or tab)
- * @param {HTMLElement} element - The element to update
- * @param {string} state - The state to apply: 'active', 'hidden', 'sliding-in', 'sliding-out'
+ * Apply state to a card element
+ * Cards have full animation states: active, sliding-in, sliding-out, hidden
+ * @param {HTMLElement} card - The card element to update
+ * @param {string} state - The state to apply
  */
-function applyTabState(element, state) {
+function applyCardState(card, state) {
   switch (state) {
     case 'active':
-      // Clean transition to active
-      element.classList.remove('tab-hidden', 'sliding-in', 'sliding-out');
-      element.classList.add('active');
+      card.classList.remove('tab-hidden', 'sliding-in', 'sliding-out');
+      card.classList.add('active');
       break;
     case 'sliding-in':
-      // Sliding in from hidden
-      element.classList.remove('tab-hidden', 'sliding-out', 'active');
-      element.classList.add('sliding-in');
+      card.classList.remove('tab-hidden', 'sliding-out', 'active');
+      card.classList.add('sliding-in');
       break;
     case 'sliding-out':
       // Keep 'active' during slide-out for CSS transition to work
-      // The transition animates FROM the active state TO the hidden state
-      element.classList.remove('tab-hidden', 'sliding-in');
-      element.classList.add('sliding-out');
-      // Note: 'active' is intentionally NOT removed here
+      card.classList.remove('tab-hidden', 'sliding-in');
+      card.classList.add('sliding-out');
       break;
     case 'hidden':
     default:
-      // Fully hidden - remove all other states
-      element.classList.remove('active', 'sliding-in', 'sliding-out');
-      element.classList.add('tab-hidden');
+      card.classList.remove('active', 'sliding-in', 'sliding-out');
+      card.classList.add('tab-hidden');
       break;
+  }
+}
+
+/**
+ * Apply state to a tab button element
+ * Tabs only toggle 'active' class - they're always visible, just styled differently
+ * The CSS handles the transform animation when active class is added/removed
+ * @param {HTMLElement} tab - The tab element to update
+ * @param {boolean} isActive - Whether the tab should be active
+ */
+function applyTabButtonState(tab, isActive) {
+  if (isActive) {
+    tab.classList.add('active');
+  } else {
+    tab.classList.remove('active');
+  }
+}
+
+/**
+ * Legacy wrapper for backward compatibility
+ * Routes to appropriate function based on element type
+ * @param {HTMLElement} element - The element to update
+ * @param {string} state - The state to apply
+ */
+function applyTabState(element, state) {
+  if (element.classList.contains('sim-tracker-tab')) {
+    // Tabs only care about active/inactive
+    applyTabButtonState(element, state === 'active');
+  } else {
+    // Cards get full state management
+    applyCardState(element, state);
   }
 }
 
@@ -658,9 +686,9 @@ function initializeTabStates(sidebarElement, side) {
   // Initialize all to hidden, then activate the first valid one
   const states = cards.map((_, i) => i === firstActiveIndex ? 'active' : 'hidden');
 
-  // Apply states to DOM
-  cards.forEach((card, i) => applyTabState(card, states[i]));
-  tabs.forEach((tab, i) => applyTabState(tab, states[i]));
+  // Apply states to DOM - use separate functions for cards and tabs
+  cards.forEach((card, i) => applyCardState(card, states[i]));
+  tabs.forEach((tab, i) => applyTabButtonState(tab, states[i] === 'active'));
 
   // Update cache
   tabStateCache[side] = { activeIndex: firstActiveIndex, states };
@@ -711,32 +739,49 @@ function setupDelegatedTabListener(sidebarElement, side) {
     const cache = tabStateCache[side];
     const isAlreadyActive = cache.states[clickedIndex] === 'active';
 
-    // Cancel pending animations
+    // If clicking already active tab, do nothing
+    if (isAlreadyActive) return;
+
+    // Cancel pending card animations
     animationTimeouts.forEach(timeout => clearTimeout(timeout));
     animationTimeouts.clear();
 
-    // Update states
-    cache.states.forEach((state, i) => {
-      if (i === clickedIndex && !isAlreadyActive) {
-        // Activate clicked tab
-        cache.states[i] = 'active';
-        cache.activeIndex = i;
+    // Find currently active index
+    const previousActiveIndex = cache.activeIndex;
 
-        if (cards[i]) applyTabState(cards[i], 'active');
-        if (tabs[i]) applyTabState(tabs[i], 'active');
-      } else if (cache.states[i] === 'active' || cache.states[i] === 'sliding-in') {
-        // Deactivate currently active tab with animation
+    // Update cache state
+    cache.activeIndex = clickedIndex;
+
+    // Process all tabs and cards
+    cache.states.forEach((state, i) => {
+      const card = cards[i];
+      const tabBtn = tabs[i];
+
+      if (i === clickedIndex) {
+        // Activate the clicked tab/card pair
+        cache.states[i] = 'active';
+
+        // Tab button: immediately toggle active (CSS handles its animation)
+        if (tabBtn) applyTabButtonState(tabBtn, true);
+
+        // Card: activate (CSS handles slide-in animation)
+        if (card) applyCardState(card, 'active');
+
+      } else if (state === 'active' || state === 'sliding-in') {
+        // Deactivate previously active tab/card pair
         cache.states[i] = 'sliding-out';
 
-        if (cards[i]) applyTabState(cards[i], 'sliding-out');
-        if (tabs[i]) applyTabState(tabs[i], 'sliding-out');
+        // Tab button: immediately remove active (CSS handles its animation back)
+        if (tabBtn) applyTabButtonState(tabBtn, false);
 
-        // After animation, hide completely
+        // Card: start slide-out animation
+        if (card) applyCardState(card, 'sliding-out');
+
+        // After card animation completes, hide it
         const timeoutId = setTimeout(() => {
           if (cache.states[i] === 'sliding-out') {
             cache.states[i] = 'hidden';
-            if (cards[i]) applyTabState(cards[i], 'hidden');
-            if (tabs[i]) applyTabState(tabs[i], 'hidden');
+            if (card) applyCardState(card, 'hidden');
           }
           animationTimeouts.delete(i);
         }, 300);
