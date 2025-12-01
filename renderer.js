@@ -212,7 +212,15 @@ function buildPanelsFromDOM(sidebarElement) {
 /**
  * Apply visual state to a panel (both tab and card)
  * @param {Panel} panel - The panel to update
- * @param {string} state - The state to apply: 'active' | 'inactive' | 'exiting'
+ * @param {string} state - The state to apply: 'active' | 'inactive' | 'exiting' | 'entering'
+ *
+ * State transitions:
+ * - inactive → entering → active (for opening animation)
+ * - active → exiting → inactive (for closing animation)
+ *
+ * The 'entering' state is needed because 'inactive' uses display:none,
+ * which prevents CSS transitions. 'entering' removes display:none first,
+ * then on the next frame we add 'active' to trigger the animation.
  */
 function applyPanelState(panel, state) {
   const { tab, card } = panel;
@@ -224,6 +232,10 @@ function applyPanelState(panel, state) {
     card.classList.remove('active', 'tab-hidden', 'sliding-in', 'sliding-out');
 
     switch (state) {
+      case 'entering':
+        // Prepare for entry animation - element is visible but at "hidden" position
+        // Don't add any classes - default CSS state should position it off-screen
+        break;
       case 'active':
         card.classList.add('active');
         break;
@@ -239,11 +251,13 @@ function applyPanelState(panel, state) {
   }
 
   // Apply state to tab - synced with card animation
-  // Tab animation is triggered by removing 'active' class
-  // For synchronized exit animation, we remove 'active' immediately when entering 'exiting'
-  // This way both tab and card start their exit animations at the same time
   if (tab) {
     switch (state) {
+      case 'entering':
+        // Tab is about to become active - don't add 'active' yet
+        // This will be added when state changes to 'active'
+        tab.classList.remove('active');
+        break;
       case 'active':
         tab.classList.add('active');
         break;
@@ -381,9 +395,49 @@ function activatePanel(side, panelIndex) {
     }
   }
 
-  // Activate the target panel
+  // Activate the target panel with entry animation
   state.activeIndex = panelIndex;
-  applyPanelState(targetPanel, 'active');
+  startPanelEntryAnimation(targetPanel);
+}
+
+/**
+ * Start entry animation for a panel
+ * Goes from inactive → entering → active to allow CSS transitions
+ * @param {Panel} panel - The panel to animate in
+ * @param {boolean} skipAnimation - If true, go directly to 'active' without animation
+ */
+function startPanelEntryAnimation(panel, skipAnimation = false) {
+  // If already active, nothing to do
+  if (panel.state === 'active') {
+    return;
+  }
+
+  // If skipping animation (e.g., initial load), go straight to active
+  if (skipAnimation) {
+    applyPanelState(panel, 'active');
+    return;
+  }
+
+  // If currently entering, let it continue
+  if (panel.state === 'entering') {
+    return;
+  }
+
+  // Step 1: Set to 'entering' state - this removes display:none
+  // and positions the element at its starting (hidden) position
+  applyPanelState(panel, 'entering');
+
+  // Step 2: On the next frame, add 'active' to trigger the CSS transition
+  // Using requestAnimationFrame ensures the browser has rendered the 'entering' state
+  requestAnimationFrame(() => {
+    // Double RAF to ensure the browser has fully processed the layout change
+    requestAnimationFrame(() => {
+      // Only proceed if still in 'entering' state (not cancelled)
+      if (panel.state === 'entering') {
+        applyPanelState(panel, 'active');
+      }
+    });
+  });
 }
 
 /**
