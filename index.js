@@ -39,6 +39,7 @@ import {
   getGenerationInProgress,
   initializeViewportChangeHandler,
   forceLayoutUpdate,
+  flushPendingSidebarUpdates,
   CONTAINER_ID
 } from "./renderer.js";
 
@@ -1107,27 +1108,17 @@ characters:
     eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, async (mesId) => {
       // Store the last rendered message ID
       lastRenderedMessageId = mesId;
-      
+
       // Render the tracker (this will use existing sim block if present)
+      // Sidebar updates are now batched via RAF, so no redundant re-render needed
       renderTracker(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
-      
+
       // Process inline templates for this message
       const messageElement = document.querySelector(`div[mesid="${mesId}"] .mes_text`);
       if (messageElement) {
         const templateConfig = getCurrentTemplateConfig();
         const isEnabled = get_settings("enableInlineTemplates");
         processInlineTemplates(messageElement, templateConfig, isEnabled);
-      }
-      
-      // For sidebar templates, ensure they render even on first message
-      // by forcing a re-render after a short delay if this is a positioned template
-      const templatePosition = currentTemplatePosition;
-      if (templatePosition === "LEFT" || templatePosition === "RIGHT") {
-        setTimeout(() => {
-          // Re-render to ensure sidebars are created if they weren't during initial render
-          log(`Re-rendering message ${mesId} to ensure sidebar creation`);
-          renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
-        }, 150);
       }
     });
     
@@ -1266,7 +1257,11 @@ characters:
     eventSource.on(event_types.GENERATION_ENDED, async (type) => {
       log(`Generation ended (type: ${type}), updating sidebars if needed`);
       setGenerationInProgress(false);
-      
+
+      // Flush any pending sidebar updates that were debounced during streaming
+      // This ensures the final state is rendered immediately
+      flushPendingSidebarUpdates();
+
       // For regenerate or continue operations with positioned templates, refresh all cards
       // This ensures the display reverts to the last tracker block instance
       if (type === "regenerate" || type === "continue") {
