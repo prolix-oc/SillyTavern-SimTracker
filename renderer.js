@@ -44,15 +44,42 @@ let rafScheduled = false;
 let streamingUpdateTimer = null;
 const STREAMING_DEBOUNCE_MS = 100;
 
-// Tab state cache to avoid recalculating from DOM
-const tabStateCache = {
-  left: { activeIndex: 0, states: [] },
-  right: { activeIndex: 0, states: [] }
-};
-
 // Delegated event listener references (to avoid re-attaching)
 let leftSidebarDelegateCleanup = null;
 let rightSidebarDelegateCleanup = null;
+
+// === PANEL SYSTEM ===
+// Virtual panel grouping - pairs tabs with their corresponding cards
+// This allows unified state management while supporting legacy template structures
+//
+// Panel state: 'active' | 'inactive' | 'exiting'
+// - active: panel is visible and interactive
+// - inactive: panel is hidden
+// - exiting: panel is animating out (transitions to inactive after animation)
+
+/**
+ * @typedef {Object} Panel
+ * @property {HTMLElement|null} tab - The tab button element
+ * @property {HTMLElement|null} card - The card content element
+ * @property {string} characterId - The character identifier (from data-character attribute)
+ * @property {string} state - Current panel state: 'active' | 'inactive' | 'exiting'
+ */
+
+/**
+ * @typedef {Object} SidebarPanelState
+ * @property {Panel[]} panels - Array of panel objects
+ * @property {number} activeIndex - Index of the currently active panel
+ * @property {Map<number, number>} exitTimeouts - Map of panel index to exit animation timeout IDs
+ */
+
+/** @type {{left: SidebarPanelState, right: SidebarPanelState}} */
+const sidebarPanelState = {
+  left: { panels: [], activeIndex: 0, exitTimeouts: new Map() },
+  right: { panels: [], activeIndex: 0, exitTimeouts: new Map() }
+};
+
+// Animation duration for panel transitions (matches CSS)
+const PANEL_ANIMATION_DURATION_MS = 300;
 
 /**
  * Schedule a batched RAF update for sidebars
@@ -133,6 +160,277 @@ function flushPendingSidebarUpdates() {
       applyRightSidebarUpdate(content);
     }
   }
+}
+
+// === PANEL SYSTEM FUNCTIONS ===
+
+/**
+ * Build panel array from sidebar DOM
+ * Pairs tabs with cards by matching data-character attribute or by index
+ * @param {HTMLElement} sidebarElement - The sidebar content element
+ * @returns {Panel[]} Array of panel objects
+ */
+function buildPanelsFromDOM(sidebarElement) {
+  const tabs = queryAll('.sim-tracker-tab', sidebarElement);
+  const cards = queryAll('.sim-tracker-card', sidebarElement);
+
+  // If no tabs or cards, return empty
+  if (cards.length === 0) return [];
+
+  const panels = [];
+
+  // Try to match by data-character attribute first
+  const cardsByCharacter = new Map();
+  cards.forEach(card => {
+    const charId = card.getAttribute('data-character');
+    if (charId !== null) {
+      cardsByCharacter.set(charId, card);
+    }
+  });
+
+  // Build panels - prefer matching by data-character, fall back to index
+  const maxLength = Math.max(tabs.length, cards.length);
+
+  for (let i = 0; i < maxLength; i++) {
+    const tab = tabs[i] || null;
+    const charId = tab?.getAttribute('data-character') ?? String(i);
+
+    // Find matching card by character ID, or use index
+    let card = cardsByCharacter.get(charId) || cards[i] || null;
+
+    panels.push({
+      tab,
+      card,
+      characterId: charId,
+      state: 'inactive'
+    });
+  }
+
+  return panels;
+}
+
+/**
+ * Apply visual state to a panel (both tab and card)
+ * @param {Panel} panel - The panel to update
+ * @param {string} state - The state to apply: 'active' | 'inactive' | 'exiting'
+ */
+function applyPanelState(panel, state) {
+  const { tab, card } = panel;
+  panel.state = state;
+
+  // Apply state to card
+  if (card) {
+    // Remove all state classes
+    card.classList.remove('active', 'tab-hidden', 'sliding-in', 'sliding-out');
+
+    switch (state) {
+      case 'active':
+        card.classList.add('active');
+        break;
+      case 'exiting':
+        // Add both active (for transition start state) and sliding-out (for animation)
+        card.classList.add('active', 'sliding-out');
+        break;
+      case 'inactive':
+      default:
+        card.classList.add('tab-hidden');
+        break;
+    }
+  }
+
+  // Apply state to tab - tabs just toggle 'active' class
+  // The CSS transition on the tab handles the animation
+  if (tab) {
+    if (state === 'active') {
+      tab.classList.add('active');
+    } else {
+      // Both 'inactive' and 'exiting' remove active from tab
+      // This lets the tab animate back while the card is still sliding out
+      tab.classList.remove('active');
+    }
+  }
+}
+
+/**
+ * Initialize panel state for a sidebar
+ * @param {HTMLElement} sidebarElement - The sidebar content element
+ * @param {string} side - 'left' or 'right'
+ */
+function initializePanelState(sidebarElement, side) {
+  const state = sidebarPanelState[side];
+
+  // Clear any pending exit timeouts
+  state.exitTimeouts.forEach(timeout => clearTimeout(timeout));
+  state.exitTimeouts.clear();
+
+  // Build panels from DOM
+  state.panels = buildPanelsFromDOM(sidebarElement);
+
+  if (state.panels.length === 0) {
+    state.activeIndex = -1;
+    return;
+  }
+
+  // Find first non-inactive card to activate
+  let firstActiveIndex = 0;
+  for (let i = 0; i < state.panels.length; i++) {
+    const card = state.panels[i].card;
+    if (card && !card.classList.contains('inactive') && !card.classList.contains('narrative-inactive')) {
+      firstActiveIndex = i;
+      break;
+    }
+  }
+
+  state.activeIndex = firstActiveIndex;
+
+  // Apply initial states to all panels
+  state.panels.forEach((panel, i) => {
+    applyPanelState(panel, i === firstActiveIndex ? 'active' : 'inactive');
+  });
+
+  // Apply container styles
+  const container = query('#silly-sim-tracker-container', sidebarElement);
+  if (container) {
+    DOMUtils.setStyle(container, {
+      width: '100%',
+      maxWidth: '100%',
+      boxSizing: 'border-box',
+      display: 'block',
+      visibility: 'visible',
+      height: '100%'
+    });
+  }
+}
+
+/**
+ * Activate a panel by index, deactivating the current one with animation
+ * @param {string} side - 'left' or 'right'
+ * @param {number} newIndex - Index of panel to activate
+ */
+function activatePanel(side, newIndex) {
+  const state = sidebarPanelState[side];
+
+  if (newIndex < 0 || newIndex >= state.panels.length) return;
+  if (newIndex === state.activeIndex && state.panels[newIndex]?.state === 'active') return;
+
+  const previousIndex = state.activeIndex;
+
+  // Cancel any pending exit timeout for the panel we're activating
+  if (state.exitTimeouts.has(newIndex)) {
+    clearTimeout(state.exitTimeouts.get(newIndex));
+    state.exitTimeouts.delete(newIndex);
+  }
+
+  // Start exit animation for previously active panel
+  if (previousIndex >= 0 && previousIndex < state.panels.length && previousIndex !== newIndex) {
+    const previousPanel = state.panels[previousIndex];
+
+    if (previousPanel.state === 'active' || previousPanel.state === 'exiting') {
+      // Cancel any existing exit timeout
+      if (state.exitTimeouts.has(previousIndex)) {
+        clearTimeout(state.exitTimeouts.get(previousIndex));
+      }
+
+      // Start exit animation
+      applyPanelState(previousPanel, 'exiting');
+
+      // After animation completes, set to fully inactive
+      const timeoutId = setTimeout(() => {
+        if (previousPanel.state === 'exiting') {
+          applyPanelState(previousPanel, 'inactive');
+        }
+        state.exitTimeouts.delete(previousIndex);
+      }, PANEL_ANIMATION_DURATION_MS);
+
+      state.exitTimeouts.set(previousIndex, timeoutId);
+    }
+  }
+
+  // Activate the new panel
+  state.activeIndex = newIndex;
+  applyPanelState(state.panels[newIndex], 'active');
+}
+
+/**
+ * Set up delegated click handler for panel tabs
+ * @param {HTMLElement} sidebarElement - The sidebar content element
+ * @param {string} side - 'left' or 'right'
+ */
+function setupPanelClickHandler(sidebarElement, side) {
+  // Clean up existing listener
+  if (side === 'left' && leftSidebarDelegateCleanup) {
+    leftSidebarDelegateCleanup();
+    leftSidebarDelegateCleanup = null;
+  } else if (side === 'right' && rightSidebarDelegateCleanup) {
+    rightSidebarDelegateCleanup();
+    rightSidebarDelegateCleanup = null;
+  }
+
+  const handleClick = (event) => {
+    const tab = event.target.closest('.sim-tracker-tab');
+    if (!tab) return;
+
+    const state = sidebarPanelState[side];
+
+    // Find which panel this tab belongs to
+    const panelIndex = state.panels.findIndex(p => p.tab === tab);
+    if (panelIndex === -1) return;
+
+    activatePanel(side, panelIndex);
+  };
+
+  // Use event delegation
+  const cleanup = on(sidebarElement, 'click', '.sim-tracker-tab', handleClick);
+
+  if (side === 'left') {
+    leftSidebarDelegateCleanup = cleanup;
+  } else {
+    rightSidebarDelegateCleanup = cleanup;
+  }
+}
+
+/**
+ * Update panel references after DOM content update
+ * Preserves current state while updating element references
+ * @param {HTMLElement} sidebarElement - The sidebar content element
+ * @param {string} side - 'left' or 'right'
+ */
+function refreshPanelReferences(sidebarElement, side) {
+  const state = sidebarPanelState[side];
+  const newPanels = buildPanelsFromDOM(sidebarElement);
+
+  // If panel count changed, reinitialize completely
+  if (newPanels.length !== state.panels.length) {
+    initializePanelState(sidebarElement, side);
+    return;
+  }
+
+  // Update element references while preserving states
+  newPanels.forEach((newPanel, i) => {
+    const oldState = state.panels[i]?.state || 'inactive';
+    newPanel.state = oldState;
+
+    // Apply the preserved state to new DOM elements
+    applyPanelState(newPanel, oldState);
+  });
+
+  state.panels = newPanels;
+}
+
+/**
+ * Clear panel state for a side (called when sidebar is removed)
+ * @param {string} side - 'left' or 'right'
+ */
+function clearPanelState(side) {
+  const state = sidebarPanelState[side];
+
+  // Clear all exit timeouts
+  state.exitTimeouts.forEach(timeout => clearTimeout(timeout));
+  state.exitTimeouts.clear();
+
+  // Reset state
+  state.panels = [];
+  state.activeIndex = 0;
 }
 
 // Function to execute bundled template logic
@@ -365,11 +663,9 @@ function applyLeftSidebarUpdate(content) {
       document.body.appendChild(verticalContainer);
     }
 
-    // Set up delegated event listener (once per sidebar lifetime)
-    setupDelegatedTabListener(leftSidebar, 'left');
-
-    // Initialize tab states
-    initializeTabStates(leftSidebar, 'left');
+    // Initialize panel state and set up click handler (new panel system)
+    initializePanelState(leftSidebar, 'left');
+    setupPanelClickHandler(leftSidebar, 'left');
 
     console.log(`[SST] [${MODULE_NAME}]`, "Created left sidebar container");
     return verticalContainer;
@@ -467,11 +763,9 @@ function applyRightSidebarUpdate(content) {
       document.body.appendChild(verticalContainer);
     }
 
-    // Set up delegated event listener (once per sidebar lifetime)
-    setupDelegatedTabListener(rightSidebar, 'right');
-
-    // Initialize tab states
-    initializeTabStates(rightSidebar, 'right');
+    // Initialize panel state and set up click handler (new panel system)
+    initializePanelState(rightSidebar, 'right');
+    setupPanelClickHandler(rightSidebar, 'right');
 
     console.log(`[SST] [${MODULE_NAME}]`, "Created right sidebar container");
     return verticalContainer;
@@ -486,7 +780,7 @@ function applyRightSidebarUpdate(content) {
 
 // Helper function to update sidebar content without destroying DOM
 function updateSidebarContentInPlace(existingSidebar, newContentHtml, side = 'left') {
-  // Create temporary container to parse new content using document fragment for performance
+  // Create temporary container to parse new content
   const tempDiv = document.createElement('div');
   tempDiv.innerHTML = newContentHtml;
 
@@ -515,8 +809,8 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml, side = 'le
       });
     }
 
-    // Re-initialize tab states and delegated listener
-    initializeTabStates(existingSidebar, side);
+    // Re-initialize panel state (new panel system)
+    initializePanelState(existingSidebar, side);
     return;
   }
 
@@ -543,19 +837,18 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml, side = 'le
       });
     }
 
-    // Re-initialize tab states
-    initializeTabStates(existingSidebar, side);
+    // Re-initialize panel state (new panel system)
+    initializePanelState(existingSidebar, side);
     return;
   }
 
-  // Use cached tab states instead of reading from DOM each time
-  const cachedStates = tabStateCache[side].states;
+  // Get panel state for preserving current states
+  const panelState = sidebarPanelState[side];
 
   // Update each card's content without destroying it
   newCards.forEach((newCard, index) => {
     if (existingCards[index]) {
       const existingCard = existingCards[index];
-      const state = cachedStates[index] || 'hidden';
 
       // Use replaceChildren for more efficient DOM update (single reflow)
       const fragment = document.createDocumentFragment();
@@ -573,17 +866,15 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml, side = 'le
         }
       });
 
-      // Apply base classes from new card then overlay cached state
+      // Apply base classes from new card
       existingCard.className = newCard.className;
-      applyCardState(existingCard, state);
     }
   });
 
-  // Update tabs with cached state
+  // Update tabs
   newTabs.forEach((newTab, index) => {
     if (existingTabs[index]) {
       const existingTab = existingTabs[index];
-      const state = cachedStates[index] || 'hidden';
 
       existingTab.innerHTML = newTab.innerHTML;
 
@@ -593,14 +884,23 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml, side = 'le
         }
       });
 
-      // Apply base classes from new tab, then set active state
+      // Apply base classes from new tab
       existingTab.className = newTab.className;
-      applyTabButtonState(existingTab, state === 'active');
     }
   });
+
+  // Refresh panel references to point to updated DOM elements, preserving state
+  refreshPanelReferences(existingSidebar, side);
 }
 
+// === DEPRECATED TAB STATE FUNCTIONS ===
+// These functions are part of the old tab/card separate state system.
+// They are superseded by the Panel System (see PANEL SYSTEM FUNCTIONS above).
+// Kept for backward compatibility but will be removed in a future version.
+// TODO: Remove these functions once all templates migrate to panel-based structure.
+
 /**
+ * @deprecated Use applyPanelState() instead
  * Apply state to a card element
  * Cards have full animation states: active, sliding-in, sliding-out, hidden
  * @param {HTMLElement} card - The card element to update
@@ -630,6 +930,7 @@ function applyCardState(card, state) {
 }
 
 /**
+ * @deprecated Use applyPanelState() instead
  * Apply state to a tab button element
  * Tabs only toggle 'active' class - they're always visible, just styled differently
  * The CSS handles the transform animation when active class is added/removed
@@ -645,6 +946,7 @@ function applyTabButtonState(tab, isActive) {
 }
 
 /**
+ * @deprecated Use applyPanelState() instead
  * Legacy wrapper for backward compatibility
  * Routes to appropriate function based on element type
  * @param {HTMLElement} element - The element to update
@@ -661,6 +963,7 @@ function applyTabState(element, state) {
 }
 
 /**
+ * @deprecated Use initializePanelState() instead
  * Initialize tab states from DOM and set up the state cache
  * @param {HTMLElement} sidebarElement - The sidebar content element
  * @param {string} side - 'left' or 'right'
@@ -708,6 +1011,7 @@ function initializeTabStates(sidebarElement, side) {
 }
 
 /**
+ * @deprecated Use setupPanelClickHandler() instead
  * Set up a single delegated event listener for tab clicks
  * This avoids re-attaching listeners on every content update
  * @param {HTMLElement} sidebarElement - The sidebar content element
@@ -811,6 +1115,8 @@ function removeGlobalSidebars() {
       leftSidebarDelegateCleanup();
       leftSidebarDelegateCleanup = null;
     }
+    // Clear panel state (new panel system)
+    clearPanelState('left');
     globalLeftSidebar.remove();
     globalLeftSidebar = null;
   }
@@ -822,13 +1128,11 @@ function removeGlobalSidebars() {
       rightSidebarDelegateCleanup();
       rightSidebarDelegateCleanup = null;
     }
+    // Clear panel state (new panel system)
+    clearPanelState('right');
     globalRightSidebar.remove();
     globalRightSidebar = null;
   }
-
-  // Reset tab state caches
-  tabStateCache.left = { activeIndex: 0, states: [] };
-  tabStateCache.right = { activeIndex: 0, states: [] };
 
   // Clear any pending updates
   pendingLeftUpdate = null;
@@ -840,8 +1144,8 @@ function removeGlobalSidebars() {
 }
 
 /**
+ * @deprecated Use initializePanelState() and setupPanelClickHandler() instead
  * Legacy wrapper for tab event listener attachment
- * Now uses the delegated listener pattern internally
  * Kept for backward compatibility with external calls
  * @param {HTMLElement} sidebarElement - The sidebar content element
  */
@@ -851,14 +1155,14 @@ function attachTabEventListeners(sidebarElement) {
                  sidebarElement.closest('#sst-global-sidebar-left') !== null;
   const side = isLeft ? 'left' : 'right';
 
-  // Use the new optimized initialization
-  initializeTabStates(sidebarElement, side);
+  // Use the new panel system
+  initializePanelState(sidebarElement, side);
 
-  // Only set up delegated listener if not already set up
+  // Only set up click handler if not already set up
   if (side === 'left' && !leftSidebarDelegateCleanup) {
-    setupDelegatedTabListener(sidebarElement, side);
+    setupPanelClickHandler(sidebarElement, side);
   } else if (side === 'right' && !rightSidebarDelegateCleanup) {
-    setupDelegatedTabListener(sidebarElement, side);
+    setupPanelClickHandler(sidebarElement, side);
   }
 }
 
