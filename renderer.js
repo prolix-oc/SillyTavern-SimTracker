@@ -605,21 +605,28 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml, side = 'le
  * @param {string} state - The state to apply: 'active', 'hidden', 'sliding-in', 'sliding-out'
  */
 function applyTabState(element, state) {
-  // Remove all state classes first
-  element.classList.remove('active', 'tab-hidden', 'sliding-in', 'sliding-out');
-
   switch (state) {
     case 'active':
+      // Clean transition to active
+      element.classList.remove('tab-hidden', 'sliding-in', 'sliding-out');
       element.classList.add('active');
       break;
     case 'sliding-in':
+      // Sliding in from hidden
+      element.classList.remove('tab-hidden', 'sliding-out', 'active');
       element.classList.add('sliding-in');
       break;
     case 'sliding-out':
+      // Keep 'active' during slide-out for CSS transition to work
+      // The transition animates FROM the active state TO the hidden state
+      element.classList.remove('tab-hidden', 'sliding-in');
       element.classList.add('sliding-out');
+      // Note: 'active' is intentionally NOT removed here
       break;
     case 'hidden':
     default:
+      // Fully hidden - remove all other states
+      element.classList.remove('active', 'sliding-in', 'sliding-out');
       element.classList.add('tab-hidden');
       break;
   }
