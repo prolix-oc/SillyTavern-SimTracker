@@ -44,6 +44,10 @@ let rafScheduled = false;
 let streamingUpdateTimer = null;
 const STREAMING_DEBOUNCE_MS = 100;
 
+// Track whether we're waiting for the first render after generation ends
+// The first render should be immediate, subsequent streaming updates are debounced
+let isFirstRenderPending = true;
+
 // Delegated event listener references (to avoid re-attaching)
 let leftSidebarDelegateCleanup = null;
 let rightSidebarDelegateCleanup = null;
@@ -111,6 +115,10 @@ function scheduleRafUpdate() {
 /**
  * Queue a sidebar update - will be batched via RAF
  * During streaming, updates are debounced to reduce jank
+ *
+ * Optimization: The first render (triggered by CHARACTER_MESSAGE_RENDERED)
+ * is always immediate to minimize perceived latency. Only subsequent
+ * streaming updates are debounced.
  */
 function queueSidebarUpdate(side, content) {
   if (side === 'left') {
@@ -119,7 +127,15 @@ function queueSidebarUpdate(side, content) {
     pendingRightUpdate = content;
   }
 
-  // During generation, debounce updates to reduce render frequency
+  // First render should always be immediate for responsiveness
+  // This handles the CHARACTER_MESSAGE_RENDERED event without delay
+  if (isFirstRenderPending) {
+    isFirstRenderPending = false;
+    scheduleRafUpdate();
+    return;
+  }
+
+  // During generation, debounce subsequent updates to reduce render frequency
   if (isGenerationInProgress) {
     if (streamingUpdateTimer) {
       clearTimeout(streamingUpdateTimer);
@@ -709,6 +725,13 @@ const calculateStatChanges = (currentCharacters, previousSimData) => {
 // State management functions
 const setGenerationInProgress = (value) => {
   isGenerationInProgress = value;
+
+  // Reset first-render flag when generation starts
+  // This ensures the first CHARACTER_MESSAGE_RENDERED after generation starts
+  // gets an immediate render instead of being debounced
+  if (value === true) {
+    isFirstRenderPending = true;
+  }
 };
 
 const getGenerationInProgress = () => {
