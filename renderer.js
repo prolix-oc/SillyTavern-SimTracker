@@ -238,15 +238,25 @@ function applyPanelState(panel, state) {
     }
   }
 
-  // Apply state to tab - tabs just toggle 'active' class
-  // The CSS transition on the tab handles the animation
+  // Apply state to tab - synced with card animation
+  // Tab animation is triggered by removing 'active' class
+  // For synchronized exit animation, we remove 'active' immediately when entering 'exiting'
+  // This way both tab and card start their exit animations at the same time
   if (tab) {
-    if (state === 'active') {
-      tab.classList.add('active');
-    } else {
-      // Both 'inactive' and 'exiting' remove active from tab
-      // This lets the tab animate back while the card is still sliding out
-      tab.classList.remove('active');
+    switch (state) {
+      case 'active':
+        tab.classList.add('active');
+        break;
+      case 'exiting':
+        // Remove 'active' to trigger the tab's exit animation
+        // This syncs with the card's sliding-out animation
+        tab.classList.remove('active');
+        break;
+      case 'inactive':
+      default:
+        // Tab is already in inactive position, ensure class is removed
+        tab.classList.remove('active');
+        break;
     }
   }
 }
