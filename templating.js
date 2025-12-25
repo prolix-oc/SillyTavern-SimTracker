@@ -505,7 +505,9 @@ async function populateTemplateDropdown(get_settings) {
     "dating-card-template-sidebar-tabs.json",
     "dating-card-template-sidebar-left-tabs.json",
     "dating-card-template-macro.json",
-    "disposition-card-template-sidebar-tabs.json"
+    "disposition-card-template-sidebar-tabs.json",
+    "tactical-hud-sidebar-tabs.json",
+    "bento-style-tracker.json"
   ];
 
   const templateOptions = [];

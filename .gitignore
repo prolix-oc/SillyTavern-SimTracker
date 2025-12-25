@@ -24,3 +24,4 @@ tracker-card-templates/bundled-js-example-template-dead.json
 prompts/bundled-js-example-prompt-dead.md
 potential_bundled_js_investigation.txt
 docs/template-guide-bundled-javascript-dead.md
+.DS_Store

@@ -1,0 +1,385 @@
+<!-- TEMPLATE NAME: Bento Style Tracker -->
+<!-- AUTHOR: User -->
+<!-- POSITION: BOTTOM -->
+
+<!-- CARD_TEMPLATE_START -->
+<style>
+    /* =========================================
+       BENTO GRID INTEGRATION
+       ========================================= */
+    /* Target the SimTracker container to enforce grid layout */
+    #silly-sim-tracker-container {
+        display: flex;
+        flex-wrap: wrap; 
+        justify-content: center;
+        gap: 20px;
+        align-items: flex-start; /* Independent Height Scaling */
+        width: 100%;
+        max-width: 960px;
+        margin: 0 auto;
+        padding: 20px 0;
+    }
+
+    /* =========================================
+       GLOBAL THEME VARIABLES (Scoped)
+       ========================================= */
+    .bento-card {
+        --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        --glass-surface: rgba(30, 30, 35, 0.70);
+        --glass-border: rgba(255, 255, 255, 0.12);
+        --glass-blur: 40px;
+        --shadow-float: 0 20px 50px -10px rgba(0, 0, 0, 0.6);
+
+        --text-primary: #ffffff;
+        --text-secondary: #9898a0;
+        
+        /* FIXED GRADIENTS */
+        --grad-aff: linear-gradient(90deg, #ff9a9e 0%, #fad0c4 50%, #fbc2eb 100%);
+        --grad-des: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
+        --grad-tru: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
+        --grad-con: linear-gradient(90deg, #cfd9df 0%, #e2ebf0 100%);
+
+        /* REACTION COLORS */
+        --st-approved: #2ecc71;    --bg-approved: rgba(46, 204, 113, 0.15);
+        --st-neutral: #f1c40f;     --bg-neutral: rgba(241, 196, 15, 0.15);
+        --st-disapproved: #e74c3c; --bg-disapproved: rgba(231, 76, 60, 0.15);
+        
+        /* CYCLE COLORS */
+        --cy-preg: #f6d365;      --bg-preg: rgba(246, 211, 101, 0.15);
+        --cy-ovu: #00d2ff;       --bg-ovu: rgba(0, 210, 255, 0.15);
+        --cy-men: #ff5e62;       --bg-men: rgba(255, 94, 98, 0.15);
+        --cy-rut: #9b59b6;       --bg-rut: rgba(155, 89, 182, 0.15);
+    }
+
+    /* =========================================
+       BENTO CARD STYLES
+       ========================================= */
+    .bento-card {
+        flex: 1 1 340px; 
+        max-width: 460px; 
+        min-width: 300px;
+        background: var(--glass-surface);
+        backdrop-filter: blur(var(--glass-blur));
+        -webkit-backdrop-filter: blur(var(--glass-blur));
+        border: 1px solid var(--glass-border);
+        border-radius: 24px;
+        box-shadow: var(--shadow-float);
+        overflow: hidden;
+        transition: border-color 0.3s ease, opacity 0.3s ease;
+        position: relative;
+        height: auto;
+        box-sizing: border-box;
+        font-family: var(--font-stack);
+        color: var(--text-primary);
+    }
+
+    .bento-card:hover { border-color: rgba(255,255,255,0.3); }
+    
+    .bento-card.inactive { opacity: 0.6; }
+
+    .bento-card * { box-sizing: border-box; }
+
+    /* SVG Helpers */
+    .bento-card svg { display: block; }
+    .bento-card .icon-sm { width: 14px; height: 14px; }
+    .bento-card .icon-md { width: 18px; height: 18px; }
+
+    /* Toggle Logic */
+    .bento-card input[type="checkbox"].toggle { position: absolute; opacity: 0; pointer-events: none; }
+
+    /* HEADER */
+    .bento-header {
+        padding: 20px 24px;
+        cursor: pointer;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        user-select: none;
+    }
+
+    .identity-group { display: flex; align-items: center; gap: 16px; }
+    .avatar-circle {
+        width: 44px; height: 44px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #333, #151515);
+        border: 2px solid rgba(255,255,255,0.1);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.4rem;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        overflow: hidden;
+    }
+    .avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+    
+    .text-group { display: flex; flex-direction: column; }
+    .text-group h2 { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.5px; margin: 0 0 2px 0; }
+    .text-group .date { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
+
+    .chevron { opacity: 0.5; transition: transform 0.4s ease; color: #fff; }
+    .bento-card input.toggle:checked + .bento-header .chevron { transform: rotate(180deg); opacity: 1; }
+    
+    .header-badges { display: flex; gap: 8px; margin-right: 12px; }
+    .mini-badge { width: 8px; height: 8px; border-radius: 50%; box-shadow: 0 0 6px currentColor; }
+
+    /* BODY */
+    .bento-body-wrapper {
+        display: grid;
+        grid-template-rows: 0fr;
+        transition: grid-template-rows 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    .bento-card input.toggle:checked ~ .bento-body-wrapper { grid-template-rows: 1fr; }
+
+    .bento-inner {
+        overflow: hidden;
+        padding: 0 24px 24px 24px;
+        opacity: 0;
+        transform: translateY(-10px);
+        transition: opacity 0.3s ease, transform 0.3s ease;
+    }
+    .bento-card input.toggle:checked ~ .bento-body-wrapper .bento-inner {
+        opacity: 1; transform: translateY(0); transition-delay: 0.1s;
+    }
+
+    /* MONOLOGUE */
+    .monologue-dark {
+        background: rgba(0,0,0,0.3);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 16px;
+        padding: 34px 16px 16px 16px; 
+        margin-bottom: 20px;
+        position: relative;
+        min-height: 90px; 
+        height: auto; 
+    }
+
+    .monologue-dark p { font-style: italic; color: #e0e0e0; font-size: 0.9rem; line-height: 1.5; margin: 0; }
+    .mono-tag { 
+        position: absolute; top: 10px; left: 16px; background: #222; 
+        padding: 2px 8px; border-radius: 4px; font-size: 0.6rem; 
+        text-transform: uppercase; font-weight: 800; color: #777;
+        letter-spacing: 0.5px; border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    /* STATUS ROW */
+    .status-row { display: flex; gap: 10px; margin-bottom: 20px; }
+    .status-pill {
+        flex: 1; background: rgba(255,255,255,0.03);
+        padding: 10px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center; gap: 8px;
+        font-size: 0.75rem; font-weight: 600;
+        border: 1px solid rgba(255,255,255,0.05);
+        color: #fff;
+    }
+
+    /* Empty/Inactive State */
+    .status-pill.empty {
+        background: rgba(0, 0, 0, 0.6); 
+        border: 1px dashed rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.2);
+        box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+    }
+
+    /* STATS GRID */
+    .stats-grid-vert { display: flex; flex-direction: column; gap: 14px; }
+    .stat-item { display: grid; grid-template-columns: 20px 1fr 30px; align-items: center; gap: 12px; }
+    
+    .track { 
+        height: 6px; background: rgba(255,255,255,0.08); 
+        border-radius: 10px; position: relative; overflow: hidden; 
+    }
+    
+    .fill-clip { 
+        position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+        border-radius: 10px;
+        clip-path: inset(0 calc(100% - var(--val)) 0 0);
+        transition: clip-path 1s cubic-bezier(0.2, 0.8, 0.2, 1);
+    }
+    
+    .g-aff { background: var(--grad-aff); }
+    .g-des { background: var(--grad-des); }
+    .g-tru { background: var(--grad-tru); }
+    .g-con { background: var(--grad-con); }
+    
+    /* Stat Value & Change Indicator */
+    .stat-value-group {
+        position: relative;
+        font-size: 0.7rem; 
+        font-weight: 700;
+        text-align: right;
+    }
+    
+    .change-indicator {
+        position: absolute;
+        top: -10px;
+        right: 0;
+        font-size: 0.6rem;
+        padding: 1px 3px;
+        border-radius: 4px;
+        white-space: nowrap;
+        opacity: 0;
+        animation: floatUp 2s forwards;
+    }
+    
+    .change-pos { color: #2ecc71; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+    .change-neg { color: #e74c3c; text-shadow: 0 1px 2px rgba(0,0,0,0.5); }
+    
+    @keyframes floatUp {
+        0% { transform: translateY(0); opacity: 1; }
+        80% { transform: translateY(-10px); opacity: 1; }
+        100% { transform: translateY(-15px); opacity: 0; }
+    }
+
+</style>
+
+<div class="bento-card {{#if stats.inactive}}inactive{{/if}}" style="--val-aff: {{divide stats.ap 2}}%; --val-des: {{divide stats.dp 1.5}}%; --val-tru: {{divide stats.tp 1.5}}%; --val-con: {{divide stats.cp 1.5}}%;">
+    <input type="checkbox" id="bento-toggle-{{characterName}}" class="toggle" checked>
+    
+    <label for="bento-toggle-{{characterName}}" class="bento-header">
+        <div class="identity-group">
+            <div class="avatar-circle" style="background: linear-gradient(135deg, {{bgColor}} 0%, #151515 100%);">
+                {{initials characterName}}
+            </div>
+            <div class="text-group">
+                <h2>{{characterName}}</h2>
+                <div class="date">{{currentDate}} • Day {{stats.days_since_first_meeting}}</div>
+            </div>
+        </div>
+        <div style="display:flex; align-items: center;">
+            <div class="header-badges">
+                <!-- Status Dots -->
+                {{#if (eq stats.cycle_stage "pregnancy")}}
+                    <div class="mini-badge" style="background: var(--cy-preg); box-shadow: 0 0 6px var(--cy-preg);" title="Pregnant"></div>
+                {{else if (eq stats.cycle_stage "ovulation")}}
+                    <div class="mini-badge" style="background: var(--cy-ovu); box-shadow: 0 0 6px var(--cy-ovu);" title="Ovulating"></div>
+                {{else if (eq stats.cycle_stage "menstruation")}}
+                    <div class="mini-badge" style="background: var(--cy-men); box-shadow: 0 0 6px var(--cy-men);" title="Menstruation"></div>
+                {{else if (eq stats.cycle_stage "rut")}}
+                    <div class="mini-badge" style="background: var(--cy-rut); box-shadow: 0 0 6px var(--cy-rut);" title="Rut / High Arousal"></div>
+                {{/if}}
+                {{#if (eq stats.last_react 1)}}
+                    <div class="mini-badge" style="background: var(--st-approved); box-shadow: 0 0 6px var(--st-approved);" title="Approved"></div>
+                {{else if (eq stats.last_react 2)}}
+                    <div class="mini-badge" style="background: var(--st-disapproved); box-shadow: 0 0 6px var(--st-disapproved);" title="Disapproved"></div>
+                {{else}}
+                    <div class="mini-badge" style="background: var(--st-neutral); box-shadow: 0 0 6px var(--st-neutral);" title="Neutral"></div>
+                {{/if}}
+            </div>
+            <div class="chevron">
+                <svg class="icon-md" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+        </div>
+    </label>
+
+    <div class="bento-body-wrapper">
+        <div class="bento-inner">
+            <!-- Monologue -->
+            <div class="monologue-dark">
+                <span class="mono-tag">Current Thought</span>
+                <p>"{{stats.internal_thought}}"</p>
+            </div>
+
+            <!-- Status Row (Pregnancy/Cycle | Reaction) -->
+            <div class="status-row">
+                <!-- Slot 1: Pregnancy/Cycle -->
+                {{#if (eq stats.cycle_stage "pregnancy")}}
+                    <div class="status-pill" style="color:var(--cy-preg); background:var(--bg-preg);">
+                        <svg class="icon-sm" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+                        <span>Pregnant ({{stats.days_preg}}d)</span>
+                    </div>
+                {{else if (eq stats.cycle_stage "ovulation")}}
+                    <div class="status-pill" style="color:var(--cy-ovu); background:var(--bg-ovu);">
+                        <svg class="icon-sm" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+                        <span>Ovulating</span>
+                    </div>
+                {{else if (eq stats.cycle_stage "menstruation")}}
+                    <div class="status-pill" style="color:var(--cy-men); background:var(--bg-men);">
+                        <svg class="icon-sm" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+                        <span>Period</span>
+                    </div>
+                {{else if (eq stats.cycle_stage "rut")}}
+                    <div class="status-pill" style="color:var(--cy-rut); background:var(--bg-rut);">
+                        <svg class="icon-sm" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+                        <span>Rut</span>
+                    </div>
+                {{else}}
+                    <!-- Default / None / Follicular / Luteal -->
+                    <div class="status-pill empty">
+                        <span>--</span>
+                    </div>
+                {{/if}}
+
+                <!-- Slot 2: Reaction -->
+                {{#if (eq stats.last_react 1)}}
+                    <div class="status-pill" style="color:var(--st-approved); background:var(--bg-approved);">
+                        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17L4 12"/></svg>
+                        <span>Approved</span>
+                    </div>
+                {{else if (eq stats.last_react 2)}}
+                    <div class="status-pill" style="color:var(--st-disapproved); background:var(--bg-disapproved);">
+                         <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                        <span>Disapproved</span>
+                    </div>
+                {{else}}
+                    <div class="status-pill" style="color:var(--st-neutral); background:var(--bg-neutral);">
+                        <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14"/></svg>
+                        <span>Neutral</span>
+                    </div>
+                {{/if}}
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="stats-grid-vert">
+                <!-- Affection -->
+                <div class="stat-item">
+                    <svg class="icon-md" viewBox="0 0 24 24" fill="#ff9a9e"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                    <div class="track"><div class="fill-clip g-aff" style="--val: {{divide stats.ap 2}}%"></div></div>
+                    <div class="stat-value-group">
+                        {{stats.ap}}
+                        {{#if stats.apChange}}
+                            <span class="change-indicator {{#if (gt stats.apChange 0)}}change-pos{{else}}change-neg{{/if}}">{{#if (gt stats.apChange 0)}}+{{/if}}{{stats.apChange}}</span>
+                        {{/if}}
+                    </div>
+                </div>
+
+                <!-- Desire -->
+                <div class="stat-item">
+                    <svg class="icon-md" viewBox="0 0 24 24" fill="url(#gradF1-{{characterName}})">
+                        <defs><linearGradient id="gradF1-{{characterName}}" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#f093fb"/><stop offset="1" stop-color="#f5576c"/></linearGradient></defs>
+                        <path fill="url(#gradF1-{{characterName}})" d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67z"/>
+                    </svg>
+                    <div class="track"><div class="fill-clip g-des" style="--val: {{divide stats.dp 1.5}}%"></div></div>
+                    <div class="stat-value-group">
+                        {{stats.dp}}
+                        {{#if stats.dpChange}}
+                             <span class="change-indicator {{#if (gt stats.dpChange 0)}}change-pos{{else}}change-neg{{/if}}">{{#if (gt stats.dpChange 0)}}+{{/if}}{{stats.dpChange}}</span>
+                        {{/if}}
+                    </div>
+                </div>
+
+                <!-- Trust -->
+                <div class="stat-item">
+                    <svg class="icon-md" viewBox="0 0 24 24" fill="#89f7fe"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+                    <div class="track"><div class="fill-clip g-tru" style="--val: {{divide stats.tp 1.5}}%"></div></div>
+                    <div class="stat-value-group">
+                        {{stats.tp}}
+                        {{#if stats.tpChange}}
+                             <span class="change-indicator {{#if (gt stats.tpChange 0)}}change-pos{{else}}change-neg{{/if}}">{{#if (gt stats.tpChange 0)}}+{{/if}}{{stats.tpChange}}</span>
+                        {{/if}}
+                    </div>
+                </div>
+
+                <!-- Contempt -->
+                <div class="stat-item">
+                    <svg class="icon-md" viewBox="0 0 24 24" fill="#888"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 11H7v-2h10v2z"/></svg>
+                    <div class="track"><div class="fill-clip g-con" style="--val: {{divide stats.cp 1.5}}%"></div></div>
+                    <div class="stat-value-group">
+                        {{stats.cp}}
+                        {{#if stats.cpChange}}
+                             <span class="change-indicator {{#if (gt stats.cpChange 0)}}change-neg{{else}}change-pos{{/if}}">{{#if (gt stats.cpChange 0)}}+{{/if}}{{stats.cpChange}}</span>
+                        {{/if}}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- CARD_TEMPLATE_END -->
