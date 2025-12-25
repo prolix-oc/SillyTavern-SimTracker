@@ -594,7 +594,6 @@ div[mesid] .mes_text #silly-sim-tracker-container {
   width: 100% !important;
   max-width: 100% !important;
   box-sizing: border-box !important;
-  display: block !important;
   visibility: visible !important;
   pointer-events: none !important;
 }

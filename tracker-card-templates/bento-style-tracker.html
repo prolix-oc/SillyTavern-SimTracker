@@ -104,14 +104,14 @@
         min-width: 44px !important;
         min-height: 44px !important;
         border-radius: 50% !important;
-        /* Background is now dynamic via inline styles, default provided below */
-        background: linear-gradient(135deg, #333, #151515);
-        border: 2px solid rgba(255,255,255,0.1);
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255,255,255,0.1);
         display: flex !important; 
         align-items: center !important; 
         justify-content: center !important;
         font-size: 1.4rem;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
         overflow: hidden;
         color: #fff;
         font-weight: bold;
@@ -246,7 +246,7 @@
     
     <label for="bento-toggle-{{characterName}}" class="bento-header">
         <div class="identity-group">
-            <div class="bento-avatar" style="background: linear-gradient(135deg, {{bgColor}} 0%, #151515 100%);">
+            <div class="bento-avatar">
                 {{rawFirstLetter characterName}}
             </div>
             <div class="text-group">
