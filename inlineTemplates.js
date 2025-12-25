@@ -154,7 +154,7 @@ function renderInlineTemplate(templateName, data, templateConfig, getSettings) {
  * Matches: [[DISPLAY=templateName, DATA={...}]]
  * Also supports shorter syntax: [[D=templateName, DATA={...}]]
  */
-const INLINE_TEMPLATE_REGEX = /\[\[(?:DISPLAY|D)=([^,\]]+),\s*DATA=(\{[^\]]+\})\]\]/g;
+const INLINE_TEMPLATE_REGEX = /\[\[(?:DISPLAY|D)=([^,\]]+),\s*DATA=(\{[\s\S]*?\})\s*\]\]/g;
 
 /**
  * Regex pattern for detecting the start of inline templates (for hiding during streaming)
@@ -260,7 +260,7 @@ export function hideStreamingInlineMarkers(messageElement, isEnabled) {
     // Check if this text node contains a partial inline marker
     if (text.includes("[[")) {
       // Check if it's a complete marker (has closing ]])
-      const hasComplete = /\[\[(?:DISPLAY|D)=([^,\]]+),\s*DATA=(\{[^\]]+\})\]\]/.test(text);
+      const hasComplete = /\[\[(?:DISPLAY|D)=([^,\]]+),\s*DATA=(\{[\s\S]*?\})\s*\]\]/.test(text);
       
       if (!hasComplete) {
         // This is a partial/incomplete marker - hide it

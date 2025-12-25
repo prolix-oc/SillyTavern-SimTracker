@@ -444,34 +444,36 @@ const initialize_settings_listeners = (
   // Function to create and show the modal
   const createAndShowModal = () => {
     // Remove any existing modal
-    $("#sst-custom-fields-modal").remove();
+    $(".sst-modal-overlay").remove();
 
-    // Create modal HTML using SillyTavern's built-in classes with dialog element
+    // Create modal HTML
     const modalHtml = `
-            <dialog id="sst-custom-fields-modal" class="popup wide_dialogue_popup large_dialogue_popup vertical_scrolling_dialogue_popup popup--animation-fast">
-                <div class="popup-header">
-                    <h3 style="margin: 0; padding: 10px 0;">Manage Custom Fields</h3>
+            <div class="sst-modal-overlay">
+              <div class="sst-modal">
+                <div class="sst-modal-header">
+                    <h3 class="sst-modal-title">Manage Custom Fields</h3>
+                    <button id="sst-modal-close" class="sst-modal-close">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                    </button>
                 </div>
-                <div class="popup-content" style="padding: 15px; flex: 1; display: flex; flex-direction: column;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <div style="flex: 1;"></div>
-                        <button id="addCustomFieldBtn" class="menu_button">Add New Field</button>
+                <div class="sst-modal-body">
+                    <div style="display: flex; justify-content: flex-end; margin-bottom: 15px;">
+                        <button id="addCustomFieldBtn" class="sst-btn sst-btn-primary">Add New Field</button>
                     </div>
-                    <div id="customFieldsList" class="sst-fields-container" style="flex: 1; overflow-y: auto;">
+                    <div id="customFieldsList">
                         <!-- Fields will be populated here by JavaScript -->
                     </div>
                 </div>
-                <div class="popup-footer" style="display: flex; justify-content: center; padding: 15px;">
-                    <button id="sst-modal-close" class="menu_button">Close</button>
-                </div>
-            </dialog>
+              </div>
+            </div>
         `;
 
     // Append modal to body
     $("body").append(modalHtml);
 
     // Get references to modal elements
-    const $modal = $("#sst-custom-fields-modal");
+    const $overlay = $(".sst-modal-overlay");
+    const $modal = $overlay.find(".sst-modal");
     const $fieldsContainer = $modal.find("#customFieldsList");
     const $addFieldButton = $modal.find("#addCustomFieldBtn");
     const $modalClose = $modal.find("#sst-modal-close");
@@ -481,18 +483,18 @@ const initialize_settings_listeners = (
       return $(`
                 <div class="sst-field-item">
                     <div class="sst-field-header">
-                        <input type="text" class="field-key-display field-key text_pole" placeholder="Field key" style="margin-right: 10px;" />
-                        <div>
-                            <button class="sst-toggle-field menu_button">Expand</button>
-                            <button class="remove-field-btn menu_button" style="margin-left: 5px;">Remove</button>
+                        <input type="text" class="field-key-display sst-input" placeholder="Field key" style="flex: 1;" />
+                        <div style="display: flex; gap: 8px;">
+                            <button class="sst-toggle-field sst-btn">Expand</button>
+                            <button class="remove-field-btn sst-btn sst-btn-danger">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                            </button>
                         </div>
                     </div>
-                    <div class="sst-field-details" style="display: none; padding: 10px; border-top: 1px solid #444; margin-top: 5px;">
-                        <div style="display: flex; flex-direction: column; gap: 10px;">
-                            <div>
-                                <label>Description for LLM:</label>
-                                <input type="text" class="field-description text_pole" placeholder="Field description" style="width: 100%;" />
-                            </div>
+                    <div class="sst-field-details" style="display: none; padding-top: 12px; border-top: 1px solid rgba(255,255,255,0.1); margin-top: 12px;">
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <label class="sst-setting-label">Description for LLM</label>
+                            <input type="text" class="field-description sst-input" placeholder="Field description" style="width: 100%;" />
                         </div>
                     </div>
                 </div>
@@ -568,26 +570,27 @@ const initialize_settings_listeners = (
 
     // Close modal when clicking the Close button
     $modalClose.on("click", () => {
-      $modal.remove();
+      $overlay.remove();
     });
 
     // Close modal with Escape key
-    $modal.on("keydown", function (e) {
+    $(document).on("keydown.sstModal", function (e) {
       if (e.key === "Escape") {
-        $modal.remove();
+        $overlay.remove();
+        $(document).off("keydown.sstModal");
       }
     });
 
-    // Also close when clicking on the backdrop (dialog native behavior)
-    $modal.on("click", function (e) {
+    // Close when clicking on the backdrop
+    $overlay.on("click", function (e) {
       if (e.target === this) {
-        $modal.remove();
+        $overlay.remove();
+        $(document).off("keydown.sstModal");
       }
     });
 
     // Render fields and show modal
     renderFields();
-    $modal[0].showModal(); // Use the native dialog showModal() method
   };
 
   // Manage fields button opens the modal
@@ -726,51 +729,63 @@ const escapeHtml = (unsafe) => {
 // Function to handle preset export
 const handlePresetExport = (loadTemplate, refreshAllCards) => {
   // Remove any existing modal
-  $("#sst-export-preset-modal").remove();
+  $(".sst-modal-overlay").remove();
 
-  // Create modal HTML using SillyTavern's built-in classes with dialog element
+  // Create modal HTML
   const modalHtml = `
-    <dialog id="sst-export-preset-modal" class="popup wide_dialogue_popup large_dialogue_popup vertical_scrolling_dialogue_popup popup--animation-fast">
-      <div class="popup-header">
-        <h3 style="margin: 0; padding: 10px 0;">Export Template Preset</h3>
+    <div class="sst-modal-overlay">
+      <div class="sst-modal">
+        <div class="sst-modal-header">
+          <h3 class="sst-modal-title">Export Template Preset</h3>
+          <button id="sst-modal-close" class="sst-modal-close">
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <div class="sst-modal-body">
+          <div style="margin-bottom: 15px;">
+            <label class="sst-setting-label" for="exportTemplateName">Template Name</label>
+            <input type="text" id="exportTemplateName" class="sst-input" style="width: 100%;" />
+          </div>
+          <div style="margin-bottom: 15px;">
+            <label class="sst-setting-label" for="exportTemplateAuthor">Author</label>
+            <input type="text" id="exportTemplateAuthor" class="sst-input" style="width: 100%;" />
+          </div>
+          <div style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+            <label class="sst-setting-label" style="margin: 0;">Include System Prompt</label>
+            <label class="sst-toggle">
+               <input type="checkbox" id="exportIncludeSysPrompt" checked />
+               <span class="sst-slider"></span>
+            </label>
+          </div>
+          <div style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+            <label class="sst-setting-label" style="margin: 0;">Include Custom Fields</label>
+            <label class="sst-toggle">
+               <input type="checkbox" id="exportIncludeCustomFields" checked />
+               <span class="sst-slider"></span>
+            </label>
+          </div>
+          <div style="margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between;">
+            <label class="sst-setting-label" style="margin: 0;">Include Extension Settings</label>
+            <label class="sst-toggle">
+               <input type="checkbox" id="exportIncludeSettings" checked />
+               <span class="sst-slider"></span>
+            </label>
+          </div>
+        </div>
+        <div class="sst-modal-footer">
+          <button id="sst-export-preset-cancel" class="sst-btn">Cancel</button>
+          <button id="sst-export-preset-confirm" class="sst-btn sst-btn-primary">Export</button>
+        </div>
       </div>
-      <div class="popup-content" style="padding: 15px; flex: 1; display: flex; flex-direction: column;">
-        <div style="margin-bottom: 15px;">
-          <label for="exportTemplateName">Template Name:</label>
-          <input type="text" id="exportTemplateName" class="text_pole" style="width: 100%;" />
-        </div>
-        <div style="margin-bottom: 15px;">
-          <label for="exportTemplateAuthor">Author:</label>
-          <input type="text" id="exportTemplateAuthor" class="text_pole" style="width: 100%;" />
-        </div>
-        <div style="margin-bottom: 15px;">
-          <label>
-            <input type="checkbox" id="exportIncludeSysPrompt" checked /> Include System Prompt
-          </label>
-        </div>
-        <div style="margin-bottom: 15px;">
-          <label>
-            <input type="checkbox" id="exportIncludeCustomFields" checked /> Include Custom Fields
-          </label>
-        </div>
-        <div style="margin-bottom: 15px;">
-          <label>
-            <input type="checkbox" id="exportIncludeSettings" checked /> Include Extension Settings
-          </label>
-        </div>
-      </div>
-      <div class="popup-footer" style="display: flex; justify-content: center; padding: 15px; gap: 10px;">
-        <button id="sst-export-preset-confirm" class="menu_button">Export</button>
-        <button id="sst-export-preset-cancel" class="menu_button">Cancel</button>
-      </div>
-    </dialog>
+    </div>
   `;
 
   // Append modal to body
   $("body").append(modalHtml);
 
   // Get references to modal elements
-  const $modal = $("#sst-export-preset-modal");
+  const $overlay = $(".sst-modal-overlay");
+  const $modal = $overlay.find(".sst-modal");
   const $templateName = $modal.find("#exportTemplateName");
   const $templateAuthor = $modal.find("#exportTemplateAuthor");
   const $includeSysPrompt = $modal.find("#exportIncludeSysPrompt");
@@ -778,6 +793,7 @@ const handlePresetExport = (loadTemplate, refreshAllCards) => {
   const $includeSettings = $modal.find("#exportIncludeSettings");
   const $confirmBtn = $modal.find("#sst-export-preset-confirm");
   const $cancelBtn = $modal.find("#sst-export-preset-cancel");
+  const $closeBtn = $modal.find("#sst-modal-close");
 
   // Pre-fill modal with current settings
   let templateName = "My Template";
@@ -786,9 +802,6 @@ const handlePresetExport = (loadTemplate, refreshAllCards) => {
 
   $templateName.val(templateName);
   $templateAuthor.val(templateAuthor);
-
-  // Show modal
-  $modal[0].showModal();
 
   // Handle confirm button
   $confirmBtn.off("click").on("click", async () => {
@@ -845,39 +858,35 @@ const handlePresetExport = (loadTemplate, refreshAllCards) => {
       URL.revokeObjectURL(url);
 
       toastr.success(`Preset "${preset.templateName}" exported successfully!`);
-      $modal[0].close();
-      $modal.remove();
+      $overlay.remove();
+      $(document).off("keydown.sstModal");
     } catch (error) {
       console.error(`[SST] [${MODULE_NAME}]`, "Error exporting preset:", error);
       toastr.error("Failed to export preset. Check console for details.");
     }
   });
 
-  // Handle cancel button
-  $cancelBtn.off("click").on("click", () => {
-    $modal[0].close();
-    $modal.remove();
-  });
+  // Handle cancel & close buttons
+  const closeModal = () => {
+    $overlay.remove();
+    $(document).off("keydown.sstModal");
+  };
+
+  $cancelBtn.off("click").on("click", closeModal);
+  $closeBtn.off("click").on("click", closeModal);
 
   // Close modal with Escape key
-  $modal.off("keydown").on("keydown", function (e) {
+  $(document).on("keydown.sstModal", function (e) {
     if (e.key === "Escape") {
-      $modal[0].close();
-      $modal.remove();
+      closeModal();
     }
   });
 
   // Close when clicking on backdrop
-  $modal.off("click").on("click", function (e) {
+  $overlay.on("click", function (e) {
     if (e.target === this) {
-      $modal[0].close();
-      $modal.remove();
+      closeModal();
     }
-  });
-  
-  // Also remove the modal when it's closed
-  $modal.off("close").on("close", function () {
-    $modal.remove();
   });
 };
 
@@ -972,53 +981,56 @@ const handlePresetImport = (event, loadTemplate, refreshAllCards) => {
 // Function to show the manage presets modal
 const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
   // Remove any existing modal
-  $("#sst-manage-presets-modal").remove();
+  $(".sst-modal-overlay").remove();
 
-  // Create modal HTML with tabs for presets and packs
+  // Create modal HTML
   const modalHtml = `
-    <dialog id="sst-manage-presets-modal" class="popup wide_dialogue_popup large_dialogue_popup vertical_scrolling_dialogue_popup popup--animation-fast">
-      <div class="popup-header">
-        <h3 style="margin: 0; padding: 10px 0;">Manage Presets & Packs</h3>
-      </div>
-      <div class="popup-content" style="padding: 15px; flex: 1; display: flex; flex-direction: column;">
-        <div style="display: flex; gap: 10px; margin-bottom: 15px; border-bottom: 1px solid #444;">
-          <button id="sst-tab-presets" class="menu_button sst-tab-active" style="flex: 1; border-bottom: 2px solid #fff;">Tracker Card Presets</button>
-          <button id="sst-tab-packs" class="menu_button" style="flex: 1;">Inline Template Packs</button>
+    <div class="sst-modal-overlay">
+      <div class="sst-modal">
+        <div class="sst-modal-header">
+          <h3 class="sst-modal-title">Manage Presets & Packs</h3>
+          <button id="sst-modal-close" class="sst-modal-close">
+             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+          </button>
         </div>
-        <div id="userPresetsList" style="flex: 1; overflow-y: auto;">
-          <!-- User presets will be populated here -->
-        </div>
-        <div id="inlinePacksList" style="flex: 1; overflow-y: auto; display: none;">
-          <!-- Inline packs will be populated here -->
+        <div class="sst-modal-body">
+          <div class="sst-tabs">
+            <div id="sst-tab-presets" class="sst-tab active">Presets</div>
+            <div id="sst-tab-packs" class="sst-tab">Template Packs</div>
+          </div>
+          <div id="userPresetsList" style="flex: 1; overflow-y: auto;">
+            <!-- User presets will be populated here -->
+          </div>
+          <div id="inlinePacksList" style="flex: 1; overflow-y: auto; display: none;">
+            <!-- Inline packs will be populated here -->
+          </div>
         </div>
       </div>
-      <div class="popup-footer" style="display: flex; justify-content: center; padding: 15px;">
-        <button id="sst-manage-presets-close" class="menu_button">Close</button>
-      </div>
-    </dialog>
+    </div>
   `;
 
   // Append modal to body
   $("body").append(modalHtml);
 
-  const $modal = $("#sst-manage-presets-modal");
+  const $overlay = $(".sst-modal-overlay");
+  const $modal = $overlay.find(".sst-modal");
   const $presetsList = $modal.find("#userPresetsList");
   const $packsList = $modal.find("#inlinePacksList");
-  const $closeBtn = $modal.find("#sst-manage-presets-close");
+  const $closeBtn = $modal.find("#sst-modal-close");
   const $tabPresets = $modal.find("#sst-tab-presets");
   const $tabPacks = $modal.find("#sst-tab-packs");
 
   // Tab switching
   $tabPresets.on("click", () => {
-    $tabPresets.addClass("sst-tab-active").css("border-bottom", "2px solid #fff");
-    $tabPacks.removeClass("sst-tab-active").css("border-bottom", "none");
+    $tabPresets.addClass("active");
+    $tabPacks.removeClass("active");
     $presetsList.show();
     $packsList.hide();
   });
 
   $tabPacks.on("click", () => {
-    $tabPacks.addClass("sst-tab-active").css("border-bottom", "2px solid #fff");
-    $tabPresets.removeClass("sst-tab-active").css("border-bottom", "none");
+    $tabPacks.addClass("active");
+    $tabPresets.removeClass("active");
     $packsList.show();
     $presetsList.hide();
   });
@@ -1028,21 +1040,23 @@ const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
   $presetsList.empty();
 
   if (userPresets.length === 0) {
-    $presetsList.append("<p>No tracker card presets found.</p>");
+    $presetsList.append("<p style='color: var(--sst-text-secondary); text-align: center; margin-top: 20px;'>No tracker card presets found.</p>");
   } else {
     userPresets.forEach((preset, index) => {
       const presetElement = $(`
-          <div class="sst-preset-item" style="margin-bottom: 15px; padding: 10px; border: 1px solid #444; border-radius: 8px;">
+          <div class="sst-field-item">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <div>
-                <strong>${
+                <strong style="display: block; color: var(--sst-text-primary); margin-bottom: 2px;">${
                   preset.templateName || `User Preset ${index + 1}`
                 }</strong>
-                <div style="font-size: 0.9em; color: #888;">by ${preset.templateAuthor || "Unknown"}</div>
+                <div style="font-size: 0.85em; color: var(--sst-text-secondary);">by ${preset.templateAuthor || "Unknown"}</div>
               </div>
-              <div>
-                <button class="sst-apply-preset menu_button" data-index="${index}" style="margin-right: 5px;">Apply</button>
-                <button class="sst-delete-preset menu_button" data-index="${index}">Delete</button>
+              <div style="display: flex; gap: 8px;">
+                <button class="sst-apply-preset sst-btn" data-index="${index}">Apply</button>
+                <button class="sst-delete-preset sst-btn sst-btn-danger" data-index="${index}">
+                   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                </button>
               </div>
             </div>
           </div>
@@ -1080,8 +1094,8 @@ const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
         toastr.success(
           `Preset "${preset.templateName || "Unnamed"}" applied successfully!`
         );
-        $modal[0].close();
-        $modal.remove();
+        $overlay.remove();
+        $(document).off("keydown.sstModal");
       }
     });
 
@@ -1116,26 +1130,28 @@ const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
   $packsList.empty();
 
   if (inlinePacks.length === 0) {
-    $packsList.append("<p>No inline template packs found. Import a pack using the 'Import Preset' button.</p>");
+    $packsList.append("<p style='color: var(--sst-text-secondary); text-align: center; margin-top: 20px;'>No inline template packs found. Import a pack using the 'Import Preset' button.</p>");
   } else {
     inlinePacks.forEach((pack, index) => {
       const inlineCount = pack.inlineTemplates ? pack.inlineTemplates.length : 0;
       const isEnabled = pack.enabled !== false; // Default to true
       
       const packElement = $(`
-          <div class="sst-pack-item" style="margin-bottom: 15px; padding: 10px; border: 1px solid #444; border-radius: 8px; ${!isEnabled ? 'opacity: 0.6;' : ''}">
+          <div class="sst-field-item" style="${!isEnabled ? 'opacity: 0.6;' : ''}">
             <div style="display: flex; justify-content: space-between; align-items: center;">
               <div style="flex: 1;">
-                <strong>${pack.templateName || `Pack ${index + 1}`}</strong>
-                <div style="font-size: 0.9em; color: #888;">by ${pack.templateAuthor || "Unknown"}</div>
-                <div style="font-size: 0.85em; color: #666; margin-top: 4px;">${inlineCount} inline template${inlineCount !== 1 ? 's' : ''}</div>
+                <strong style="display: block; color: var(--sst-text-primary); margin-bottom: 2px;">${pack.templateName || `Pack ${index + 1}`}</strong>
+                <div style="font-size: 0.85em; color: var(--sst-text-secondary);">by ${pack.templateAuthor || "Unknown"}</div>
+                <div class="sst-tag" style="display: inline-block; margin-left: 0; margin-top: 4px;">${inlineCount} template${inlineCount !== 1 ? 's' : ''}</div>
               </div>
-              <div style="display: flex; gap: 5px; align-items: center;">
-                <label style="display: flex; align-items: center; margin-right: 10px; cursor: pointer;">
-                  <input type="checkbox" class="sst-pack-toggle" data-index="${index}" ${isEnabled ? 'checked' : ''} style="margin-right: 5px;" />
-                  <span>Enabled</span>
+              <div style="display: flex; gap: 12px; align-items: center;">
+                <label class="sst-toggle">
+                  <input type="checkbox" class="sst-pack-toggle" data-index="${index}" ${isEnabled ? 'checked' : ''} />
+                  <span class="sst-slider"></span>
                 </label>
-                <button class="sst-delete-pack menu_button" data-index="${index}">Remove</button>
+                <button class="sst-delete-pack sst-btn sst-btn-danger" data-index="${index}">
+                   <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+                </button>
               </div>
             </div>
           </div>
@@ -1152,7 +1168,7 @@ const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
       set_settings("inlinePacks", inlinePacks);
       
       // Update the opacity
-      $(this).closest(".sst-pack-item").css("opacity", isEnabled ? "1" : "0.6");
+      $(this).closest(".sst-field-item").css("opacity", isEnabled ? "1" : "0.6");
       
       toastr.info(`Pack "${inlinePacks[index].templateName}" ${isEnabled ? 'enabled' : 'disabled'}`);
     });
@@ -1180,34 +1196,26 @@ const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
     });
   }
 
-  // Show modal
-  $modal[0].showModal();
-
   // Handle close button
-  $closeBtn.off("click").on("click", () => {
-    $modal[0].close();
-    $modal.remove();
-  });
+  const closeModal = () => {
+    $overlay.remove();
+    $(document).off("keydown.sstModal");
+  };
+
+  $closeBtn.off("click").on("click", closeModal);
 
   // Close modal with Escape key
-  $modal.off("keydown").on("keydown", function (e) {
+  $(document).on("keydown.sstModal", function (e) {
     if (e.key === "Escape") {
-      $modal[0].close();
-      $modal.remove();
+      closeModal();
     }
   });
 
   // Close when clicking on backdrop
-  $modal.off("click").on("click", function (e) {
+  $overlay.on("click", function (e) {
     if (e.target === this) {
-      $modal[0].close();
-      $modal.remove();
+      closeModal();
     }
-  });
-  
-  // Also remove the modal when it's closed
-  $modal.off("close").on("close", function () {
-    $modal.remove();
   });
 };
 
