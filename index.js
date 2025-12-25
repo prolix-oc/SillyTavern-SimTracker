@@ -121,8 +121,72 @@ globalThis.simTrackerGenInterceptor = async function (
   // Use structuredClone to deep copy message objects so we don't affect the actual chat history
   const clonedChat = chat.map(msg => structuredClone(msg));
 
-  // Filter out sim blocks from messages beyond the configured maximum
-  // This modifies only the cloned chat, not the original
+  // Clean up excess sim blocks from chat history
+  // This ensures we don't clutter the context with old tracker data
+  // Only keep the most recent N blocks as configured
+  const retainCount = parseInt(get_settings("retainTrackerCount")) || 3;
+  const knownIdentifiers = get_settings("knownIdentifiers") || ["sim"];
+  
+  // Also include the current identifier if it's not in the list
+  const currentIdentifier = get_settings("codeBlockIdentifier");
+  if (currentIdentifier && !knownIdentifiers.includes(currentIdentifier)) {
+    knownIdentifiers.push(currentIdentifier);
+  }
+
+  // Find all messages with tracker blocks
+  const messagesWithTrackers = [];
+  
+  // Scan backwards to find messages with trackers
+  for (let i = clonedChat.length - 1; i >= 0; i--) {
+    const msg = clonedChat[i];
+    if (!msg.mes) continue;
+    
+    let hasTracker = false;
+    for (const id of knownIdentifiers) {
+      if (msg.mes.includes("```" + id)) {
+        hasTracker = true;
+        break;
+      }
+    }
+    
+    if (hasTracker) {
+      messagesWithTrackers.push(i);
+    }
+  }
+  
+  // Determine which messages need cleaning (all but the last retainCount)
+  // messagesWithTrackers is ordered from newest to oldest
+  if (messagesWithTrackers.length > retainCount) {
+    const indicesToClean = messagesWithTrackers.slice(retainCount);
+    log(`Cleaning up ${indicesToClean.length} old tracker blocks from context (retaining last ${retainCount})`);
+    
+    indicesToClean.forEach(index => {
+      let content = clonedChat[index].mes;
+      
+      // Remove all known tracker blocks from this message
+      knownIdentifiers.forEach(id => {
+        // Regex to match code blocks with this identifier
+        // Matches ```id ... ``` including newlines
+        const regex = new RegExp("```" + id + "[\\s\\S]*?```", "g");
+        content = content.replace(regex, "");
+        
+        // Also clean up any wrapper divs if present (for hidden blocks)
+        // <div style="display: none;"> ... </div>
+        // This is a simple cleanup, might leave empty divs but that's fine for LLM context
+        // Ideally we'd remove the whole div if it's empty now
+      });
+      
+      // Clean up empty lines that might be left
+      content = content.replace(/\n\s*\n\s*\n/g, "\n\n").trim();
+      
+      clonedChat[index].mes = content;
+    });
+  }
+
+  // Filter out sim blocks from messages beyond the configured maximum (for Max Sim Blocks setting)
+  // This is a separate setting from Retain N Trackers - Max Sim Blocks is specifically for prompt engineering
+  // whereas Retain N Trackers is for context management
+  // However, since we just removed old trackers, filterSimBlocksInPrompt will have less work to do
   filterSimBlocksInPrompt(clonedChat, get_settings);
 
   // Return the modified clone - SillyTavern will use this for prompt building

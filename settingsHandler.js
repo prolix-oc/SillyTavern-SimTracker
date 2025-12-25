@@ -95,8 +95,10 @@ const default_settings = {
   secondaryLLMStreaming: true, // Enable streaming for secondary LLM
   secondaryLLMStripHTML: true, // Strip HTML from context for secondary LLM
   maxSimBlocksInContext: 3, // Maximum number of sim blocks to include in LLM context (0 = unlimited)
+  retainTrackerCount: 3, // New setting: Number of most recent tracker blocks to retain in context
   enableInlineTemplates: false, // Enable inline template rendering
   inlinePacks: [], // Imported inline template packs
+  knownIdentifiers: ["sim"], // List of all known code block identifiers
 };
 
 let settings = {};
@@ -105,6 +107,15 @@ const settings_ui_map = {};
 const get_settings = (key) => settings[key] ?? default_settings[key];
 const set_settings = (key, value) => {
   settings[key] = value;
+
+  // If updating codeBlockIdentifier, add it to knownIdentifiers
+  if (key === "codeBlockIdentifier" && value) {
+    const known = settings.knownIdentifiers || ["sim"];
+    if (!known.includes(value)) {
+      settings.knownIdentifiers = [...known, value];
+    }
+  }
+
   saveSettingsDebounced();
 };
 
@@ -257,6 +268,7 @@ const initialize_settings_listeners = (
   bind_setting("#secondaryLLMStreaming", "secondaryLLMStreaming", "boolean");
   bind_setting("#secondaryLLMStripHTML", "secondaryLLMStripHTML", "boolean");
   bind_setting("#maxSimBlocksInContext", "maxSimBlocksInContext", "text");
+  bind_setting("#retainTrackerCount", "retainTrackerCount", "text");
 
   // Inline templates setting
   bind_setting("#enableInlineTemplates", "enableInlineTemplates", "boolean");
