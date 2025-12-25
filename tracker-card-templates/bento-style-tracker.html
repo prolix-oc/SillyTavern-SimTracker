@@ -98,7 +98,7 @@
     }
 
     .identity-group { display: flex; align-items: center; gap: 16px; }
-    .avatar-circle {
+    .bento-avatar {
         width: 44px; height: 44px;
         border-radius: 50%;
         /* Background is now dynamic via inline styles, default provided below */
@@ -237,7 +237,7 @@
     
     <label for="bento-toggle-{{characterName}}" class="bento-header">
         <div class="identity-group">
-            <div class="avatar-circle" style="background: linear-gradient(135deg, {{bgColor}} 0%, #151515 100%);">
+            <div class="bento-avatar" style="background: linear-gradient(135deg, {{bgColor}} 0%, #151515 100%);">
                 {{initials characterName}}
             </div>
             <div class="text-group">
@@ -344,9 +344,8 @@
 
                 <!-- Desire -->
                 <div class="stat-item">
-                    <svg class="icon-md" viewBox="0 0 24 24" fill="url(#gradF1-{{characterName}})">
-                        <defs><linearGradient id="gradF1-{{characterName}}" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#f093fb"/><stop offset="1" stop-color="#f5576c"/></linearGradient></defs>
-                        <path fill="url(#gradF1-{{characterName}})" d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67z"/>
+                    <svg class="icon-md" viewBox="0 0 24 24" fill="#f5576c">
+                        <path d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67z"/>
                     </svg>
                     <div class="track"><div class="fill-clip g-des" style="--val: {{divide stats.dp 1.5}}%"></div></div>
                     <div class="stat-value-group">
