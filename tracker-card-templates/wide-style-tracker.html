@@ -1,0 +1,421 @@
+<!-- TEMPLATE NAME: Wide Style Tracker -->
+<!-- AUTHOR: Prolix OCs -->
+<!-- POSITION: BOTTOM -->
+
+<!-- CARD_TEMPLATE_START -->
+<style>
+    /* =========================================
+       GLOBAL THEME (Scoped)
+       ========================================= */
+    #silly-sim-tracker-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 20px;
+        width: 100%;
+        padding: 20px 0;
+    }
+
+    .wide-wrapper-scope {
+        --font-stack: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        --glass-surface: rgba(30, 30, 35, 0.85);
+        --glass-border: rgba(255, 255, 255, 0.12);
+        --glass-blur: 40px;
+        --shadow-float: 0 20px 50px -10px rgba(0, 0, 0, 0.6);
+
+        --text-primary: #ffffff;
+        --text-secondary: #9898a0;
+        
+        --grad-aff: linear-gradient(90deg, #ff9a9e 0%, #fad0c4 100%);
+        --grad-des: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        --grad-tru: linear-gradient(90deg, #89f7fe 0%, #66a6ff 100%);
+        --grad-con: linear-gradient(90deg, #434343 0%, #a8a8a8 100%);
+
+        --st-neutral: #f1c40f;
+        --st-disapproved: #e74c3c; --bg-disapproved: rgba(231, 76, 60, 0.15);
+        --st-approved: #2ecc71;    --bg-approved: rgba(46, 204, 113, 0.15);
+        
+        --cy-preg: #f6d365;      --bg-preg: rgba(246, 211, 101, 0.15);
+        --cy-ovu: #00d2ff;       --bg-ovu: rgba(0, 210, 255, 0.15);
+        --cy-men: #ff5e62;       --bg-men: rgba(255, 94, 98, 0.15);
+        --cy-rut: #9b59b6;       --bg-rut: rgba(155, 89, 182, 0.15);
+    }
+
+    .wide-wrapper-scope * { box-sizing: border-box; }
+
+    .wide-wrapper-scope svg { display: block; }
+    .wide-wrapper-scope .icon-sm { width: 14px; height: 14px; }
+    .wide-wrapper-scope .icon-md { width: 18px; height: 18px; }
+    
+    /* Toggle Logic */
+    .wide-wrapper-scope input[type="checkbox"].toggle-wide { position: absolute; opacity: 0; pointer-events: none; }
+
+
+    /* =========================================
+       CORE COMPONENT STRUCTURE
+       ========================================= */
+    
+    /* 1. The Wrapper (Layout Constraints) */
+    .wide-container {
+        width: 100%;
+        /* HARD CONSTRAINT: Desktop Max Width */
+        max-width: 850px; 
+        display: flex;
+        justify-content: center;
+        position: relative;
+    }
+
+    /* 2. The Card Surface */
+    .wide-card {
+        background: var(--glass-surface);
+        backdrop-filter: blur(var(--glass-blur));
+        -webkit-backdrop-filter: blur(var(--glass-blur));
+        border: 1px solid var(--glass-border);
+        border-radius: 28px;
+        box-shadow: var(--shadow-float);
+        overflow: hidden;
+        
+        /* Layout Engine */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        
+        color: var(--text-primary);
+        font-family: var(--font-stack);
+    }
+    
+    .wide-card.inactive { opacity: 0.6; }
+
+    /* 
+       3. Center Column (Always Visible Trigger) 
+    */
+    .col-center {
+        flex-shrink: 0; 
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        cursor: pointer;
+        z-index: 10;
+        transition: background 0.4s ease;
+    }
+
+    /* Center Content Styling */
+    .wide-avatar {
+        width: 70px; height: 70px;
+        border-radius: 50%;
+        background: #222;
+        border: 3px solid rgba(255,255,255,0.15);
+        margin-bottom: 14px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 2rem;
+        box-shadow: 0 8px 20px rgba(0,0,0,0.3);
+        color: #fff;
+    }
+    .text-group h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; }
+    .text-group .date { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; letter-spacing: 1px; }
+
+    .btn-expand {
+        margin-top: 20px;
+        font-size: 0.65rem;
+        text-transform: uppercase;
+        letter-spacing: 1.5px;
+        color: rgba(255,255,255,0.6);
+        border: 1px solid rgba(255,255,255,0.2);
+        padding: 8px 16px;
+        border-radius: 20px;
+        transition: all 0.3s;
+    }
+    .col-center:hover .btn-expand { background: #fff; color: #000; border-color: #fff; }
+    
+    .btn-expand::after { content: "View Status"; }
+    input.toggle-wide:checked + .wide-card .btn-expand::after { content: "Close View"; }
+    input.toggle-wide:checked + .wide-card .btn-expand { 
+        background: rgba(255,255,255,0.05); color: #888; border-color: transparent; 
+    }
+
+    /* 
+       4. Side Columns (The Content) 
+    */
+    .col-left, .col-right {
+        display: flex;
+        align-items: center;
+        /* Inner Masking Container to prevent text fritzing/wrapping */
+    }
+    
+    .col-mask-fix {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+    }
+
+    /* Content Styling */
+    .wide-mono {
+        font-style: italic; font-size: 0.9rem; line-height: 1.5; color: #ddd;
+        background: rgba(255,255,255,0.04); padding: 14px; border-radius: 12px;
+        border-left: 3px solid var(--st-neutral);
+    }
+    .cycle-box {
+        display: inline-flex; align-items: center; gap: 8px;
+        font-size: 0.7rem; font-weight: 700; text-transform: uppercase;
+        color: var(--cy-ovu); background: var(--bg-ovu);
+        padding: 6px 10px; border-radius: 6px; align-self: flex-start; letter-spacing: 0.5px;
+    }
+    .reaction-box {
+        display: flex; align-items: center; justify-content: space-between;
+        background: var(--bg-disapproved); color: var(--st-disapproved);
+        padding: 10px 14px; border-radius: 10px; font-size: 0.75rem; font-weight: 700;
+    }
+    .stat-group { display: flex; flex-direction: column; gap: 10px; }
+    .stat-mini { display: flex; align-items: center; gap: 12px; width: 100%; }
+    .mini-track { flex-grow: 1; height: 5px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden;}
+    .mini-fill { height: 100%; border-radius: 4px; width: var(--val); }
+    .f-aff { background: var(--grad-aff); } .f-des { background: var(--grad-des); }
+    .f-tru { background: var(--grad-tru); } .f-con { background: var(--grad-con); }
+
+
+    /* =========================================
+       SCENARIO A: DESKTOP (> 768px)
+       Logic: Horizontal Center-Out Expansion
+       ========================================= */
+    @media (min-width: 769px) {
+        
+        /* Card Animation: Width Only */
+        .wide-card {
+            width: 320px; /* Base Width */
+            height: 240px; /* HARD CONSTRAINT: Fixed Height */
+            transition: width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        input.toggle-wide:checked + .wide-card {
+            width: 100%; /* Expand to container max */
+        }
+
+        /* Column Layout: Row */
+        .wide-card { flex-direction: row; }
+
+        /* Center Column */
+        .col-center {
+            width: 320px;
+            height: 100%;
+            border-right: 1px solid transparent;
+            border-left: 1px solid transparent;
+        }
+        input.toggle-wide:checked + .wide-card .col-center {
+            background: rgba(0,0,0,0.2);
+            border-right-color: rgba(255,255,255,0.08);
+            border-left-color: rgba(255,255,255,0.08);
+        }
+
+        /* Side Columns Animation */
+        .col-left, .col-right {
+            width: 0; opacity: 0; flex-grow: 0; overflow: hidden; height: 100%;
+            transition: width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.5s ease-in;
+        }
+        input.toggle-wide:checked + .wide-card .col-left,
+        input.toggle-wide:checked + .wide-card .col-right {
+            width: 100%; flex-grow: 1; opacity: 1;
+        }
+
+        /* Content Masking (Prevents Fritzing) */
+        .col-mask-fix {
+            width: 260px; /* HARD CONSTRAINT: Fixed Pixel Width */
+            flex-shrink: 0;
+            padding: 0 20px;
+        }
+    }
+
+
+    /* =========================================
+       SCENARIO B: MOBILE (< 768px)
+       Logic: Vertical Accordion Expansion
+       ========================================= */
+    @media (max-width: 768px) {
+        
+        /* Container: Full Width */
+        .wide-container { max-width: 400px; }
+
+        /* Card Animation: Height Only (via grid-template-rows trick) */
+        .wide-card {
+            width: 100%; /* HARD CONSTRAINT: Fill width */
+            height: auto; /* Let content dictate height */
+            flex-direction: column; /* Stack vertically */
+            padding: 0;
+        }
+
+        /* Center Column: Moves to Top */
+        .col-center {
+            width: 100%;
+            padding: 30px 20px; /* Breathing room */
+            border-bottom: 1px solid transparent;
+            transition: border-color 0.4s ease;
+        }
+        input.toggle-wide:checked + .wide-card .col-center {
+            border-bottom-color: rgba(255,255,255,0.1);
+            background: rgba(255,255,255,0.02);
+        }
+
+        /* 
+           MOBILE EXPANSION MECHANIC
+           We wrap the side columns in a grid transition wrapper 
+           to animate height seamlessly.
+        */
+        .mobile-expand-wrapper {
+            display: grid;
+            width: 100%;
+            grid-template-rows: 0fr; /* Closed */
+            transition: grid-template-rows 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+        }
+        input.toggle-wide:checked + .wide-card .mobile-expand-wrapper {
+            grid-template-rows: 1fr; /* Open */
+        }
+
+        .mobile-inner {
+            overflow: hidden;
+            width: 100%;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: opacity 0.4s ease, transform 0.4s ease;
+        }
+        input.toggle-wide:checked + .wide-card .mobile-inner {
+            opacity: 1; transform: translateY(0);
+            transition-delay: 0.1s;
+        }
+
+        /* Side Columns: Stacked Blocks */
+        .col-left, .col-right {
+            width: 100%; height: auto; display: block;
+            opacity: 1; /* Always opacity 1 inside the wrapper */
+        }
+        
+        /* Content Masking: Reset to fluid */
+        .col-mask-fix {
+            width: 100%; /* HARD CONSTRAINT: Fill container */
+            padding: 20px 24px;
+        }
+        .col-right .col-mask-fix { padding-top: 0; padding-bottom: 30px; }
+    }
+
+</style>
+
+<div class="wide-wrapper-scope">
+    <div class="wide-container">
+        
+        <input type="checkbox" id="wide-toggle-{{characterName}}" class="toggle toggle-wide">
+        
+        <div class="wide-card {{#if stats.inactive}}inactive{{/if}}" style="background: linear-gradient(145deg, {{adjustColorBrightness bgColor 30}} 0%, {{adjustColorBrightness darkerBgColor 30}} 100%);">
+            
+            <!-- 1. CENTER (Header/Trigger) - Order 1 on Mobile -->
+            <label for="wide-toggle-{{characterName}}" class="col-center">
+                <div class="wide-avatar">{{rawFirstLetter characterName}}</div>
+                <div class="text-group">
+                    <h2>{{characterName}}</h2>
+                    <div class="date">{{currentDate}} • Day {{stats.days_since_first_meeting}}</div>
+                </div>
+                <div class="btn-expand"></div>
+            </label>
+
+            <!-- 
+                2. MOBILE WRAPPER 
+            -->
+            <div class="mobile-expand-wrapper" style="display: contents;">
+                <!-- Style overrides for mobile/desktop split -->
+                <style>
+                    @media (max-width: 768px) {
+                        .mobile-expand-wrapper { display: grid !important; }
+                    }
+                    @media (min-width: 769px) {
+                        .mobile-inner { display: contents; }
+                    }
+                </style>
+                
+                <div class="mobile-inner">
+                    
+                    <!-- LEFT COLUMN -->
+                    <div class="col-left">
+                        <div class="col-mask-fix">
+                            <div class="wide-mono">
+                                "{{stats.internal_thought}}"
+                            </div>
+                            
+                            <!-- Cycle Status -->
+                            {{#if (eq stats.cycle_stage "pregnancy")}}
+                            <div class="cycle-box" style="color:var(--cy-preg); background:var(--bg-preg);">
+                                <svg class="icon-sm" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+                                Pregnant ({{stats.days_preg}}d)
+                            </div>
+                            {{else if (eq stats.cycle_stage "ovulation")}}
+                            <div class="cycle-box" style="color:var(--cy-ovu); background:var(--bg-ovu);">
+                                <svg class="icon-sm" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+                                Ovulating
+                            </div>
+                            {{else if (eq stats.cycle_stage "menstruation")}}
+                            <div class="cycle-box" style="color:var(--cy-men); background:var(--bg-men);">
+                                <svg class="icon-sm" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+                                Period
+                            </div>
+                            {{else if (eq stats.cycle_stage "rut")}}
+                            <div class="cycle-box" style="color:var(--cy-rut); background:var(--bg-rut);">
+                                <svg class="icon-sm" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+                                Rut
+                            </div>
+                            {{/if}}
+                        </div>
+                    </div>
+
+                    <!-- RIGHT COLUMN -->
+                    <div class="col-right">
+                        <div class="col-mask-fix">
+                            <!-- Reaction Box -->
+                            <div class="reaction-box" 
+                                 style="{{#if (eq stats.last_react 1)}}background:var(--bg-approved); color:var(--st-approved);{{else if (eq stats.last_react 2)}}background:var(--bg-disapproved); color:var(--st-disapproved);{{else}}background:var(--bg-neutral); color:var(--st-neutral);{{/if}}">
+                                <span>Last Action</span>
+                                <span style="display:flex; align-items:center; gap:5px;">
+                                    {{#if (eq stats.last_react 1)}}
+                                    <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17L4 12"/></svg>
+                                    Approved
+                                    {{else if (eq stats.last_react 2)}}
+                                    <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M18 6L6 18M6 6l12 12"/></svg>
+                                    Disapproved
+                                    {{else}}
+                                    <svg class="icon-sm" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12h14"/></svg>
+                                    Neutral
+                                    {{/if}}
+                                </span>
+                            </div>
+
+                            <div class="stat-group">
+                                <!-- Affection -->
+                                <div class="stat-mini">
+                                    <svg class="icon-md" viewBox="0 0 24 24" fill="#ff9a9e"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                                    <div class="mini-track"><div class="mini-fill f-aff" style="--val: {{divide stats.ap 2}}%"></div></div>
+                                </div>
+                                <!-- Desire -->
+                                <div class="stat-mini">
+                                    <svg class="icon-md" viewBox="0 0 24 24" fill="url(#gradF3-{{characterName}})">
+                                        <defs><linearGradient id="gradF3-{{characterName}}" x1="0" y1="1" x2="1" y2="0"><stop offset="0" stop-color="#f093fb"/><stop offset="1" stop-color="#f5576c"/></linearGradient></defs>
+                                        <path fill="url(#gradF3-{{characterName}})" d="M13.5.67s.74 2.65.74 4.8c0 2.06-1.35 3.73-3.41 3.73-2.07 0-3.63-1.67-3.63-3.73l.03-.36C5.21 7.51 4 10.62 4 14c0 4.42 3.58 8 8 8s8-3.58 8-8C20 8.61 17.41 3.8 13.5.67z"/>
+                                    </svg>
+                                    <div class="mini-track"><div class="mini-fill f-des" style="--val: {{divide stats.dp 1.5}}%"></div></div>
+                                </div>
+                                <!-- Trust -->
+                                <div class="stat-mini">
+                                    <svg class="icon-md" viewBox="0 0 24 24" fill="#89f7fe"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/></svg>
+                                    <div class="mini-track"><div class="mini-fill f-tru" style="--val: {{divide stats.tp 1.5}}%"></div></div>
+                                </div>
+                                <!-- Contempt -->
+                                <div class="stat-mini">
+                                    <svg class="icon-md" viewBox="0 0 24 24" fill="#888"><path d="M12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm5 11H7v-2h10v2z"/></svg>
+                                    <div class="mini-track"><div class="mini-fill f-con" style="--val: {{divide stats.cp 1.5}}%"></div></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+<!-- CARD_TEMPLATE_END -->
