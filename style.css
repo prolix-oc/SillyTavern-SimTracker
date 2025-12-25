@@ -355,36 +355,24 @@ input:checked + .sst-slider:before {
   transform: rotate(180deg);
 }
 
-/* Modals */
-.sst-modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
-  backdrop-filter: blur(5px);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  opacity: 0;
-  animation: sstFadeIn 0.2s forwards;
+/* Modals - Adapted for ST Compatibility */
+/* We target the specific dialog IDs to override ST defaults */
+#sst-custom-fields-modal,
+#sst-export-preset-modal,
+#sst-manage-presets-modal {
+  background: #1c1c1e !important;
+  border: 1px solid var(--sst-glass-border) !important;
+  border-radius: 18px !important;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.5) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+  color: var(--sst-text-primary);
 }
 
-.sst-modal {
-  background: #1c1c1e;
-  border: 1px solid var(--sst-glass-border);
-  border-radius: 18px;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-  width: 90%;
-  max-width: 600px;
-  max-height: 85vh;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  transform: scale(0.95);
-  animation: sstScaleIn 0.2s 0.1s forwards;
+/* Use standard ST overlay opacity/blur if possible, or force it on dialog::backdrop */
+dialog::backdrop {
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(5px);
 }
 
 .sst-modal-header {
@@ -423,6 +411,8 @@ input:checked + .sst-slider:before {
   padding: 24px;
   overflow-y: auto;
   flex: 1;
+  /* ST sets max-height on popups, but we want our body to scroll */
+  max-height: 60vh;
 }
 
 .sst-modal-footer {
@@ -509,11 +499,11 @@ input:checked + .sst-slider:before {
     padding: 16px;
   }
   
-  .sst-modal {
-    width: 100%;
-    height: 100%;
-    max-height: 100%;
-    border-radius: 0;
+  #sst-custom-fields-modal,
+  #sst-export-preset-modal,
+  #sst-manage-presets-modal {
+    width: 95% !important;
+    max-width: 95% !important;
   }
 }
 

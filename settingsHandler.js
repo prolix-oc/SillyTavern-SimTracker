@@ -444,12 +444,12 @@ const initialize_settings_listeners = (
   // Function to create and show the modal
   const createAndShowModal = () => {
     // Remove any existing modal
-    $(".sst-modal-overlay").remove();
+    $("#sst-custom-fields-modal").remove();
 
-    // Create modal HTML
+    // Create modal HTML using SillyTavern's built-in classes with dialog element
+    // We add our own ID/classes to style it while keeping ST behavior
     const modalHtml = `
-            <div class="sst-modal-overlay">
-              <div class="sst-modal">
+            <dialog id="sst-custom-fields-modal" class="popup wide_dialogue_popup large_dialogue_popup vertical_scrolling_dialogue_popup popup--animation-fast">
                 <div class="sst-modal-header">
                     <h3 class="sst-modal-title">Manage Custom Fields</h3>
                     <button id="sst-modal-close" class="sst-modal-close">
@@ -464,16 +464,14 @@ const initialize_settings_listeners = (
                         <!-- Fields will be populated here by JavaScript -->
                     </div>
                 </div>
-              </div>
-            </div>
+            </dialog>
         `;
 
-    // Append modal to body
+    // Append modal to body - IMPORTANT: Append to body to respect ST's modal layering
     $("body").append(modalHtml);
 
     // Get references to modal elements
-    const $overlay = $(".sst-modal-overlay");
-    const $modal = $overlay.find(".sst-modal");
+    const $modal = $("#sst-custom-fields-modal");
     const $fieldsContainer = $modal.find("#customFieldsList");
     const $addFieldButton = $modal.find("#addCustomFieldBtn");
     const $modalClose = $modal.find("#sst-modal-close");
@@ -570,27 +568,26 @@ const initialize_settings_listeners = (
 
     // Close modal when clicking the Close button
     $modalClose.on("click", () => {
-      $overlay.remove();
+      $modal.remove();
     });
 
     // Close modal with Escape key
-    $(document).on("keydown.sstModal", function (e) {
+    $modal.on("keydown", function (e) {
       if (e.key === "Escape") {
-        $overlay.remove();
-        $(document).off("keydown.sstModal");
+        $modal.remove();
       }
     });
 
     // Close when clicking on the backdrop
-    $overlay.on("click", function (e) {
+    $modal.on("click", function (e) {
       if (e.target === this) {
-        $overlay.remove();
-        $(document).off("keydown.sstModal");
+        $modal.remove();
       }
     });
 
     // Render fields and show modal
     renderFields();
+    $modal[0].showModal();
   };
 
   // Manage fields button opens the modal
@@ -719,22 +716,21 @@ const load_settings_html_manually = async () => {
 const escapeHtml = (unsafe) => {
   if (typeof unsafe !== "string") return unsafe;
   return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
+    .replace(/&/g, "&")
+    .replace(/</g, "<")
+    .replace(/>/g, ">")
+    .replace(/"/g, """)
     .replace(/'/g, "&#039;");
 };
 
 // Function to handle preset export
 const handlePresetExport = (loadTemplate, refreshAllCards) => {
   // Remove any existing modal
-  $(".sst-modal-overlay").remove();
+  $("#sst-export-preset-modal").remove();
 
-  // Create modal HTML
+  // Create modal HTML using SillyTavern's built-in classes with dialog element
   const modalHtml = `
-    <div class="sst-modal-overlay">
-      <div class="sst-modal">
+    <dialog id="sst-export-preset-modal" class="popup wide_dialogue_popup large_dialogue_popup vertical_scrolling_dialogue_popup popup--animation-fast">
         <div class="sst-modal-header">
           <h3 class="sst-modal-title">Export Template Preset</h3>
           <button id="sst-modal-close" class="sst-modal-close">
@@ -776,16 +772,14 @@ const handlePresetExport = (loadTemplate, refreshAllCards) => {
           <button id="sst-export-preset-cancel" class="sst-btn">Cancel</button>
           <button id="sst-export-preset-confirm" class="sst-btn sst-btn-primary">Export</button>
         </div>
-      </div>
-    </div>
+    </dialog>
   `;
 
   // Append modal to body
   $("body").append(modalHtml);
 
   // Get references to modal elements
-  const $overlay = $(".sst-modal-overlay");
-  const $modal = $overlay.find(".sst-modal");
+  const $modal = $("#sst-export-preset-modal");
   const $templateName = $modal.find("#exportTemplateName");
   const $templateAuthor = $modal.find("#exportTemplateAuthor");
   const $includeSysPrompt = $modal.find("#exportIncludeSysPrompt");
@@ -858,8 +852,7 @@ const handlePresetExport = (loadTemplate, refreshAllCards) => {
       URL.revokeObjectURL(url);
 
       toastr.success(`Preset "${preset.templateName}" exported successfully!`);
-      $overlay.remove();
-      $(document).off("keydown.sstModal");
+      $modal.remove();
     } catch (error) {
       console.error(`[SST] [${MODULE_NAME}]`, "Error exporting preset:", error);
       toastr.error("Failed to export preset. Check console for details.");
@@ -868,26 +861,27 @@ const handlePresetExport = (loadTemplate, refreshAllCards) => {
 
   // Handle cancel & close buttons
   const closeModal = () => {
-    $overlay.remove();
-    $(document).off("keydown.sstModal");
+    $modal.remove();
   };
 
   $cancelBtn.off("click").on("click", closeModal);
   $closeBtn.off("click").on("click", closeModal);
 
   // Close modal with Escape key
-  $(document).on("keydown.sstModal", function (e) {
+  $modal.on("keydown", function (e) {
     if (e.key === "Escape") {
       closeModal();
     }
   });
 
   // Close when clicking on backdrop
-  $overlay.on("click", function (e) {
+  $modal.on("click", function (e) {
     if (e.target === this) {
       closeModal();
     }
   });
+
+  $modal[0].showModal();
 };
 
 // Function to handle preset import
@@ -981,12 +975,11 @@ const handlePresetImport = (event, loadTemplate, refreshAllCards) => {
 // Function to show the manage presets modal
 const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
   // Remove any existing modal
-  $(".sst-modal-overlay").remove();
+  $("#sst-manage-presets-modal").remove();
 
-  // Create modal HTML
+  // Create modal HTML using SillyTavern's built-in classes with dialog element
   const modalHtml = `
-    <div class="sst-modal-overlay">
-      <div class="sst-modal">
+    <dialog id="sst-manage-presets-modal" class="popup wide_dialogue_popup large_dialogue_popup vertical_scrolling_dialogue_popup popup--animation-fast">
         <div class="sst-modal-header">
           <h3 class="sst-modal-title">Manage Presets & Packs</h3>
           <button id="sst-modal-close" class="sst-modal-close">
@@ -1005,15 +998,13 @@ const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
             <!-- Inline packs will be populated here -->
           </div>
         </div>
-      </div>
-    </div>
+    </dialog>
   `;
 
   // Append modal to body
   $("body").append(modalHtml);
 
-  const $overlay = $(".sst-modal-overlay");
-  const $modal = $overlay.find(".sst-modal");
+  const $modal = $("#sst-manage-presets-modal");
   const $presetsList = $modal.find("#userPresetsList");
   const $packsList = $modal.find("#inlinePacksList");
   const $closeBtn = $modal.find("#sst-modal-close");
@@ -1094,8 +1085,7 @@ const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
         toastr.success(
           `Preset "${preset.templateName || "Unnamed"}" applied successfully!`
         );
-        $overlay.remove();
-        $(document).off("keydown.sstModal");
+        $modal.remove();
       }
     });
 
@@ -1198,25 +1188,26 @@ const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
 
   // Handle close button
   const closeModal = () => {
-    $overlay.remove();
-    $(document).off("keydown.sstModal");
+    $modal.remove();
   };
 
   $closeBtn.off("click").on("click", closeModal);
 
   // Close modal with Escape key
-  $(document).on("keydown.sstModal", function (e) {
+  $modal.on("keydown", function (e) {
     if (e.key === "Escape") {
       closeModal();
     }
   });
 
   // Close when clicking on backdrop
-  $overlay.on("click", function (e) {
+  $modal.on("click", function (e) {
     if (e.target === this) {
       closeModal();
     }
   });
+
+  $modal[0].showModal();
 };
 
 // Export functions and variables
