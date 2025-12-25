@@ -504,6 +504,7 @@ async function populateTemplateDropdown(get_settings) {
   console.log(`[SST] [${MODULE_NAME}]`, "Populating template dropdown with parsed friendly names...");
 
   const defaultFiles = [
+    "wide-style-tracker.json",
     "dating-card-template.json",
     "dating-card-template-positioned.json",
     "dating-card-template-sidebar.json",

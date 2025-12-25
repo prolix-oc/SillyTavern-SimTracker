@@ -75,7 +75,7 @@ const default_settings = {
   defaultBgColor: "#6a5acd",
   showThoughtBubble: true,
   customTemplateHtml: "",
-  templateFile: "dating-card-template.json", // Changed to JSON file
+  templateFile: "bento-style-tracker.json", // Changed to JSON file
   templatePosition: "BOTTOM", // Default template position
   datingSimPrompt:
     "Default prompt could not be loaded. Please check file path.",
@@ -146,7 +146,7 @@ const loadDefaultPromptFromFile = async () => {
 // Function to load the default JSON template
 const loadDefaultTemplate = async () => {
   try {
-    const defaultTemplatePath = `${get_extension_directory()}/tracker-card-templates/dating-card-template.json`;
+    const defaultTemplatePath = `${get_extension_directory()}/tracker-card-templates/bento-style-tracker.json`;
     const defaultTemplate = await $.get(defaultTemplatePath);
     // jQuery may automatically parse JSON responses, so we need to check if it's already an object
     const templateData = typeof defaultTemplate === "string" ? JSON.parse(defaultTemplate) : defaultTemplate;
@@ -639,7 +639,7 @@ const initialize_settings = async () => {
   // For first-time users, auto-load the default JSON template
   if (!extensionSettings[MODULE_NAME]) {
     try {
-      const defaultTemplatePath = `${get_extension_directory()}/tracker-card-templates/dating-card-template.json`;
+      const defaultTemplatePath = `${get_extension_directory()}/tracker-card-templates/bento-style-tracker.json`;
       const defaultTemplate = await $.get(defaultTemplatePath);
       // jQuery may automatically parse JSON responses, so we need to check if it's already an object
       const templateData = typeof defaultTemplate === "string" ? JSON.parse(defaultTemplate) : defaultTemplate;
