@@ -125,7 +125,7 @@
     .text-group h2 { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.5px; margin: 0 0 2px 0; }
     .text-group .date { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 600; letter-spacing: 0.5px; }
 
-    .chevron { opacity: 0.5; transition: transform 0.4s ease; color: #fff; }
+    .chevron { opacity: 0.5; transition: transform 0.4s ease; color: #fff; will-change: transform; transform: translateZ(0); }
     .bento-card input.toggle:checked + .bento-header .chevron { transform: rotate(180deg); opacity: 1; }
     
     .header-badges { display: flex; gap: 8px; margin-right: 12px; }
@@ -136,6 +136,7 @@
         display: grid;
         grid-template-rows: 0fr;
         transition: grid-template-rows 0.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+        will-change: grid-template-rows;
     }
     .bento-card input.toggle:checked ~ .bento-body-wrapper { grid-template-rows: 1fr; }
 
@@ -143,11 +144,12 @@
         overflow: hidden;
         padding: 0 24px 24px 24px;
         opacity: 0;
-        transform: translateY(-10px);
+        transform: translate3d(0, -10px, 0);
         transition: opacity 0.3s ease, transform 0.3s ease;
+        will-change: opacity, transform;
     }
     .bento-card input.toggle:checked ~ .bento-body-wrapper .bento-inner {
-        opacity: 1; transform: translateY(0); transition-delay: 0.1s;
+        opacity: 1; transform: translate3d(0, 0, 0); transition-delay: 0.1s;
     }
 
     /* MONOLOGUE */
