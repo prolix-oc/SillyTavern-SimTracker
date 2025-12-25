@@ -136,6 +136,12 @@ Handlebars.registerHelper("initials", function (name) {
   return name.charAt(0).toUpperCase();
 });
 
+Handlebars.registerHelper("rawFirstLetter", function (name) {
+  // Extract the first letter of the name without any formatting
+  if (!name || typeof name !== 'string' || name.length === 0) return "?";
+  return name.charAt(0);
+});
+
 Handlebars.registerHelper("unless", function (conditional, options) {
   if (!conditional) {
     return options.fn(this);

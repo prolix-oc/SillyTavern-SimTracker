@@ -110,6 +110,7 @@
         overflow: hidden;
         color: #fff;
         font-weight: bold;
+        text-transform: uppercase;
     }
     
     .text-group { display: flex; flex-direction: column; }
@@ -238,7 +239,7 @@
     <label for="bento-toggle-{{characterName}}" class="bento-header">
         <div class="identity-group">
             <div class="bento-avatar" style="background: linear-gradient(135deg, {{bgColor}} 0%, #151515 100%);">
-                {{initials characterName}}
+                {{rawFirstLetter characterName}}
             </div>
             <div class="text-group">
                 <h2>{{characterName}}</h2>
