@@ -716,10 +716,10 @@ const load_settings_html_manually = async () => {
 const escapeHtml = (unsafe) => {
   if (typeof unsafe !== "string") return unsafe;
   return unsafe
-    .replace(/&/g, "&")
-    .replace(/</g, "<")
-    .replace(/>/g, ">")
-    .replace(/"/g, """)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 };
 
