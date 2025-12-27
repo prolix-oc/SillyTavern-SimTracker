@@ -158,6 +158,10 @@ const loadDefaultTemplate = async () => {
       set_settings("datingSimPrompt", templateData.sysPrompt);
     }
 
+    if (templateData.displayInstructions !== undefined) {
+      set_settings("displayInstructionsPrompt", templateData.displayInstructions);
+    }
+
     if (templateData.customFields !== undefined) {
       set_settings("customFields", templateData.customFields);
     }
@@ -304,6 +308,10 @@ const initialize_settings_listeners = (
           set_settings("datingSimPrompt", presetData.sysPrompt);
         }
 
+        if (presetData.displayInstructions !== undefined) {
+          set_settings("displayInstructionsPrompt", presetData.displayInstructions);
+        }
+
         if (presetData.customFields !== undefined) {
           set_settings("customFields", presetData.customFields);
         }
@@ -336,6 +344,10 @@ const initialize_settings_listeners = (
 
           if (templateData.sysPrompt !== undefined) {
             set_settings("datingSimPrompt", templateData.sysPrompt);
+          }
+
+          if (templateData.displayInstructions !== undefined) {
+            set_settings("displayInstructionsPrompt", templateData.displayInstructions);
           }
 
           if (templateData.customFields !== undefined) {
@@ -651,6 +663,10 @@ const initialize_settings = async () => {
         settings.datingSimPrompt = templateData.sysPrompt;
       }
 
+      if (templateData.displayInstructions !== undefined) {
+        settings.displayInstructionsPrompt = templateData.displayInstructions;
+      }
+
       if (templateData.customFields !== undefined) {
         settings.customFields = templateData.customFields;
       }
@@ -681,6 +697,10 @@ const initialize_settings = async () => {
 
         if (templateData.sysPrompt !== undefined) {
           settings.datingSimPrompt = templateData.sysPrompt;
+        }
+
+        if (templateData.displayInstructions !== undefined) {
+          settings.displayInstructionsPrompt = templateData.displayInstructions;
         }
 
         if (templateData.customFields !== undefined) {
@@ -825,6 +845,7 @@ const handlePresetExport = (loadTemplate, refreshAllCards) => {
       // Conditionally add other components
       if ($includeSysPrompt.is(":checked")) {
         preset.sysPrompt = get_settings("datingSimPrompt") || "";
+        preset.displayInstructions = get_settings("displayInstructionsPrompt") || "";
       }
 
       if ($includeCustomFields.is(":checked")) {
@@ -942,6 +963,10 @@ const handlePresetImport = (event, loadTemplate, refreshAllCards) => {
 
         if (preset.sysPrompt !== undefined) {
           set_settings("datingSimPrompt", preset.sysPrompt);
+        }
+
+        if (preset.displayInstructions !== undefined) {
+          set_settings("displayInstructionsPrompt", preset.displayInstructions);
         }
 
         if (preset.customFields !== undefined) {
@@ -1078,6 +1103,10 @@ const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
 
         if (preset.sysPrompt !== undefined) {
           set_settings("datingSimPrompt", preset.sysPrompt);
+        }
+
+        if (preset.displayInstructions !== undefined) {
+          set_settings("displayInstructionsPrompt", preset.displayInstructions);
         }
 
         if (preset.customFields !== undefined) {
