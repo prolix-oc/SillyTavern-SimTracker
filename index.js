@@ -1071,24 +1071,59 @@ ${exampleJson}
 
             // Append the sim block to the message in the user's preferred format
             const format = get_settings("trackerFormat") || "json";
+            const customFields = get_settings("customFields") || [];
             let simBlock;
-            
+
             if (format === "yaml") {
-              // Create a basic YAML structure
+              // Create a YAML structure based on custom fields
+              let yamlContent = "worldData:\n";
+              yamlContent += "  current_date: \"\"\n";
+              yamlContent += "  current_time: \"\"\n";
+              yamlContent += "characters:\n";
+              yamlContent += "  - name: \"\"\n";
+
+              // Add each custom field with a default value
+              customFields.forEach((field) => {
+                const key = sanitizeFieldKey(field.key);
+                // Use appropriate default based on common field patterns
+                let defaultValue = "\"\"";
+                if (key.toLowerCase().includes("point") ||
+                    key.toLowerCase().endsWith("p") && key.length <= 3 ||
+                    key.toLowerCase().includes("day") ||
+                    key.toLowerCase().includes("health") ||
+                    key.toLowerCase().includes("react")) {
+                  defaultValue = "0";
+                } else if (key.toLowerCase().includes("inactive") ||
+                           key.toLowerCase().includes("preg") && !key.toLowerCase().includes("day")) {
+                  defaultValue = "false";
+                }
+                yamlContent += `    ${key}: ${defaultValue}\n`;
+              });
+
               simBlock = `
 \`\`\`${identifier}
-worldData:
-  current_date: ""
-  current_time: ""
-characters:
-  - name: ""
-    ap: 0
-    dp: 0
-    tp: 0
-    cp: 0
-\`\`\``;
+${yamlContent}\`\`\``;
             } else {
-              // Create a basic JSON structure
+              // Create a JSON structure based on custom fields
+              let fieldsJson = "";
+              customFields.forEach((field, index) => {
+                const key = sanitizeFieldKey(field.key);
+                // Use appropriate default based on common field patterns
+                let defaultValue = '""';
+                if (key.toLowerCase().includes("point") ||
+                    key.toLowerCase().endsWith("p") && key.length <= 3 ||
+                    key.toLowerCase().includes("day") ||
+                    key.toLowerCase().includes("health") ||
+                    key.toLowerCase().includes("react")) {
+                  defaultValue = "0";
+                } else if (key.toLowerCase().includes("inactive") ||
+                           key.toLowerCase().includes("preg") && !key.toLowerCase().includes("day")) {
+                  defaultValue = "false";
+                }
+                const comma = index < customFields.length - 1 ? "," : "";
+                fieldsJson += `      "${key}": ${defaultValue}${comma}\n`;
+              });
+
               simBlock = `
 \`\`\`${identifier}
 {
@@ -1099,11 +1134,7 @@ characters:
   "characters": [
     {
       "name": "",
-      "ap": 0,
-      "dp": 0,
-      "tp": 0,
-      "cp": 0
-    }
+${fieldsJson}    }
   ]
 }
 \`\`\``;

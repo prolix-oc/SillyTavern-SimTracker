@@ -683,9 +683,57 @@ const initialize_settings = async () => {
       );
     }
   } else {
-    // For existing users, if they have selected a default template, load its settings
+    // For existing users, load the selected template's settings
     const selectedTemplate = settings.templateFile;
-    if (selectedTemplate && selectedTemplate.endsWith(".json") && !selectedTemplate.startsWith("user-preset-")) {
+
+    // Handle user presets (stored in userPresets array)
+    if (selectedTemplate && selectedTemplate.startsWith("user-preset-")) {
+      const userPresets = settings.userPresets || [];
+      // Extract preset name from templateFile (format: "user-preset-PresetName")
+      const presetName = selectedTemplate.replace("user-preset-", "");
+      const preset = userPresets.find(p => p.templateName === presetName);
+
+      if (preset) {
+        console.log(
+          `[SST] [${MODULE_NAME}]`,
+          `Loading user preset settings: ${presetName}`
+        );
+
+        // Apply the preset settings
+        if (preset.htmlTemplate) {
+          settings.customTemplateHtml = unescapeHtml(preset.htmlTemplate);
+        }
+
+        if (preset.sysPrompt !== undefined) {
+          settings.datingSimPrompt = preset.sysPrompt;
+        }
+
+        if (preset.displayInstructions !== undefined) {
+          settings.displayInstructionsPrompt = preset.displayInstructions;
+        }
+
+        if (preset.customFields !== undefined) {
+          settings.customFields = preset.customFields;
+        }
+
+        if (preset.extSettings) {
+          Object.keys(preset.extSettings).forEach((key) => {
+            // Don't overwrite the templateFile setting with the one from extSettings
+            // as it refers to the HTML template file, not the JSON preset file
+            if (key !== "templateFile") {
+              settings[key] = preset.extSettings[key];
+            }
+          });
+        }
+      } else {
+        console.log(
+          `[SST] [${MODULE_NAME}]`,
+          `User preset not found: ${presetName}. This may happen if the preset was deleted.`
+        );
+      }
+    }
+    // Handle default templates (JSON files in tracker-card-templates folder)
+    else if (selectedTemplate && selectedTemplate.endsWith(".json")) {
       try {
         const defaultTemplatePath = `${get_extension_directory()}/tracker-card-templates/${selectedTemplate}`;
         const defaultTemplate = await $.get(defaultTemplatePath);
