@@ -689,14 +689,14 @@ const initialize_settings = async () => {
     // Handle user presets (stored in userPresets array)
     if (selectedTemplate && selectedTemplate.startsWith("user-preset-")) {
       const userPresets = settings.userPresets || [];
-      // Extract preset name from templateFile (format: "user-preset-PresetName")
-      const presetName = selectedTemplate.replace("user-preset-", "");
-      const preset = userPresets.find(p => p.templateName === presetName);
+      // Extract preset index from templateFile (format: "user-preset-0", "user-preset-1", etc.)
+      const presetIndex = parseInt(selectedTemplate.replace("user-preset-", ""));
+      const preset = (presetIndex >= 0 && presetIndex < userPresets.length) ? userPresets[presetIndex] : null;
 
       if (preset) {
         console.log(
           `[SST] [${MODULE_NAME}]`,
-          `Loading user preset settings: ${presetName}`
+          `Loading user preset settings: ${preset.templateName || `Preset ${presetIndex}`}`
         );
 
         // Apply the preset settings
@@ -728,7 +728,7 @@ const initialize_settings = async () => {
       } else {
         console.log(
           `[SST] [${MODULE_NAME}]`,
-          `User preset not found: ${presetName}. This may happen if the preset was deleted.`
+          `User preset at index ${presetIndex} not found. This may happen if the preset was deleted.`
         );
       }
     }
