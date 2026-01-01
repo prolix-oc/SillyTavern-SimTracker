@@ -421,17 +421,68 @@ async function generateTrackerWithSecondaryLLM(get_settings) {
 
   let formatExample = "";
 
+  // Helper to generate YAML for an array field
+  const generateYamlArrayField = (field) => {
+    let output = `    ${field.key}:  # ${field.description}\n`;
+    if (field.itemSchema === "string") {
+      output += `      - "[item 1]"\n      - "[item 2]"\n`;
+    } else if (Array.isArray(field.itemSchema) && field.itemSchema.length > 0) {
+      output += `      - `;
+      field.itemSchema.forEach((prop, idx) => {
+        const propValue = prop.type === "number" ? "0" : (prop.type === "boolean" ? "false" : `"[value]"`);
+        if (idx === 0) {
+          output += `${prop.key}: ${propValue}`;
+          if (prop.description) output += `  # ${prop.description}`;
+          output += "\n";
+        } else {
+          output += `        ${prop.key}: ${propValue}`;
+          if (prop.description) output += `  # ${prop.description}`;
+          output += "\n";
+        }
+      });
+    }
+    return output;
+  };
+
+  // Helper to generate JSON for an array field
+  const generateJsonArrayField = (field, isLast) => {
+    const comma = isLast ? "" : ",";
+    if (field.itemSchema === "string") {
+      return `      "${field.key}": ["[item 1]", "[item 2]"]${comma} // ${field.description}\n`;
+    } else if (Array.isArray(field.itemSchema) && field.itemSchema.length > 0) {
+      let output = `      "${field.key}": [\n        {\n`;
+      field.itemSchema.forEach((prop, idx) => {
+        const propValue = prop.type === "number" ? "0" : (prop.type === "boolean" ? "false" : `"[value]"`);
+        const propComma = idx < field.itemSchema.length - 1 ? "," : "";
+        const comment = prop.description ? ` // ${prop.description}` : "";
+        output += `          "${prop.key}": ${propValue}${propComma}${comment}\n`;
+      });
+      output += `        }\n      ]${comma} // ${field.description}\n`;
+      return output;
+    }
+    return `      "${field.key}": []${comma} // ${field.description}\n`;
+  };
+
   if (trackerFormat === "yaml") {
     let yamlContent = `worldData:\n  current_date: "YYYY-MM-DD"\n  current_time: "HH:MM"\ncharacters:\n  - name: "Character Name"\n`;
     customFields.forEach((field) => {
-      yamlContent += `    ${field.key}: [appropriate value] # ${field.description}\n`;
+      if (field.type === "array") {
+        yamlContent += generateYamlArrayField(field);
+      } else {
+        yamlContent += `    ${field.key}: [appropriate value] # ${field.description}\n`;
+      }
     });
     formatExample = `\`\`\`${codeBlockIdentifier}\n${yamlContent}\`\`\``;
   } else {
     let jsonContent = `{\n  "worldData": {\n    "current_date": "YYYY-MM-DD",\n    "current_time": "HH:MM"\n  },\n  "characters": [\n    {\n      "name": "Character Name",\n`;
     customFields.forEach((field, index) => {
-      const comma = index < customFields.length - 1 ? "," : "";
-      jsonContent += `      "${field.key}": [appropriate value]${comma} // ${field.description}\n`;
+      const isLast = index === customFields.length - 1;
+      if (field.type === "array") {
+        jsonContent += generateJsonArrayField(field, isLast);
+      } else {
+        const comma = isLast ? "" : ",";
+        jsonContent += `      "${field.key}": [appropriate value]${comma} // ${field.description}\n`;
+      }
     });
     jsonContent += `    }\n  ]\n}`;
     formatExample = `\`\`\`${codeBlockIdentifier}\n${jsonContent}\n\`\`\``;

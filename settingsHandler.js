@@ -501,11 +501,16 @@ const initialize_settings_listeners = (
     const $modalClose = $modal.find("#sst-modal-close");
 
     // Create field template
-    const createFieldTemplate = () => {
+    const createFieldTemplate = (fieldType = "scalar") => {
+      const isArray = fieldType === "array";
       return $(`
-                <div class="sst-field-item">
+                <div class="sst-field-item" data-field-type="${fieldType}">
                     <div class="sst-field-header">
                         <input type="text" class="field-key-display sst-input" placeholder="Field key" style="flex: 1;" />
+                        <select class="field-type-select sst-select" style="width: 100px;">
+                            <option value="scalar" ${!isArray ? 'selected' : ''}>Scalar</option>
+                            <option value="array" ${isArray ? 'selected' : ''}>Array</option>
+                        </select>
                         <div style="display: flex; gap: 8px;">
                             <button class="sst-toggle-field sst-btn">Expand</button>
                             <button class="remove-field-btn sst-btn sst-btn-danger">
@@ -518,9 +523,134 @@ const initialize_settings_listeners = (
                             <label class="sst-setting-label">Description for LLM</label>
                             <input type="text" class="field-description sst-input" placeholder="Field description" style="width: 100%;" />
                         </div>
+                        <div class="sst-array-schema-section" style="display: ${isArray ? 'block' : 'none'}; margin-top: 12px; padding: 12px; background: rgba(0,0,0,0.15); border-radius: 8px; border-left: 3px solid var(--SmartThemeQuoteColor, #6a5acd);">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <label class="sst-setting-label" style="margin: 0;">Array Item Schema</label>
+                                <select class="array-item-type sst-select" style="width: 140px;">
+                                    <option value="object">Object Properties</option>
+                                    <option value="string">Simple Strings</option>
+                                </select>
+                            </div>
+                            <div class="sst-array-item-fields">
+                                <!-- Array item properties rendered here -->
+                            </div>
+                            <button class="add-array-prop sst-btn sst-btn-secondary" style="margin-top: 8px; width: 100%;">+ Add Property</button>
+                        </div>
                     </div>
                 </div>
             `);
+    };
+
+    // Create array property row template
+    const createArrayPropTemplate = (prop = {}) => {
+      return $(`
+                <div class="sst-array-prop-item" style="display: grid; grid-template-columns: 1fr 90px 2fr 32px; gap: 8px; margin-bottom: 8px; align-items: center;">
+                    <input type="text" class="array-prop-key sst-input" placeholder="Property name" value="${prop.key || ''}" />
+                    <select class="array-prop-type sst-select">
+                        <option value="string" ${prop.type === 'string' || !prop.type ? 'selected' : ''}>String</option>
+                        <option value="number" ${prop.type === 'number' ? 'selected' : ''}>Number</option>
+                        <option value="boolean" ${prop.type === 'boolean' ? 'selected' : ''}>Boolean</option>
+                    </select>
+                    <input type="text" class="array-prop-desc sst-input" placeholder="Description" value="${prop.description || ''}" />
+                    <button class="remove-array-prop sst-btn sst-btn-danger" style="padding: 6px;">
+                        <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+                    </button>
+                </div>
+            `);
+    };
+
+    // Helper to render array property fields
+    const renderArrayProps = ($fieldElement, index, fields) => {
+      const field = fields[index];
+      const $propsContainer = $fieldElement.find(".sst-array-item-fields");
+      const $addPropBtn = $fieldElement.find(".add-array-prop");
+      const $itemTypeSelect = $fieldElement.find(".array-item-type");
+
+      $propsContainer.empty();
+
+      // Determine if itemSchema is "string" or an array of objects
+      const isSimpleString = field.itemSchema === "string";
+      $itemTypeSelect.val(isSimpleString ? "string" : "object");
+
+      // Show/hide the add property button and props based on item type
+      if (isSimpleString) {
+        $addPropBtn.hide();
+        $propsContainer.append('<p style="color: var(--sst-text-secondary); font-size: 0.9em; margin: 0;">Array will contain simple string values.</p>');
+      } else {
+        $addPropBtn.show();
+        const itemSchema = Array.isArray(field.itemSchema) ? field.itemSchema : [];
+
+        if (itemSchema.length === 0) {
+          $propsContainer.append('<p style="color: var(--sst-text-secondary); font-size: 0.9em; margin: 0;">No properties defined. Add properties to define the object structure.</p>');
+        } else {
+          itemSchema.forEach((prop, propIndex) => {
+            const $propElement = createArrayPropTemplate(prop);
+
+            // Handle property key change
+            $propElement.find(".array-prop-key").on("input", function () {
+              const newKey = sanitizeFieldKey($(this).val());
+              const updatedFields = [...fields];
+              updatedFields[index].itemSchema[propIndex].key = newKey;
+              set_settings("customFields", updatedFields);
+            });
+
+            // Handle property type change
+            $propElement.find(".array-prop-type").on("change", function () {
+              const newType = $(this).val();
+              const updatedFields = [...fields];
+              updatedFields[index].itemSchema[propIndex].type = newType;
+              set_settings("customFields", updatedFields);
+            });
+
+            // Handle property description change
+            $propElement.find(".array-prop-desc").on("input", function () {
+              const newDesc = $(this).val();
+              const updatedFields = [...fields];
+              updatedFields[index].itemSchema[propIndex].description = newDesc;
+              set_settings("customFields", updatedFields);
+            });
+
+            // Handle remove property
+            $propElement.find(".remove-array-prop").on("click", function () {
+              const updatedFields = [...fields];
+              updatedFields[index].itemSchema.splice(propIndex, 1);
+              set_settings("customFields", updatedFields);
+              renderArrayProps($fieldElement, index, updatedFields);
+            });
+
+            $propsContainer.append($propElement);
+          });
+        }
+      }
+
+      // Handle item type change (object vs string)
+      $itemTypeSelect.off("change").on("change", function () {
+        const newItemType = $(this).val();
+        const updatedFields = [...get_settings("customFields")];
+        if (newItemType === "string") {
+          updatedFields[index].itemSchema = "string";
+        } else {
+          // Convert to object array with empty schema
+          updatedFields[index].itemSchema = [];
+        }
+        set_settings("customFields", updatedFields);
+        renderArrayProps($fieldElement, index, updatedFields);
+      });
+
+      // Handle add property button
+      $addPropBtn.off("click").on("click", function () {
+        const updatedFields = [...get_settings("customFields")];
+        if (!Array.isArray(updatedFields[index].itemSchema)) {
+          updatedFields[index].itemSchema = [];
+        }
+        updatedFields[index].itemSchema.push({
+          key: "new_prop",
+          type: "string",
+          description: ""
+        });
+        set_settings("customFields", updatedFields);
+        renderArrayProps($fieldElement, index, updatedFields);
+      });
     };
 
     // Function to render the list of fields
@@ -528,7 +658,8 @@ const initialize_settings_listeners = (
       const fields = get_settings("customFields") || [];
       $fieldsContainer.empty();
       fields.forEach((field, index) => {
-        const $fieldElement = createFieldTemplate();
+        const fieldType = field.type || "scalar";
+        const $fieldElement = createFieldTemplate(fieldType);
 
         // Set values in the key input (which is now at the top level)
         const fieldKey = field.key || "";
@@ -552,6 +683,31 @@ const initialize_settings_listeners = (
             updatedFields[index].description = newValue;
             set_settings("customFields", updatedFields);
           });
+
+        // Handle type selector change
+        $fieldElement.find(".field-type-select").on("change", function () {
+          const newType = $(this).val();
+          const updatedFields = [...fields];
+          updatedFields[index].type = newType;
+
+          // Initialize itemSchema if switching to array
+          if (newType === "array" && !updatedFields[index].itemSchema) {
+            updatedFields[index].itemSchema = [];
+          }
+          // Remove itemSchema if switching to scalar
+          if (newType === "scalar") {
+            delete updatedFields[index].itemSchema;
+            delete updatedFields[index].type; // Remove type property for scalar (backward compat)
+          }
+
+          set_settings("customFields", updatedFields);
+          renderFields(); // Re-render to update UI
+        });
+
+        // Render array properties if this is an array field
+        if (fieldType === "array") {
+          renderArrayProps($fieldElement, index, fields);
+        }
 
         $fieldElement.find(".remove-field-btn").on("click", function () {
           const updatedFields = fields.filter((_, i) => i !== index);

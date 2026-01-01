@@ -478,6 +478,51 @@ dialog::backdrop {
   gap: 12px;
 }
 
+/* Array Schema Editor */
+.sst-array-schema-section {
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(0, 0, 0, 0.15);
+  border-radius: 8px;
+  border-left: 3px solid var(--SmartThemeQuoteColor, #6a5acd);
+}
+
+.sst-array-prop-item {
+  display: grid;
+  grid-template-columns: 1fr 90px 2fr 32px;
+  gap: 8px;
+  margin-bottom: 8px;
+  align-items: center;
+}
+
+@media (max-width: 600px) {
+  .sst-array-prop-item {
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+
+  .sst-array-prop-item .array-prop-desc {
+    grid-column: 1 / -1;
+  }
+
+  .sst-array-prop-item .remove-array-prop {
+    grid-column: 2;
+    justify-self: end;
+  }
+}
+
+.sst-btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(255, 255, 255, 0.2);
+  color: var(--sst-text-secondary);
+}
+
+.sst-btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: var(--sst-text-primary);
+}
+
 /* Mobile Responsiveness */
 @media (max-width: 768px) {
   .sst-setting-row {

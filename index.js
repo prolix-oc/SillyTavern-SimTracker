@@ -384,6 +384,71 @@ jQuery(async () => {
       const format = get_settings("trackerFormat") || "json";
       const identifier = get_settings("codeBlockIdentifier") || "sim";
 
+      // Helper to generate default value for a type
+      const getDefaultValue = (type) => {
+        switch (type) {
+          case "number": return "0";
+          case "boolean": return "false";
+          case "string":
+          default: return "\"[VALUE]\"";
+        }
+      };
+
+      // Helper to generate YAML array field example
+      const generateYamlArrayField = (field) => {
+        const sanitizedKey = sanitizeFieldKey(field.key);
+        let output = `    ${sanitizedKey}:  # ${field.description}\n`;
+
+        if (field.itemSchema === "string") {
+          // Simple string array
+          output += `      - "[${sanitizedKey.toUpperCase()}_ITEM_1]"\n`;
+          output += `      - "[${sanitizedKey.toUpperCase()}_ITEM_2]"\n`;
+        } else if (Array.isArray(field.itemSchema) && field.itemSchema.length > 0) {
+          // Object array
+          output += `      - `;
+          field.itemSchema.forEach((prop, idx) => {
+            const propKey = sanitizeFieldKey(prop.key);
+            const propValue = prop.type === "number" ? "0" : (prop.type === "boolean" ? "false" : `"[${propKey.toUpperCase()}]"`);
+            if (idx === 0) {
+              output += `${propKey}: ${propValue}`;
+              if (prop.description) output += `  # ${prop.description}`;
+              output += "\n";
+            } else {
+              output += `        ${propKey}: ${propValue}`;
+              if (prop.description) output += `  # ${prop.description}`;
+              output += "\n";
+            }
+          });
+        }
+        return output;
+      };
+
+      // Helper to generate JSON array field example
+      const generateJsonArrayField = (field) => {
+        const sanitizedKey = sanitizeFieldKey(field.key);
+        let output = `      "${sanitizedKey}": `;
+
+        if (field.itemSchema === "string") {
+          // Simple string array
+          output += `["[${sanitizedKey.toUpperCase()}_ITEM_1]", "[${sanitizedKey.toUpperCase()}_ITEM_2]"], // ${field.description}\n`;
+        } else if (Array.isArray(field.itemSchema) && field.itemSchema.length > 0) {
+          // Object array
+          output += `[\n        {\n`;
+          field.itemSchema.forEach((prop, idx) => {
+            const propKey = sanitizeFieldKey(prop.key);
+            const propValue = prop.type === "number" ? "0" : (prop.type === "boolean" ? "false" : `"[${propKey.toUpperCase()}]"`);
+            const comma = idx < field.itemSchema.length - 1 ? "," : "";
+            const comment = prop.description ? ` // ${prop.description}` : "";
+            output += `          "${propKey}": ${propValue}${comma}${comment}\n`;
+          });
+          output += `        }\n      ], // ${field.description}\n`;
+        } else {
+          // Empty or undefined schema, just show empty array
+          output += `[], // ${field.description}\n`;
+        }
+        return output;
+      };
+
       if (format === "yaml") {
         let exampleYaml = "worldData:\n";
         exampleYaml += "  current_date: \"[CURRENT_STORY_DATE]\"  # YYYY-MM-DD\n";
@@ -393,7 +458,11 @@ jQuery(async () => {
 
         fields.forEach((field) => {
           const sanitizedKey = sanitizeFieldKey(field.key);
-          exampleYaml += `    ${sanitizedKey}: [${sanitizedKey.toUpperCase()}_VALUE]  # ${field.description}\n`;
+          if (field.type === "array") {
+            exampleYaml += generateYamlArrayField(field);
+          } else {
+            exampleYaml += `    ${sanitizedKey}: [${sanitizedKey.toUpperCase()}_VALUE]  # ${field.description}\n`;
+          }
         });
 
         exampleYaml += "  # Add additional character objects here as needed\n";
@@ -410,7 +479,11 @@ jQuery(async () => {
 
         fields.forEach((field) => {
           const sanitizedKey = sanitizeFieldKey(field.key);
-          exampleJson += `      "${sanitizedKey}": [${sanitizedKey.toUpperCase()}_VALUE], // ${field.description}\n`;
+          if (field.type === "array") {
+            exampleJson += generateJsonArrayField(field);
+          } else {
+            exampleJson += `      "${sanitizedKey}": [${sanitizedKey.toUpperCase()}_VALUE], // ${field.description}\n`;
+          }
         });
 
         exampleJson += "    }\n";
