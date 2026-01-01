@@ -524,7 +524,7 @@ dialog::backdrop {
   position: fixed !important;
   top: 0 !important;
   bottom: 0 !important;
-  height: 100vh !important;
+  height: 100dvh !important; /* Use dvh for mobile keyboard compatibility */
   width: auto !important;
   box-sizing: border-box !important;
   margin: 0 !important;
@@ -539,6 +539,7 @@ dialog::backdrop {
   overflow: visible !important;
   pointer-events: none !important;
   z-index: 100 !important;
+  touch-action: manipulation !important; /* Improve mobile touch handling */
 }
 #sst-global-sidebar-left #silly-sim-tracker-container,
 #sst-global-sidebar-right #silly-sim-tracker-container {
@@ -547,4 +548,35 @@ dialog::backdrop {
   box-sizing: border-box !important;
   visibility: visible !important;
   pointer-events: none !important;
+}
+
+/* Mobile touch improvements */
+@media (pointer: coarse), (hover: none) {
+  #sst-global-sidebar-left,
+  #sst-global-sidebar-right {
+    /* Ensure sidebars don't block input areas on mobile */
+    touch-action: manipulation !important;
+  }
+
+  /* Ensure interactive elements within sidebars receive touch events properly */
+  #sst-global-sidebar-left .sim-tracker-tab,
+  #sst-global-sidebar-right .sim-tracker-tab,
+  #sst-global-sidebar-left .sim-tracker-card,
+  #sst-global-sidebar-right .sim-tracker-card,
+  #sst-global-sidebar-left label,
+  #sst-global-sidebar-right label,
+  #sst-global-sidebar-left input,
+  #sst-global-sidebar-right input {
+    pointer-events: auto !important;
+    touch-action: manipulation !important;
+  }
+}
+
+/* Fallback for browsers that don't support dvh */
+@supports not (height: 100dvh) {
+  #sst-global-sidebar-left,
+  #sst-global-sidebar-right {
+    height: 100vh !important;
+    /* Use top+bottom=0 as implicit height fallback */
+  }
 }

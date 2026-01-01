@@ -549,6 +549,11 @@ function setupPanelClickHandler(sidebarElement, side) {
  * @param {string} side - 'left' or 'right'
  */
 function refreshPanelReferences(sidebarElement, side) {
+  // Skip for 'unmanaged' tabs - template handles its own state via CSS
+  if (currentTabsType === 'unmanaged') {
+    return;
+  }
+
   const state = sidebarPanelState[side];
   const newPanels = buildPanelsFromDOM(sidebarElement);
 
@@ -770,7 +775,7 @@ function applyLeftSidebarUpdate(content) {
         top: '0',
         bottom: '0',
         width: 'auto',
-        height: '100vh',
+        height: '100dvh', // Use dvh for mobile keyboard compatibility (fallback: top+bottom=0)
         boxSizing: 'border-box',
         margin: '0',
         padding: '10px',
@@ -785,7 +790,8 @@ function applyLeftSidebarUpdate(content) {
         overflow: 'visible',
         pointerEvents: 'none',
         zIndex: '100',
-        contain: 'layout style'
+        contain: 'layout style',
+        touchAction: 'manipulation' // Improve mobile touch handling
       }
     });
 
@@ -824,8 +830,11 @@ function applyLeftSidebarUpdate(content) {
     }
 
     // Initialize panel state and set up click handler (new panel system)
-    initializePanelState(leftSidebar, 'left');
-    setupPanelClickHandler(leftSidebar, 'left');
+    // Skip for 'unmanaged' tabs - template handles its own state via CSS
+    if (currentTabsType !== 'unmanaged') {
+      initializePanelState(leftSidebar, 'left');
+      setupPanelClickHandler(leftSidebar, 'left');
+    }
 
     console.log(`[SST] [${MODULE_NAME}]`, "Created left sidebar container");
     return verticalContainer;
@@ -870,7 +879,7 @@ function applyRightSidebarUpdate(content) {
         top: '0',
         bottom: '0',
         width: 'auto',
-        height: '100vh',
+        height: '100dvh', // Use dvh for mobile keyboard compatibility (fallback: top+bottom=0)
         boxSizing: 'border-box',
         margin: '0',
         padding: '10px',
@@ -885,7 +894,8 @@ function applyRightSidebarUpdate(content) {
         overflow: 'visible',
         pointerEvents: 'none',
         zIndex: '100',
-        contain: 'layout style'
+        contain: 'layout style',
+        touchAction: 'manipulation' // Improve mobile touch handling
       }
     });
 
@@ -924,8 +934,11 @@ function applyRightSidebarUpdate(content) {
     }
 
     // Initialize panel state and set up click handler (new panel system)
-    initializePanelState(rightSidebar, 'right');
-    setupPanelClickHandler(rightSidebar, 'right');
+    // Skip for 'unmanaged' tabs - template handles its own state via CSS
+    if (currentTabsType !== 'unmanaged') {
+      initializePanelState(rightSidebar, 'right');
+      setupPanelClickHandler(rightSidebar, 'right');
+    }
 
     console.log(`[SST] [${MODULE_NAME}]`, "Created right sidebar container");
     return verticalContainer;
@@ -970,7 +983,10 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml, side = 'le
     }
 
     // Re-initialize panel state (new panel system)
-    initializePanelState(existingSidebar, side);
+    // Skip for 'unmanaged' tabs - template handles its own state via CSS
+    if (currentTabsType !== 'unmanaged') {
+      initializePanelState(existingSidebar, side);
+    }
     return;
   }
 
@@ -998,7 +1014,10 @@ function updateSidebarContentInPlace(existingSidebar, newContentHtml, side = 'le
     }
 
     // Re-initialize panel state (new panel system)
-    initializePanelState(existingSidebar, side);
+    // Skip for 'unmanaged' tabs - template handles its own state via CSS
+    if (currentTabsType !== 'unmanaged') {
+      initializePanelState(existingSidebar, side);
+    }
     return;
   }
 
@@ -1310,6 +1329,11 @@ function removeGlobalSidebars() {
  * @param {HTMLElement} sidebarElement - The sidebar content element
  */
 function attachTabEventListeners(sidebarElement) {
+  // Skip for 'unmanaged' tabs - template handles its own state via CSS
+  if (currentTabsType === 'unmanaged') {
+    return;
+  }
+
   // Determine which side this sidebar is on
   const isLeft = sidebarElement.id === 'sst-sidebar-left-content' ||
                  sidebarElement.closest('#sst-global-sidebar-left') !== null;

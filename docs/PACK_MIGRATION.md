@@ -156,16 +156,73 @@ Templates can specify how tabs behave using the `tabsType` field in the JSON con
 - First panel starts **active** by default
 - Best for: Traditional tab interfaces where one panel is always visible
 
+### Unmanaged Mode
+```json
+{
+  "tabsType": "unmanaged"
+}
+```
+
+- **No JS click handlers** attached to tabs
+- **No state classes** (`.active`, `.sliding-out`, `.tab-hidden`) applied
+- Template handles all state management via CSS (radio button or checkbox hack)
+- Best for: Template developers who want full creative control over tab behavior and animations
+
+#### CSS Radio Button Pattern (Switching)
+```handlebars
+<style>
+  .tab-radio { display: none; }
+  .sim-tracker-card { display: none; }
+
+  {{#each characters}}
+  #tab-{{@index}}:checked ~ .cards .card-{{@index}} { display: block; }
+  {{/each}}
+</style>
+
+{{#each characters}}
+<input type="radio" name="tabs" id="tab-{{@index}}" {{#if @first}}checked{{/if}}>
+{{/each}}
+
+<div class="tabs">
+  {{#each characters}}
+  <label for="tab-{{@index}}">{{initials characterName}}</label>
+  {{/each}}
+</div>
+
+<div class="cards">
+  {{#each characters}}
+  <div class="sim-tracker-card card-{{@index}}">...</div>
+  {{/each}}
+</div>
+```
+
+#### CSS Checkbox Pattern (Collapsible)
+```handlebars
+<style>
+  .toggle { display: none; }
+  .card-body { display: grid; grid-template-rows: 0fr; }
+  .toggle:checked ~ .card-body { grid-template-rows: 1fr; }
+</style>
+
+{{#each characters}}
+<div class="card">
+  <input type="checkbox" id="toggle-{{@index}}" class="toggle" checked>
+  <label for="toggle-{{@index}}">{{characterName}}</label>
+  <div class="card-body"><div class="inner">...</div></div>
+</div>
+{{/each}}
+```
+
 ### For Custom HTML Templates
 
 Add an HTML comment to specify tab type:
 ```html
 <!-- TABS_TYPE: toggle -->
-```
-or
-```html
 <!-- TABS_TYPE: switching -->
+<!-- TABS_TYPE: unmanaged -->
 ```
+
+Note: The JSON `"tabsType"` field is preferred over HTML comments.
 
 ## Future: Grouped Panel Structure (Optional)
 

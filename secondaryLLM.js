@@ -420,24 +420,54 @@ async function generateTrackerWithSecondaryLLM(get_settings) {
   console.log(`[SST] [${MODULE_NAME}]`, `Using template-specific settings: ${customFields.length} custom fields, format: ${trackerFormat}`);
 
   let formatExample = "";
-  
+
   if (trackerFormat === "yaml") {
-    formatExample = `worldData:\n  current_date: "YYYY-MM-DD"\n  current_time: "HH:MM"\ncharacters:\n  - name: "Character Name"\n`;
+    let yamlContent = `worldData:\n  current_date: "YYYY-MM-DD"\n  current_time: "HH:MM"\ncharacters:\n  - name: "Character Name"\n`;
     customFields.forEach((field) => {
-      formatExample += `    ${field.key}: [appropriate value] # ${field.description}\n`;
+      yamlContent += `    ${field.key}: [appropriate value] # ${field.description}\n`;
     });
+    formatExample = `\`\`\`${codeBlockIdentifier}\n${yamlContent}\`\`\``;
   } else {
-    formatExample = `{\n  "worldData": {\n    "current_date": "YYYY-MM-DD",\n    "current_time": "HH:MM"\n  },\n  "characters": [\n    {\n      "name": "Character Name",\n`;
+    let jsonContent = `{\n  "worldData": {\n    "current_date": "YYYY-MM-DD",\n    "current_time": "HH:MM"\n  },\n  "characters": [\n    {\n      "name": "Character Name",\n`;
     customFields.forEach((field, index) => {
       const comma = index < customFields.length - 1 ? "," : "";
-      formatExample += `      "${field.key}": [appropriate value]${comma} // ${field.description}\n`;
+      jsonContent += `      "${field.key}": [appropriate value]${comma} // ${field.description}\n`;
     });
-    formatExample += `    }\n  ]\n}`;
+    jsonContent += `    }\n  ]\n}`;
+    formatExample = `\`\`\`${codeBlockIdentifier}\n${jsonContent}\n\`\`\``;
   }
 
   // Replace {{sim_format}} in the system prompt
   let processedPrompt = systemPrompt.replace(/\{\{sim_format\}\}/g, formatExample);
-  
+
+  // Replace {{user}} and {{char}} macros with actual values from context
+  // SillyTavern context: name1 = user/persona name, name2 = character name (undefined in group chats)
+  const userName = context.name1 || "User";
+  const charName = context.name2 || (context.groupId ? "Characters" : "Character");
+
+  // Get group member names if in a group chat
+  let groupNames = "";
+  if (context.groupId && context.groups) {
+    const currentGroup = context.groups.find(g => g.id === context.groupId);
+    if (currentGroup && currentGroup.members) {
+      const memberNames = currentGroup.members
+        .map(memberId => {
+          const char = context.characters.find(c => c.avatar === memberId);
+          return char ? char.name : null;
+        })
+        .filter(Boolean);
+      groupNames = memberNames.join(", ");
+    }
+  }
+
+  // Replace macros - handle both {{user}} and {{char}} variants
+  processedPrompt = processedPrompt.replace(/\{\{user\}\}/gi, userName);
+  processedPrompt = processedPrompt.replace(/\{\{char\}\}/gi, charName);
+  // For group chats, also support {{group}} macro
+  if (groupNames) {
+    processedPrompt = processedPrompt.replace(/\{\{group\}\}/gi, groupNames);
+  }
+
   // Build the conversation context
   let conversationText = processedPrompt + "\n\n";
   

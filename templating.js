@@ -92,6 +92,69 @@ Handlebars.registerHelper("divideRoundUp", function (a, b) {
   return Math.ceil(a / b);
 });
 
+// === HSL COLOR CONVERSION UTILITIES ===
+
+/**
+ * Convert RGB values to HSL
+ * @param {number} r - Red (0-255)
+ * @param {number} g - Green (0-255)
+ * @param {number} b - Blue (0-255)
+ * @returns {Object} {h: 0-360, s: 0-100, l: 0-100}
+ */
+function rgbToHsl(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h, s, l = (max + min) / 2;
+
+  if (max === min) {
+    h = s = 0;
+  } else {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case r: h = ((g - b) / d + (g < b ? 6 : 0)) / 6; break;
+      case g: h = ((b - r) / d + 2) / 6; break;
+      case b: h = ((r - g) / d + 4) / 6; break;
+    }
+  }
+  return { h: h * 360, s: s * 100, l: l * 100 };
+}
+
+/**
+ * Convert HSL values to RGB
+ * @param {number} h - Hue (0-360)
+ * @param {number} s - Saturation (0-100)
+ * @param {number} l - Lightness (0-100)
+ * @returns {Object} {r: 0-255, g: 0-255, b: 0-255}
+ */
+function hslToRgb(h, s, l) {
+  h /= 360; s /= 100; l /= 100;
+  let r, g, b;
+
+  if (s === 0) {
+    r = g = b = l;
+  } else {
+    const hue2rgb = (p, q, t) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1/6) return p + (q - p) * 6 * t;
+      if (t < 1/2) return q;
+      if (t < 2/3) return p + (q - p) * (2/3 - t) * 6;
+      return p;
+    };
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
+    const p = 2 * l - q;
+    r = hue2rgb(p, q, h + 1/3);
+    g = hue2rgb(p, q, h);
+    b = hue2rgb(p, q, h - 1/3);
+  }
+  return {
+    r: Math.round(r * 255),
+    g: Math.round(g * 255),
+    b: Math.round(b * 255)
+  };
+}
+
 Handlebars.registerHelper(
   "adjustColorBrightness",
   function (hexColor, brightnessPercent) {
@@ -118,6 +181,42 @@ Handlebars.registerHelper(
   }
 );
 
+/**
+ * Adjust color using HSL values
+ * Usage: {{adjustHSL "#ff0000" 30 0 -10}}
+ *   - hueShift: degrees to shift hue (0-360, wraps around)
+ *   - saturationAdjust: percentage to add/subtract from saturation (-100 to 100)
+ *   - lightnessAdjust: percentage to add/subtract from lightness (-100 to 100)
+ */
+Handlebars.registerHelper("adjustHSL", function (hexColor, hueShift, saturationAdjust, lightnessAdjust) {
+  // Validate inputs
+  if (!hexColor || typeof hexColor !== 'string') return "#000000";
+  hueShift = typeof hueShift === 'number' ? hueShift : 0;
+  saturationAdjust = typeof saturationAdjust === 'number' ? saturationAdjust : 0;
+  lightnessAdjust = typeof lightnessAdjust === 'number' ? lightnessAdjust : 0;
+
+  // Parse hex to RGB
+  hexColor = hexColor.replace("#", "");
+  const r = parseInt(hexColor.substring(0, 2), 16);
+  const g = parseInt(hexColor.substring(2, 4), 16);
+  const b = parseInt(hexColor.substring(4, 6), 16);
+
+  // Convert to HSL
+  let hsl = rgbToHsl(r, g, b);
+
+  // Apply adjustments
+  hsl.h = (hsl.h + hueShift) % 360;
+  if (hsl.h < 0) hsl.h += 360;  // Handle negative hue
+  hsl.s = Math.max(0, Math.min(100, hsl.s + saturationAdjust));
+  hsl.l = Math.max(0, Math.min(100, hsl.l + lightnessAdjust));
+
+  // Convert back to RGB
+  const rgb = hslToRgb(hsl.h, hsl.s, hsl.l);
+
+  // Return hex
+  return `#${rgb.r.toString(16).padStart(2, "0")}${rgb.g.toString(16).padStart(2, "0")}${rgb.b.toString(16).padStart(2, "0")}`;
+});
+
 Handlebars.registerHelper("tabZIndex", function (index) {
   // Calculate z-index for tabs (higher for first tabs)
   // This creates a stacking effect where the first tab is on top
@@ -140,6 +239,56 @@ Handlebars.registerHelper("rawFirstLetter", function (name) {
   // Extract the first letter of the name without any formatting
   if (!name || typeof name !== 'string' || name.length === 0) return "?";
   return name.charAt(0);
+});
+
+// === STRING TRANSFORMATION HELPERS ===
+
+/**
+ * Convert string to lowercase with underscores
+ * Usage: {{slugifyUnderscore character.name}}
+ * "John Doe" → "john_doe"
+ */
+Handlebars.registerHelper("slugifyUnderscore", function (name) {
+  if (!name || typeof name !== 'string') return "";
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')    // Remove special chars except spaces/dashes
+    .replace(/[\s-]+/g, '_');     // Replace spaces/dashes with underscores
+});
+
+/**
+ * Convert string to lowercase with dashes
+ * Usage: {{slugifyDash character.name}}
+ * "John Doe" → "john-doe"
+ */
+Handlebars.registerHelper("slugifyDash", function (name) {
+  if (!name || typeof name !== 'string') return "";
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^\w\s-]/g, '')    // Remove special chars except spaces/dashes
+    .replace(/[\s_]+/g, '-');     // Replace spaces/underscores with dashes
+});
+
+/**
+ * Convert string to camelCase
+ * Usage: {{camelCase character.name}}
+ * "John Doe" → "johnDoe"
+ */
+Handlebars.registerHelper("camelCase", function (name) {
+  if (!name || typeof name !== 'string') return "";
+  return name
+    .trim()
+    .replace(/[^\w\s]/g, '')     // Remove special chars
+    .split(/\s+/)                 // Split on whitespace
+    .map((word, index) => {
+      if (index === 0) {
+        return word.toLowerCase();
+      }
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
+    .join('');
 });
 
 Handlebars.registerHelper("unless", function (conditional, options) {
@@ -690,8 +839,8 @@ const loadTemplate = async (get_settings, set_settings) => {
           // Extract bundled JavaScript logic from the custom template
           currentTemplateLogic = extractTemplateLogic(customTemplateHtml);
 
-          // Extract tabsType from HTML comment if present (<!-- TABS_TYPE: toggle -->)
-          const tabsTypeRegex = /<!--\s*TABS_TYPE\s*:\s*(toggle|switching)\s*-->/i;
+          // Extract tabsType from HTML comment if present (<!-- TABS_TYPE: toggle|switching|unmanaged -->)
+          const tabsTypeRegex = /<!--\s*TABS_TYPE\s*:\s*(toggle|switching|unmanaged)\s*-->/i;
           const tabsTypeMatch = customTemplateHtml.match(tabsTypeRegex);
           currentTabsType = tabsTypeMatch ? tabsTypeMatch[1].toLowerCase() : "toggle";
 

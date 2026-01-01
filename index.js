@@ -377,11 +377,62 @@ jQuery(async () => {
     }
 
     log("Registering macros...");
+
+    // Helper function to generate sim_format content (used by both macros and for nested macro replacement)
+    const generateSimFormatContent = () => {
+      const fields = get_settings("customFields") || [];
+      const format = get_settings("trackerFormat") || "json";
+      const identifier = get_settings("codeBlockIdentifier") || "sim";
+
+      if (format === "yaml") {
+        let exampleYaml = "worldData:\n";
+        exampleYaml += "  current_date: \"[CURRENT_STORY_DATE]\"  # YYYY-MM-DD\n";
+        exampleYaml += "  current_time: \"[CURRENT_STORY_TIME]\"  # 24-hour time (e.g., 21:34, 10:21)\n";
+        exampleYaml += "characters:\n";
+        exampleYaml += "  - name: \"[CHARACTER_NAME]\"\n";
+
+        fields.forEach((field) => {
+          const sanitizedKey = sanitizeFieldKey(field.key);
+          exampleYaml += `    ${sanitizedKey}: [${sanitizedKey.toUpperCase()}_VALUE]  # ${field.description}\n`;
+        });
+
+        exampleYaml += "  # Add additional character objects here as needed\n";
+        return `\`\`\`${identifier}\n${exampleYaml}\`\`\``;
+      } else {
+        let exampleJson = "{\n";
+        exampleJson += "  \"worldData\": {\n";
+        exampleJson += "    \"current_date\": \"[CURRENT_STORY_DATE]\", // YYYY-MM-DD\n";
+        exampleJson += "    \"current_time\": \"[CURRENT_STORY_TIME]\" // 24-hour time (e.g., 21:34, 10:21)\n";
+        exampleJson += "  },\n";
+        exampleJson += "  \"characters\": [\n";
+        exampleJson += "    {\n";
+        exampleJson += "      \"name\": \"[CHARACTER_NAME]\",\n";
+
+        fields.forEach((field) => {
+          const sanitizedKey = sanitizeFieldKey(field.key);
+          exampleJson += `      "${sanitizedKey}": [${sanitizedKey.toUpperCase()}_VALUE], // ${field.description}\n`;
+        });
+
+        exampleJson += "    }\n";
+        exampleJson += "    // Add additional character objects here as needed\n";
+        exampleJson += "  ]\n";
+        exampleJson += "}";
+        return `\`\`\`${identifier}\n${exampleJson}\n\`\`\``;
+      }
+    };
+
     MacrosParser.registerMacro("sim_tracker", () => {
       if (!get_settings("isEnabled")) return "";
       log("Processed {{sim_tracker}} macro.");
-      
+
       let output = get_settings("datingSimPrompt");
+
+      // Replace nested {{sim_format}} macro since SillyTavern can't handle nested macros
+      if (output && output.includes("{{sim_format}}")) {
+        const simFormatContent = generateSimFormatContent();
+        output = output.replace(/\{\{sim_format\}\}/g, simFormatContent);
+        log("Replaced nested {{sim_format}} macro with dynamic content");
+      }
       
       // If inline templates are enabled, merge the {{sim_displays}} content into this macro
       const inlineEnabled = get_settings("enableInlineTemplates");
@@ -402,7 +453,7 @@ jQuery(async () => {
         displayContent += "Place tracker data at the END of your response in a code block:\n\n";
         displayContent += "- Syntax: ```" + identifier + "\\n[data here]\\n```\n";
         displayContent += "- Must be the LAST element in your message\n";
-        displayContent += "- Use the format specified in {{sim_format}} (see main tracker instructions)\n";
+        displayContent += "- Use the format specified above (see main tracker instructions)\n";
         displayContent += "- Will render as visual tracker cards for the user\n\n";
         
         if (templateConfig) {
@@ -483,7 +534,36 @@ jQuery(async () => {
         output += displayContent;
         log("Merged {{sim_displays}} content into {{sim_tracker}} (inline templates enabled)");
       }
-      
+
+      // Replace {{user}} and {{char}} macros with actual values from context
+      // SillyTavern's MacrosParser doesn't handle nested macros, so we do it manually
+      // Context: name1 = user/persona name, name2 = character name (undefined in group chats)
+      const context = getContext();
+      const userName = context.name1 || "User";
+      const charName = context.name2 || (context.groupId ? "Characters" : "Character");
+
+      // Get group member names if in a group chat
+      let groupNames = "";
+      if (context.groupId && context.groups) {
+        const currentGroup = context.groups.find(g => g.id === context.groupId);
+        if (currentGroup && currentGroup.members) {
+          const memberNames = currentGroup.members
+            .map(memberId => {
+              const char = context.characters.find(c => c.avatar === memberId);
+              return char ? char.name : null;
+            })
+            .filter(Boolean);
+          groupNames = memberNames.join(", ");
+        }
+      }
+
+      // Replace macros
+      output = output.replace(/\{\{user\}\}/gi, userName);
+      output = output.replace(/\{\{char\}\}/gi, charName);
+      if (groupNames) {
+        output = output.replace(/\{\{group\}\}/gi, groupNames);
+      }
+
       return output;
     });
 
@@ -559,62 +639,8 @@ jQuery(async () => {
 
     MacrosParser.registerMacro("sim_format", () => {
       if (!get_settings("isEnabled")) return "";
-      const fields = get_settings("customFields") || [];
-      const format = get_settings("trackerFormat") || "json";
       log("Processed {{sim_format}} macro.");
-
-      if (format === "yaml") {
-        // Generate YAML example structure with the new format
-        let exampleYaml = "worldData:\n";
-        exampleYaml += "  current_date: \"[CURRENT_STORY_DATE]\"  # YYYY-MM-DD\n";
-        exampleYaml += "  current_time: \"[CURRENT_STORY_TIME]\"  # 24-hour time (e.g., 21:34, 10:21)\n";
-        exampleYaml += "characters:\n";
-        exampleYaml += "  - name: \"[CHARACTER_NAME]\"\n";
-
-        // Add each custom field as a commented key-value pair
-        fields.forEach((field) => {
-          const sanitizedKey = sanitizeFieldKey(field.key);
-          exampleYaml += `    ${sanitizedKey}: [${sanitizedKey.toUpperCase()}_VALUE]  # ${
-            field.description
-          }\n`;
-        });
-
-        exampleYaml += "  # Add additional character objects here as needed\n";
-
-        // Wrap in the code block with the identifier
-        const identifier = get_settings("codeBlockIdentifier") || "sim";
-        return `\`\`\`${identifier}
-${exampleYaml}\`\`\``;
-      } else {
-        // Generate JSON example structure with the new format
-        let exampleJson = "{\n";
-        exampleJson += "  \"worldData\": {\n";
-        exampleJson += "    \"current_date\": \"[CURRENT_STORY_DATE]\", // YYYY-MM-DD\n";
-        exampleJson += "    \"current_time\": \"[CURRENT_STORY_TIME]\" // 24-hour time (e.g., 21:34, 10:21)\n";
-        exampleJson += "  },\n";
-        exampleJson += "  \"characters\": [\n";
-        exampleJson += "    {\n";
-        exampleJson += "      \"name\": \"[CHARACTER_NAME]\",\n";
-
-        // Add each custom field as a commented key-value pair
-        fields.forEach((field) => {
-          const sanitizedKey = sanitizeFieldKey(field.key);
-          exampleJson += `      "${sanitizedKey}": [${sanitizedKey.toUpperCase()}_VALUE], // ${
-            field.description
-          }\n`;
-        });
-
-        exampleJson += "    }\n";
-        exampleJson += "    // Add additional character objects here as needed\n";
-        exampleJson += "  ]\n";
-        exampleJson += "}";
-
-        // Wrap in the code block with the identifier
-        const identifier = get_settings("codeBlockIdentifier") || "sim";
-        return `\`\`\`${identifier}
-${exampleJson}
-\`\`\``;
-      }
+      return generateSimFormatContent();
     });
 
     MacrosParser.registerMacro("sim_displays", () => {
@@ -638,7 +664,7 @@ ${exampleJson}
       output += "Place tracker data at the END of your response in a code block:\n\n";
       output += "- Syntax: ```" + identifier + "\\n[data here]\\n```\n";
       output += "- Must be the LAST element in your message\n";
-      output += "- Use the format specified in {{sim_format}} (see main tracker instructions)\n";
+      output += "- Format: " + generateSimFormatContent() + "\n";
       output += "- Will render as visual tracker cards for the user\n\n";
       
       if (inlineEnabled && templateConfig) {
@@ -1213,10 +1239,10 @@ ${fieldsJson}    }
       if (messageElement) {
         const templateConfig = getCurrentTemplateConfig();
         const isEnabled = get_settings("enableInlineTemplates");
-        processInlineTemplates(messageElement, templateConfig, isEnabled);
+        processInlineTemplates(messageElement, templateConfig, isEnabled, get_settings);
       }
     });
-    
+
     // Helper function to clean up and wrap sim blocks in all messages with hidden divs
     const wrapSimBlocksInChat = () => {
       if (!get_settings("isEnabled") || !get_settings("hideSimBlocks")) return;
@@ -1324,10 +1350,10 @@ ${fieldsJson}    }
       if (messageElement) {
         const templateConfig = getCurrentTemplateConfig();
         const isEnabled = get_settings("enableInlineTemplates");
-        processInlineTemplates(messageElement, templateConfig, isEnabled);
+        processInlineTemplates(messageElement, templateConfig, isEnabled, get_settings);
       }
     });
-    
+
     eventSource.on(event_types.MESSAGE_SWIPE, (mesId) => {
       log(
         `Message swipe detected for message ID ${mesId}. Updating last_sim_stats macro and re-rendering tracker.`
@@ -1344,7 +1370,7 @@ ${fieldsJson}    }
       if (messageElement) {
         const templateConfig = getCurrentTemplateConfig();
         const isEnabled = get_settings("enableInlineTemplates");
-        processInlineTemplates(messageElement, templateConfig, isEnabled);
+        processInlineTemplates(messageElement, templateConfig, isEnabled, get_settings);
       }
     });
 
