@@ -133,54 +133,63 @@ globalThis.simTrackerGenInterceptor = async function (
     knownIdentifiers.push(currentIdentifier);
   }
 
-  // Find all messages with tracker blocks
-  const messagesWithTrackers = [];
+  // Find the cutoff point (Nth last assistant message) based on retainTrackerCount
+  let cutoffIndex = 0;
+  let assistantCount = 0;
   
-  // Scan backwards to find messages with trackers
+  // Scan backwards to find the Nth assistant message
   for (let i = clonedChat.length - 1; i >= 0; i--) {
     const msg = clonedChat[i];
     if (!msg.mes) continue;
     
-    let hasTracker = false;
-    for (const id of knownIdentifiers) {
-      if (msg.mes.includes("```" + id)) {
-        hasTracker = true;
+    // Only count assistant messages
+    if (!msg.is_user && !msg.is_system) {
+      assistantCount++;
+      if (assistantCount >= retainCount) {
+        cutoffIndex = i;
         break;
       }
     }
-    
-    if (hasTracker) {
-      messagesWithTrackers.push(i);
-    }
   }
   
-  // Determine which messages need cleaning (all but the last retainCount)
-  // messagesWithTrackers is ordered from newest to oldest
-  if (messagesWithTrackers.length > retainCount) {
-    const indicesToClean = messagesWithTrackers.slice(retainCount);
-    log(`Cleaning up ${indicesToClean.length} old tracker blocks from context (retaining last ${retainCount})`);
+  // If we found enough assistant messages, strip trackers from all messages older than the cutoff
+  // If we didn't reach the limit (cutoffIndex is 0), we don't need to clean anything before it
+  if (cutoffIndex > 0) {
+    log(`Cleaning up tracker blocks older than message ${cutoffIndex} (retaining last ${retainCount} assistant messages)`);
     
-    indicesToClean.forEach(index => {
-      let content = clonedChat[index].mes;
+    // Iterate through all messages older than the cutoff
+    for (let i = 0; i < cutoffIndex; i++) {
+      const msg = clonedChat[i];
+      if (!msg.mes) continue;
+      
+      let content = msg.mes;
+      let modified = false;
       
       // Remove all known tracker blocks from this message
       knownIdentifiers.forEach(id => {
         // Regex to match code blocks with this identifier
-        // Matches ```id ... ``` including newlines
         const regex = new RegExp("```" + id + "[\\s\\S]*?```", "g");
-        content = content.replace(regex, "");
+        
+        if (regex.test(content)) {
+          content = content.replace(regex, "");
+          modified = true;
+        }
         
         // Also clean up any wrapper divs if present (for hidden blocks)
-        // <div style="display: none;"> ... </div>
-        // This is a simple cleanup, might leave empty divs but that's fine for LLM context
-        // Ideally we'd remove the whole div if it's empty now
+        // We handle this by checking for the div wrapper pattern that might remain
+        const divRegex = /<div style="display: none;">\s*\n?\s*<\/div>/g;
+        if (divRegex.test(content)) {
+            content = content.replace(divRegex, "");
+            modified = true;
+        }
       });
       
-      // Clean up empty lines that might be left
-      content = content.replace(/\n\s*\n\s*\n/g, "\n\n").trim();
-      
-      clonedChat[index].mes = content;
-    });
+      if (modified) {
+        // Clean up empty lines that might be left
+        content = content.replace(/\n\s*\n\s*\n/g, "\n\n").trim();
+        clonedChat[i].mes = content;
+      }
+    }
   }
 
   // Filter out sim blocks from messages beyond the configured maximum (for Max Sim Blocks setting)
