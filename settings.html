@@ -255,14 +255,17 @@
 
               <div class="sst-setting-row">
                 <div class="sst-setting-info">
-                  <label class="sst-setting-label" for="secondaryLLMAPI">API Source</label>
+                  <label class="sst-setting-label" for="secondaryLLMAPI">Provider</label>
+                  <p id="sst-provider-hint" class="sst-setting-desc" style="margin-top:4px;">Uses API key from SillyTavern settings.</p>
                 </div>
                 <div class="sst-setting-control">
                   <select id="secondaryLLMAPI" class="sst-select">
                     <option value="openai">OpenAI</option>
-                    <option value="claude">Claude</option>
-                    <option value="custom">Custom</option>
-                    <option value="full-manual">Full Manual</option>
+                    <option value="anthropic">Anthropic Claude</option>
+                    <option value="openrouter">OpenRouter</option>
+                    <option value="google">Google AI Studio</option>
+                    <option value="chutes">Chutes.ai</option>
+                    <option value="custom">Custom (OpenAI-Compatible)</option>
                   </select>
                 </div>
               </div>
@@ -276,21 +279,23 @@
                 </div>
               </div>
 
-              <div class="sst-setting-row">
-                <div class="sst-setting-info">
-                  <label class="sst-setting-label" for="secondaryLLMEndpoint">Endpoint (Manual)</label>
+              <div id="sst-custom-api-fields" style="display: none;">
+                <div class="sst-setting-row">
+                  <div class="sst-setting-info">
+                    <label class="sst-setting-label" for="secondaryLLMEndpoint">Endpoint URL</label>
+                  </div>
+                  <div class="sst-setting-control">
+                    <input type="text" id="secondaryLLMEndpoint" class="sst-input" placeholder="https://api.example.com/v1/chat/completions">
+                  </div>
                 </div>
-                <div class="sst-setting-control">
-                  <input type="text" id="secondaryLLMEndpoint" class="sst-input" placeholder="https://api.example.com/v1">
-                </div>
-              </div>
-              
-              <div class="sst-setting-row">
-                <div class="sst-setting-info">
-                  <label class="sst-setting-label" for="secondaryLLMAPIKey">API Key (Manual)</label>
-                </div>
-                <div class="sst-setting-control">
-                  <input type="password" id="secondaryLLMAPIKey" class="sst-input" placeholder="API Key">
+                
+                <div class="sst-setting-row">
+                  <div class="sst-setting-info">
+                    <label class="sst-setting-label" for="secondaryLLMAPIKey">API Key</label>
+                  </div>
+                  <div class="sst-setting-control">
+                    <input type="password" id="secondaryLLMAPIKey" class="sst-input" placeholder="sk-...">
+                  </div>
                 </div>
               </div>
 
@@ -310,6 +315,19 @@
                 <div class="sst-setting-control">
                   <label class="sst-toggle">
                     <input type="checkbox" id="secondaryLLMStreaming">
+                    <span class="sst-slider"></span>
+                  </label>
+                </div>
+              </div>
+
+              <div class="sst-setting-row" id="sst-reverse-proxy-row">
+                <div class="sst-setting-info">
+                  <label class="sst-setting-label" for="secondaryLLMUseReverseProxy">Use Reverse Proxy</label>
+                  <p class="sst-setting-desc" style="margin-top:4px;">Route requests through ST's configured proxy.</p>
+                </div>
+                <div class="sst-setting-control">
+                  <label class="sst-toggle">
+                    <input type="checkbox" id="secondaryLLMUseReverseProxy">
                     <span class="sst-slider"></span>
                   </label>
                 </div>

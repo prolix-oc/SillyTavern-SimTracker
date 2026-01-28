@@ -6,6 +6,101 @@ import { generateTrackerBlock } from "./formatUtils.js";
 const MODULE_NAME = "silly-sim-tracker";
 
 /**
+ * Secret key identifiers used by SillyTavern's secrets system
+ * These map to the keys stored via /api/secrets/find
+ */
+const SECRET_KEYS = {
+  OPENAI: "api_key_openai",
+  CLAUDE: "api_key_claude",
+  OPENROUTER: "api_key_openrouter",
+  MAKERSUITE: "api_key_makersuite", // Google AI Studio
+  CHUTES: "api_key_chutes",
+};
+
+/**
+ * Provider configuration for secondary LLM
+ * Each provider has its endpoint, secret key reference, and default model placeholder
+ */
+export const PROVIDER_CONFIG = {
+  openai: {
+    name: "OpenAI",
+    endpoint: "https://api.openai.com/v1/chat/completions",
+    secretKey: SECRET_KEYS.OPENAI,
+    placeholder: "gpt-4o-mini",
+    format: "openai",
+    useProxy: false,
+  },
+  anthropic: {
+    name: "Anthropic Claude",
+    endpoint: "https://api.anthropic.com/v1/messages",
+    secretKey: SECRET_KEYS.CLAUDE,
+    placeholder: "claude-3-5-haiku-latest",
+    format: "anthropic",
+    useProxy: false,
+  },
+  openrouter: {
+    name: "OpenRouter",
+    endpoint: "https://openrouter.ai/api/v1/chat/completions",
+    secretKey: SECRET_KEYS.OPENROUTER,
+    placeholder: "openai/gpt-4o-mini",
+    format: "openai",
+    useProxy: false,
+  },
+  google: {
+    name: "Google AI Studio",
+    endpoint: "https://generativelanguage.googleapis.com/v1beta/models",
+    secretKey: SECRET_KEYS.MAKERSUITE,
+    placeholder: "gemini-2.0-flash",
+    format: "google",
+    useProxy: false,
+  },
+  chutes: {
+    name: "Chutes.ai",
+    endpoint: "https://llm.chutes.ai/v1/chat/completions",
+    secretKey: SECRET_KEYS.CHUTES,
+    placeholder: "deepseek-ai/DeepSeek-V3-0324",
+    format: "openai",
+    useProxy: false,
+  },
+  custom: {
+    name: "Custom (OpenAI-Compatible)",
+    endpoint: "", // User provides
+    secretKey: null, // User provides their own key
+    placeholder: "model-name",
+    format: "openai",
+    useProxy: false,
+  },
+};
+
+/**
+ * Fetch an API key from SillyTavern's secrets system
+ * @param {string} secretKey - The secret key identifier (e.g., "api_key_openai")
+ * @returns {Promise<string|null>} The API key or null if not found
+ */
+async function fetchSecretKey(secretKey) {
+  if (!secretKey) return null;
+  
+  try {
+    const response = await fetch("/api/secrets/find", {
+      method: "POST",
+      headers: getRequestHeaders(),
+      body: JSON.stringify({ key: secretKey }),
+    });
+    
+    if (!response.ok) {
+      console.warn(`[SST] [${MODULE_NAME}]`, `Failed to fetch secret key: ${response.status}`);
+      return null;
+    }
+    
+    const data = await response.json();
+    return data.value || null;
+  } catch (error) {
+    console.error(`[SST] [${MODULE_NAME}]`, "Error fetching secret key:", error);
+    return null;
+  }
+}
+
+/**
  * Get the request headers for SillyTavern API calls
  */
 function getRequestHeaders() {
@@ -25,58 +120,226 @@ function getCurrentCompletionEndpoint() {
 }
 
 /**
+ * Check if a string is a valid URL
+ */
+function isValidUrl(str) {
+  try {
+    new URL(str);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Get reverse proxy settings from SillyTavern
+ * Returns { url, password } if configured, null otherwise
+ */
+function getReverseProxySettings() {
+  try {
+    const context = SillyTavern.getContext();
+    const oaiSettings = context.chatCompletionSettings;
+    
+    if (oaiSettings?.reverse_proxy && isValidUrl(oaiSettings.reverse_proxy)) {
+      return {
+        url: oaiSettings.reverse_proxy,
+        password: oaiSettings.proxy_password || "",
+      };
+    }
+  } catch (error) {
+    console.warn(`[SST] [${MODULE_NAME}]`, "Could not get reverse proxy settings:", error);
+  }
+  return null;
+}
+
+/**
  * Send a raw completion request to generate tracker data
- * Based on the example-send.js implementation
- * Supports both streaming and non-streaming responses
+ * Supports both SillyTavern proxy and direct API calls with secret key reuse
  */
 async function sendRawCompletionRequest({
   model,
   prompt,
   temperature = 0.7,
-  api = "openai",
+  provider = "openai",
   endpoint = null,
   apiKey = null,
   extra = {},
   streaming = true,
+  useReverseProxy = true, // New option to respect ST's reverse proxy setting
 }) {
-  let url = getCurrentCompletionEndpoint();
-  let headers = getRequestHeaders();
-
-  let body = {
-    messages: [{ role: "user", content: prompt }],
-    model,
-    temperature,
-    chat_completion_source: api,
-    stream: streaming, // Use streaming parameter
-    ...extra,
-  };
-
-  // Handle full-manual configuration with direct endpoint calls
-  if (api === "full-manual" && endpoint && apiKey) {
+  const providerConfig = PROVIDER_CONFIG[provider];
+  
+  // Determine if we're using a known provider with ST secrets
+  const isKnownProvider = provider !== "custom" && providerConfig?.secretKey;
+  
+  // Check for reverse proxy configuration
+  const reverseProxy = useReverseProxy ? getReverseProxySettings() : null;
+  
+  let url;
+  let headers;
+  let body;
+  let resolvedApiKey = apiKey;
+  
+  // For known providers, fetch the API key from ST secrets
+  if (isKnownProvider) {
+    resolvedApiKey = await fetchSecretKey(providerConfig.secretKey);
+    if (!resolvedApiKey) {
+      throw new Error(`No API key found for ${providerConfig.name}. Please configure it in SillyTavern's API settings.`);
+    }
+  }
+  
+  // Handle custom provider with user-provided endpoint and key
+  if (provider === "custom") {
+    if (!endpoint || !apiKey) {
+      throw new Error("Custom provider requires both endpoint and API key to be configured.");
+    }
     url = endpoint;
     headers = {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     };
-    // For direct endpoint calls, use standard OpenAI-compatible format
     body = {
       model,
       messages: [{ role: "user", content: prompt }],
       temperature,
-      stream: streaming, // Use streaming parameter
+      stream: streaming,
       ...extra,
     };
-  } else if (api === "custom" && model) {
-    body.custom_model_id = model;
-    const oai_settings = SillyTavern.getContext().openai_settings || {};
-    body.custom_url = oai_settings.custom_url || "";
+  }
+  // Handle Anthropic's different API format
+  else if (providerConfig?.format === "anthropic") {
+    url = providerConfig.endpoint;
+    headers = {
+      "Content-Type": "application/json",
+      "x-api-key": resolvedApiKey,
+      "anthropic-version": "2023-06-01",
+      "anthropic-dangerous-direct-browser-access": "true",
+    };
+    body = {
+      model,
+      max_tokens: extra.max_tokens || 4096,
+      messages: [{ role: "user", content: prompt }],
+      stream: streaming,
+    };
+    if (temperature !== undefined) {
+      body.temperature = temperature;
+    }
+  }
+  // Handle Google AI Studio format
+  else if (providerConfig?.format === "google") {
+    // Google uses a different URL structure: /models/{model}:generateContent
+    const action = streaming ? "streamGenerateContent" : "generateContent";
+    url = `${providerConfig.endpoint}/${model}:${action}?key=${resolvedApiKey}`;
+    headers = {
+      "Content-Type": "application/json",
+    };
+    body = {
+      contents: [{ role: "user", parts: [{ text: prompt }] }],
+      generationConfig: {
+        temperature,
+        maxOutputTokens: extra.max_tokens || 4096,
+      },
+    };
+  }
+  // Handle OpenAI-compatible providers (OpenAI, OpenRouter, Chutes, etc.)
+  else if (providerConfig?.format === "openai") {
+    url = providerConfig.endpoint;
+    headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${resolvedApiKey}`,
+    };
+    body = {
+      model,
+      messages: [{ role: "user", content: prompt }],
+      temperature,
+      stream: streaming,
+      ...extra,
+    };
+    
+    // OpenRouter-specific headers
+    if (provider === "openrouter") {
+      headers["HTTP-Referer"] = window.location.origin;
+      headers["X-Title"] = "SillyTavern SimTracker";
+    }
+  }
+  // Fallback to ST proxy for unknown providers
+  else {
+    url = getCurrentCompletionEndpoint();
+    headers = getRequestHeaders();
+    body = {
+      messages: [{ role: "user", content: prompt }],
+      model,
+      temperature,
+      chat_completion_source: provider,
+      stream: streaming,
+      ...extra,
+    };
   }
 
+  // Apply reverse proxy override for supported providers
+  // This respects ST's reverse proxy configuration
+  if (reverseProxy && provider !== "custom") {
+    const originalUrl = url;
+    let proxyUrl = reverseProxy.url.replace(/\/+$/, ""); // Remove trailing slashes
+    
+    if (providerConfig?.format === "openai") {
+      // OpenAI-compatible: append /v1/chat/completions if needed
+      if (!proxyUrl.endsWith("/chat/completions")) {
+        if (!proxyUrl.endsWith("/v1")) {
+          proxyUrl += "/v1";
+        }
+        proxyUrl += "/chat/completions";
+      }
+      url = proxyUrl;
+      
+      // If proxy has a password, use it as auth
+      if (reverseProxy.password) {
+        headers["Authorization"] = `Bearer ${reverseProxy.password}`;
+      }
+    } 
+    else if (providerConfig?.format === "anthropic") {
+      // Anthropic: append /v1/messages if needed
+      if (!proxyUrl.endsWith("/messages")) {
+        if (!proxyUrl.endsWith("/v1")) {
+          proxyUrl += "/v1";
+        }
+        proxyUrl += "/messages";
+      }
+      url = proxyUrl;
+      
+      // If proxy has a password, use it as x-api-key
+      if (reverseProxy.password) {
+        headers["x-api-key"] = reverseProxy.password;
+      }
+    }
+    else if (providerConfig?.format === "google") {
+      // Google: the proxy should handle the full URL structure
+      // Replace the base endpoint, keeping the model and action parts
+      const modelAction = url.replace(providerConfig.endpoint, "");
+      // Remove the API key from the URL when using proxy
+      const cleanModelAction = modelAction.replace(/\?key=[^&]+/, "");
+      proxyUrl += cleanModelAction;
+      url = proxyUrl;
+      
+      // If proxy has a password, add it as a header (proxy-specific)
+      if (reverseProxy.password) {
+        headers["Authorization"] = `Bearer ${reverseProxy.password}`;
+      }
+    }
+    
+    if (originalUrl !== url) {
+      console.log(`[SST] [${MODULE_NAME}]`, `Using reverse proxy: ${originalUrl} -> ${url}`);
+    }
+  }
+
+  console.log(`[SST] [${MODULE_NAME}]`, "Provider:", provider, "| Format:", providerConfig?.format || "proxy");
   console.log(`[SST] [${MODULE_NAME}]`, "Request URL:", url);
-  console.log(`[SST] [${MODULE_NAME}]`, "Request body:", JSON.stringify(body, null, 2));
   console.log(`[SST] [${MODULE_NAME}]`, `Streaming: ${streaming ? "enabled" : "disabled"}`);
   
-  const res = await fetch(url + '/chat/completions', {
+  // For ST proxy, append the chat completions path
+  const fetchUrl = url.startsWith("/api/") ? url + "/chat/completions" : url;
+  
+  const res = await fetch(fetchUrl, {
     method: "POST",
     headers: headers,
     body: JSON.stringify(body),
@@ -152,6 +415,10 @@ async function sendRawCompletionRequest({
               else if (parsed.choices?.[0]?.text) {
                 content = parsed.choices[0].text;
               }
+              // Google AI Studio streaming format
+              else if (parsed.candidates?.[0]?.content?.parts?.[0]?.text) {
+                content = parsed.candidates[0].content.parts[0].text;
+              }
               
               if (content) {
                 fullText += content;
@@ -177,6 +444,7 @@ async function sendRawCompletionRequest({
 
     // Handle different response formats
     if (data.choices?.[0]?.message?.content) {
+      // OpenAI format
       text = data.choices[0].message.content;
     } else if (data.completion) {
       text = data.completion;
@@ -191,6 +459,9 @@ async function sendRawCompletionRequest({
       text = textBlock?.text || "";
     } else if (typeof data.content === "string") {
       text = data.content;
+    } else if (data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      // Handle Google AI Studio format
+      text = data.candidates[0].content.parts[0].text;
     }
 
     return { text, full: data };
@@ -385,14 +656,15 @@ async function generateTrackerWithSecondaryLLM(get_settings) {
 
   // Get settings
   const messageCount = parseInt(get_settings("secondaryLLMMessageCount")) || 5;
-  const api = get_settings("secondaryLLMAPI") || "openai";
+  const provider = get_settings("secondaryLLMAPI") || "openai";
   const model = get_settings("secondaryLLMModel") || "";
   const endpoint = get_settings("secondaryLLMEndpoint") || null;
   const apiKey = get_settings("secondaryLLMAPIKey") || null;
   const temperature = parseFloat(get_settings("secondaryLLMTemperature")) || 0.7;
   const top_p = parseFloat(get_settings("secondaryLLMTopP")) || 1;
+  const useReverseProxy = get_settings("secondaryLLMUseReverseProxy") !== false; // Default to true
 
-  if (!model && api !== "full-manual") {
+  if (!model && provider !== "custom") {
     console.log(`[SST] [${MODULE_NAME}]`, "No model specified for secondary LLM");
     toastr.warning("Secondary LLM model not configured. Please set the model in settings.");
     return null;
@@ -550,11 +822,12 @@ async function generateTrackerWithSecondaryLLM(get_settings) {
       model: model,
       prompt: conversationText,
       temperature: temperature,
-      api: api,
+      provider: provider,
       endpoint: endpoint,
       apiKey: apiKey,
       extra: extra,
       streaming: streaming,
+      useReverseProxy: useReverseProxy,
     });
 
     if (!response.text) {

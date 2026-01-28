@@ -93,6 +93,7 @@ const default_settings = {
   secondaryLLMTemperature: 0.7, // Temperature for secondary generation
   secondaryLLMTopP: 1, // Top P for secondary generation
   secondaryLLMStreaming: true, // Enable streaming for secondary LLM
+  secondaryLLMUseReverseProxy: true, // Use ST's reverse proxy if configured
   secondaryLLMStripHTML: true, // Strip HTML from context for secondary LLM
   maxSimBlocksInContext: 3, // Maximum number of sim blocks to include in LLM context (0 = unlimited)
   retainTrackerCount: 3, // New setting: Number of most recent tracker blocks to retain in context
@@ -270,9 +271,71 @@ const initialize_settings_listeners = (
   bind_setting("#secondaryLLMTemperature", "secondaryLLMTemperature", "text");
   bind_setting("#secondaryLLMTopP", "secondaryLLMTopP", "text");
   bind_setting("#secondaryLLMStreaming", "secondaryLLMStreaming", "boolean");
+  bind_setting("#secondaryLLMUseReverseProxy", "secondaryLLMUseReverseProxy", "boolean");
   bind_setting("#secondaryLLMStripHTML", "secondaryLLMStripHTML", "boolean");
   bind_setting("#maxSimBlocksInContext", "maxSimBlocksInContext", "text");
   bind_setting("#retainTrackerCount", "retainTrackerCount", "text");
+
+  // Provider-specific UI toggle for secondary LLM
+  const providerPlaceholders = {
+    openai: "gpt-4o-mini",
+    anthropic: "claude-3-5-haiku-latest",
+    openrouter: "openai/gpt-4o-mini",
+    google: "gemini-2.0-flash",
+    chutes: "deepseek-ai/DeepSeek-V3-0324",
+    custom: "model-name",
+  };
+  
+  // Providers that support reverse proxy
+  const reverseProxyProviders = ["openai", "anthropic", "openrouter", "google", "chutes"];
+  
+  const updateSecondaryLLMProviderUI = () => {
+    const provider = get_settings("secondaryLLMAPI") || "openai";
+    const isCustom = provider === "custom";
+    const supportsReverseProxy = reverseProxyProviders.includes(provider);
+    
+    // Show/hide custom endpoint and API key fields
+    const $customFields = $("#sst-custom-api-fields");
+    if ($customFields.length) {
+      if (isCustom) {
+        $customFields.show();
+      } else {
+        $customFields.hide();
+      }
+    }
+    
+    // Show/hide reverse proxy option (only for OpenAI-compatible providers)
+    const $reverseProxyRow = $("#sst-reverse-proxy-row");
+    if ($reverseProxyRow.length) {
+      if (supportsReverseProxy) {
+        $reverseProxyRow.show();
+      } else {
+        $reverseProxyRow.hide();
+      }
+    }
+    
+    // Update hint text
+    const $hint = $("#sst-provider-hint");
+    if ($hint.length) {
+      if (isCustom) {
+        $hint.text("Provide your own endpoint and API key below.");
+      } else {
+        $hint.text("Uses API key from SillyTavern settings.");
+      }
+    }
+    
+    // Update model placeholder
+    const $modelInput = $("#secondaryLLMModel");
+    if ($modelInput.length && providerPlaceholders[provider]) {
+      $modelInput.attr("placeholder", providerPlaceholders[provider]);
+    }
+  };
+  
+  // Initial UI update
+  updateSecondaryLLMProviderUI();
+  
+  // Listen for provider changes
+  $("#secondaryLLMAPI").on("change", updateSecondaryLLMProviderUI);
 
   // Inline templates setting
   bind_setting("#enableInlineTemplates", "enableInlineTemplates", "boolean");
