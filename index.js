@@ -1307,10 +1307,19 @@ ${fieldsJson}    }
 
     // Track the last rendered message ID for secondary LLM generation
     let lastRenderedMessageId = null;
+    // Track pending swipe render to ensure DOM is ready
+    let pendingSwipeRender = null;
 
     eventSource.on(event_types.CHARACTER_MESSAGE_RENDERED, async (mesId) => {
       // Store the last rendered message ID
       lastRenderedMessageId = mesId;
+
+      // Check if this is a pending swipe render
+      const isSwipeRender = pendingSwipeRender === mesId;
+      if (isSwipeRender) {
+        pendingSwipeRender = null;
+        log(`Processing delayed tracker render for swiped message ${mesId}`);
+      }
 
       // Render the tracker (this will use existing sim block if present)
       // Sidebar updates are now batched via RAF, so no redundant re-render needed
@@ -1438,22 +1447,15 @@ ${fieldsJson}    }
 
     eventSource.on(event_types.MESSAGE_SWIPE, (mesId) => {
       log(
-        `Message swipe detected for message ID ${mesId}. Updating last_sim_stats macro and re-rendering tracker.`
+        `Message swipe detected for message ID ${mesId}. Updating last_sim_stats macro and scheduling tracker re-render.`
       );
       const updatedStats = updateLastSimStatsOnRegenerateOrSwipe(mesId, get_settings);
       if (updatedStats) {
         lastSimJsonString = updatedStats;
       }
-      // Re-render the tracker for the swiped message (same as MESSAGE_EDITED)
-      renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
-      
-      // Process inline templates for the swiped message
-      const messageElement = document.querySelector(`div[mesid="${mesId}"] .mes_text`);
-      if (messageElement) {
-        const templateConfig = getCurrentTemplateConfig();
-        const isEnabled = get_settings("enableInlineTemplates");
-        processInlineTemplates(messageElement, templateConfig, isEnabled, get_settings);
-      }
+      // Mark that we need to render after swipe - CHARACTER_MESSAGE_RENDERED will handle it
+      // This ensures the DOM is ready before rendering
+      pendingSwipeRender = mesId;
     });
 
     // Listen for generation ended event to update sidebars and trigger secondary LLM
