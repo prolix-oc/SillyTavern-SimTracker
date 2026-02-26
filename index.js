@@ -1380,6 +1380,27 @@ ${fieldsJson}    }
       }
     });
 
+    // ── Lumiverse Chat Sheld: re-render after React DOM commit ──────
+    // When Chat Sheld's React re-renders (streaming end, swipe, edit),
+    // dangerouslySetInnerHTML wipes any previously injected tracker cards.
+    // LumiverseHelper dispatches 'lumiverse:content-rendered' after each
+    // stable (non-streaming) DOM commit. Re-inject tracker cards here.
+    document.addEventListener('lumiverse:content-rendered', (e) => {
+      if (!get_settings("isEnabled")) return;
+      const { mesId } = e.detail;
+      if (mesId === undefined || mesId === null) return;
+
+      renderTracker(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
+
+      // Re-process inline templates for this message
+      const msgEl = getMessageContent(mesId);
+      if (msgEl) {
+        const templateConfig = getCurrentTemplateConfig();
+        const isEnabled = get_settings("enableInlineTemplates");
+        processInlineTemplates(msgEl, templateConfig, isEnabled, get_settings);
+      }
+    });
+
     // Helper function to clean up and wrap sim blocks in all messages with hidden divs
     const wrapSimBlocksInChat = () => {
       if (!get_settings("isEnabled") || !get_settings("hideSimBlocks")) return;
