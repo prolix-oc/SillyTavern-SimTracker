@@ -21,6 +21,7 @@ import {
 } from "./helpers.js";
 
 import {
+  isLumiverseActive,
   getChatContainer,
   getMessageContent,
   closestMessageContent,
@@ -247,9 +248,39 @@ jQuery(async () => {
 
     // Set up MutationObserver to hide sim code blocks (both during streaming and in history)
     log("Setting up MutationObserver for sim block hiding...");
-    
+
+    // Inject a persistent CSS rule to hide sim code blocks in Lumiverse's React DOM.
+    // DOM manipulation (pre.style.display="none") gets overwritten by React re-renders
+    // during streaming (~30fps), causing a hide/show flickering cycle. A CSS rule is
+    // persistent and survives React's dangerouslySetInnerHTML updates.
+    const updateLumiverseSimBlockCSS = (identifier) => {
+      let style = document.getElementById("sst-lumiverse-hide-sim");
+      if (!isLumiverseActive()) {
+        // Remove the style if Lumiverse is not active
+        if (style) style.remove();
+        return;
+      }
+      if (!style) {
+        style = document.createElement("style");
+        style.id = "sst-lumiverse-hide-sim";
+        document.head.appendChild(style);
+      }
+      style.textContent = `.lcs-message-content pre:has(code[class*="${identifier}"]) { display: none !important; }`;
+    };
+
+    // Initial CSS injection
+    updateLumiverseSimBlockCSS(get_settings("codeBlockIdentifier"));
+
+    // Update CSS when identifier setting changes
+    jQuery("#codeBlockIdentifier").on("change input", () => {
+      updateLumiverseSimBlockCSS(get_settings("codeBlockIdentifier"));
+    });
+
     const hideSimBlocks = () => {
       if (!get_settings("isEnabled") || !get_settings("hideSimBlocks")) return;
+
+      // In Lumiverse mode, CSS handles hiding — skip DOM manipulation
+      if (isLumiverseActive()) return;
 
       const identifier = get_settings("codeBlockIdentifier");
 
@@ -265,17 +296,22 @@ jQuery(async () => {
         }
       });
     };
-    
+
     const observer = new MutationObserver((mutations) => {
       if (!get_settings("isEnabled") || !get_settings("hideSimBlocks")) return;
 
       const identifier = get_settings("codeBlockIdentifier");
       const isGenerating = getGenerationInProgress();
-      
+      const lumiverseActive = isLumiverseActive();
+
+      // In Lumiverse mode when not generating, CSS handles everything — skip processing
+      // entirely to avoid wasted work on React's ~30fps re-renders during streaming
+      if (lumiverseActive && !isGenerating) return;
+
       mutations.forEach((mutation) => {
         mutation.addedNodes.forEach((node) => {
           if (node.nodeType !== Node.ELEMENT_NODE) return;
-          
+
           // Check if this node is or contains a code element with sim class
           let codeElements = [];
           if (node.tagName === "CODE" && node.className.includes(identifier)) {
@@ -283,17 +319,20 @@ jQuery(async () => {
           } else {
             codeElements = Array.from(queryAll(`code[class*="${identifier}"]`, node));
           }
-          
+
           codeElements.forEach((codeElement) => {
             const pre = codeElement.closest("pre");
             if (!pre) return;
-            
-            // Hide the pre element
-            if (pre.style.display !== "none") {
-              log(`Hiding sim code block`);
-              pre.style.display = "none";
+
+            // In Lumiverse mode, CSS handles code block hiding — skip DOM manipulation
+            // to avoid fighting React's dangerouslySetInnerHTML re-renders during streaming
+            if (!lumiverseActive) {
+              if (pre.style.display !== "none") {
+                log(`Hiding sim code block`);
+                pre.style.display = "none";
+              }
             }
-            
+
             // Only show "Preparing" text if we're actively generating
             if (isGenerating) {
               const mesText = closestMessageContent(pre);
@@ -305,11 +344,11 @@ jQuery(async () => {
                 // Get the message ID to check if this is the actively generating message
                 const mesId = parentMes ? getMessageIdFromElement(parentMes) : null;
                 const isLastMessage = mesId !== null && lastRenderedMessageId !== null && parseInt(mesId) === lastRenderedMessageId;
-                
+
                 // Only show preparing text for the actively generating message without tracker cards
                 if (!hasTrackerCards && isLastMessage) {
                   mesTextsWithPreparingText.add(mesText);
-                  
+
                   const preparingText = document.createElement("div");
                   preparingText.className = "sst-preparing-text";
                   preparingText.textContent = "Preparing new tracker cards...";
@@ -319,12 +358,12 @@ jQuery(async () => {
                     margin: 10px 0;
                     animation: sst-pulse 1.5s infinite;
                   `;
-                  
+
                   mesText.parentNode.insertBefore(
                     preparingText,
                     mesText.nextSibling
                   );
-                  
+
                   if (!document.getElementById("sst-pulse-animation")) {
                     const style = document.createElement("style");
                     style.id = "sst-pulse-animation";
@@ -343,9 +382,11 @@ jQuery(async () => {
           });
         });
       });
-      
-      // Also run a sweep to catch any that might have been missed
-      hideSimBlocks();
+
+      // Run sweep only for standard ST mode (CSS handles Lumiverse)
+      if (!lumiverseActive) {
+        hideSimBlocks();
+      }
     });
 
     // Start observing the chat area (supports both ST and Lumiverse DOM)
@@ -1508,16 +1549,20 @@ ${fieldsJson}    }
                 // Save the updated chat
                 await context.saveChat();
                 
-                // Update the message in the UI (supports both ST and Lumiverse)
-                const secLlmMsgEl = getMessageContent(mesId);
-                if (secLlmMsgEl) {
-                  secLlmMsgEl.innerHTML = messageFormatting(
-                    message.mes,
-                    message.name,
-                    message.is_system,
-                    message.is_user,
-                    mesId
-                  );
+                // Update the message in the UI
+                // Lumiverse: Skip innerHTML replacement — React manages message content.
+                // LumiverseHelper will pick up the change via syncSingleMessage/syncFullChat.
+                if (!isLumiverseActive()) {
+                  const secLlmMsgEl = getMessageContent(mesId);
+                  if (secLlmMsgEl) {
+                    secLlmMsgEl.innerHTML = messageFormatting(
+                      message.mes,
+                      message.name,
+                      message.is_system,
+                      message.is_user,
+                      mesId
+                    );
+                  }
                 }
 
                 log("Updated message with secondary LLM generated tracker block");

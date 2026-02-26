@@ -14,6 +14,7 @@ import {
 } from "./helpers.js";
 import DOMUtils from "./sthelpers/domUtils.js";
 import {
+  isLumiverseActive,
   getMessageContent,
   getMessageElement,
   getAllMessages,
@@ -24,6 +25,7 @@ import {
 
 const MODULE_NAME = "silly-sim-tracker";
 const CONTAINER_ID = "silly-sim-tracker-container";
+const TRACKER_DIVIDER_CLASS = "sst-tracker-divider";
 
 // Viewport change detection
 let viewportResizeTimeout = null;
@@ -1424,33 +1426,38 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
     const match = message.mes.match(jsonRegex);
 
     // Handle message formatting and sim block hiding
-    if (get_settings("hideSimBlocks")) {
-      let displayMessage = message.mes;
+    // Lumiverse: Skip innerHTML replacement entirely — React manages message content
+    // via dangerouslySetInnerHTML, and overwriting it causes flickering as React
+    // re-renders and restores its own content. Code blocks are hidden via CSS rule.
+    if (!isLumiverseActive()) {
+      if (get_settings("hideSimBlocks")) {
+        let displayMessage = message.mes;
 
-      // Hide sim blocks with div wrapper (more robust against re-rendering)
-      const hideRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
-      displayMessage = displayMessage.replace(
-        hideRegex,
-        (match) => `<div style="display: none;">\n${match}\n</div>`
-      );
+        // Hide sim blocks with div wrapper (more robust against re-rendering)
+        const hideRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
+        displayMessage = displayMessage.replace(
+          hideRegex,
+          (match) => `<div style="display: none;">\n${match}\n</div>`
+        );
 
-      // Format and display the message content (without the tracker UI)
-      messageElement.innerHTML = messageFormatting(
-        displayMessage,
-        message.name,
-        message.is_system,
-        message.is_user,
-        mesId
-      );
-    } else {
-      // Just format the message if not hiding blocks
-      messageElement.innerHTML = messageFormatting(
-        message.mes,
-        message.name,
-        message.is_system,
-        message.is_user,
-        mesId
-      );
+        // Format and display the message content (without the tracker UI)
+        messageElement.innerHTML = messageFormatting(
+          displayMessage,
+          message.name,
+          message.is_system,
+          message.is_user,
+          mesId
+        );
+      } else {
+        // Just format the message if not hiding blocks
+        messageElement.innerHTML = messageFormatting(
+          message.mes,
+          message.name,
+          message.is_system,
+          message.is_user,
+          mesId
+        );
+      }
     }
 
     if (match) {
@@ -1633,21 +1640,39 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
 
       // Use the template position from the templating module
       const templatePosition = currentTemplatePosition;
+      const lumiverseMode = isLumiverseActive();
+
+      // In Lumiverse mode, remove any existing tracker elements from this message
+      // before inserting new ones (since we don't replace innerHTML)
+      if (lumiverseMode) {
+        const messageWrapper = getMessageElement(mesId);
+        if (messageWrapper) {
+          const existingContainer = messageWrapper.querySelector(`#${CONTAINER_ID}`);
+          if (existingContainer) existingContainer.remove();
+          messageWrapper.querySelectorAll(`.${TRACKER_DIVIDER_CLASS}`).forEach(el => el.remove());
+        }
+      }
 
       // Handle different positions
       switch (templatePosition) {
         case "TOP": {
-          // Insert above the message content (inside the message block)
-          const reasoningEl = getReasoningElement(messageElement);
-          const topHtml =
-            compiledWrapperTemplate({ cardsHtml }) +
-            `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
-          if (reasoningEl) {
-            // Insert above reasoning details if they exist
-            reasoningEl.insertAdjacentHTML("beforebegin", topHtml);
+          if (lumiverseMode) {
+            // Lumiverse: Insert before .lcs-message-content as sibling (outside React's control)
+            const topHtml =
+              compiledWrapperTemplate({ cardsHtml }) +
+              `<hr class="${TRACKER_DIVIDER_CLASS}" style="margin-top: 15px; margin-bottom: 20px;">`;
+            messageElement.insertAdjacentHTML("beforebegin", topHtml);
           } else {
-            // If no reasoning details, insert at the beginning of the message
-            messageElement.insertAdjacentHTML("afterbegin", topHtml);
+            // Standard ST: Insert inside the message content
+            const reasoningEl = getReasoningElement(messageElement);
+            const topHtml =
+              compiledWrapperTemplate({ cardsHtml }) +
+              `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
+            if (reasoningEl) {
+              reasoningEl.insertAdjacentHTML("beforebegin", topHtml);
+            } else {
+              messageElement.insertAdjacentHTML("afterbegin", topHtml);
+            }
           }
           break;
         }
@@ -1673,11 +1698,19 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
         }
         case "BOTTOM":
         default: {
-          // Add a horizontal divider before the cards
-          const bottomHtml =
-            `<hr style="margin-top: 15px; margin-bottom: 20px;">` +
-            compiledWrapperTemplate({ cardsHtml });
-          messageElement.insertAdjacentHTML("beforeend", bottomHtml);
+          if (lumiverseMode) {
+            // Lumiverse: Insert after .lcs-message-content as sibling (outside React's control)
+            const bottomHtml =
+              `<hr class="${TRACKER_DIVIDER_CLASS}" style="margin-top: 15px; margin-bottom: 20px;">` +
+              compiledWrapperTemplate({ cardsHtml });
+            messageElement.insertAdjacentHTML("afterend", bottomHtml);
+          } else {
+            // Standard ST: Insert inside the message content
+            const bottomHtml =
+              `<hr style="margin-top: 15px; margin-bottom: 20px;">` +
+              compiledWrapperTemplate({ cardsHtml });
+            messageElement.insertAdjacentHTML("beforeend", bottomHtml);
+          }
           break;
         }
       }
@@ -1719,7 +1752,9 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
     let displayMessage = message.mes;
 
     // Only format and display message content if we have a message element
-    if (messageElement) {
+    // Lumiverse: Skip innerHTML replacement — React manages message content.
+    // Code blocks are hidden via injected CSS rule, not DOM manipulation.
+    if (messageElement && !isLumiverseActive()) {
       // Hide sim blocks if the setting is enabled
       if (get_settings("hideSimBlocks")) {
         const hideRegex = new RegExp("```" + identifier + "[\\s\\S]*?```", "gm");
@@ -1746,8 +1781,15 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
 
     if (dataMatch && dataMatch[0]) {
       // Remove the container if it already exists to prevent duplication on re-renders
-      // Only do this if we have a message element (for non-positioned templates)
-      if (messageElement) {
+      if (isLumiverseActive()) {
+        // Lumiverse: tracker container is a sibling of .lcs-message-content, search in wrapper
+        const messageWrapper = getMessageElement(mesId);
+        if (messageWrapper) {
+          const existingContainer = messageWrapper.querySelector(`#${CONTAINER_ID}`);
+          if (existingContainer) existingContainer.remove();
+          messageWrapper.querySelectorAll(`.${TRACKER_DIVIDER_CLASS}`).forEach(el => el.remove());
+        }
+      } else if (messageElement) {
         const existingContainer = messageElement.querySelector(
           `#${CONTAINER_ID}`
         );
@@ -1937,18 +1979,27 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
 
       // Handle different positions
       console.log(`[SST] [${MODULE_NAME}]`, `Rendering tracker for position: ${templatePosition}, mesId: ${mesId}`);
+      const lumiverseMode = isLumiverseActive();
       switch (templatePosition) {
         case "TOP": {
-          // Insert above the message content (inside the message block)
           if (messageElement) {
-            const reasoningEl = getReasoningElement(messageElement);
-            const topHtml =
-              compiledWrapperTemplate({ cardsHtml }) +
-              `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
-            if (reasoningEl) {
-              reasoningEl.insertAdjacentHTML("beforebegin", topHtml);
+            if (lumiverseMode) {
+              // Lumiverse: Insert before .lcs-message-content as sibling (outside React's control)
+              const topHtml =
+                compiledWrapperTemplate({ cardsHtml }) +
+                `<hr class="${TRACKER_DIVIDER_CLASS}" style="margin-top: 15px; margin-bottom: 20px;">`;
+              messageElement.insertAdjacentHTML("beforebegin", topHtml);
             } else {
-              messageElement.insertAdjacentHTML("afterbegin", topHtml);
+              // Standard ST: Insert inside the message content
+              const reasoningEl = getReasoningElement(messageElement);
+              const topHtml =
+                compiledWrapperTemplate({ cardsHtml }) +
+                `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
+              if (reasoningEl) {
+                reasoningEl.insertAdjacentHTML("beforebegin", topHtml);
+              } else {
+                messageElement.insertAdjacentHTML("afterbegin", topHtml);
+              }
             }
           }
           break;
@@ -1979,12 +2030,20 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
         }
         case "BOTTOM":
         default: {
-          // Add a horizontal divider before the cards
           if (messageElement) {
-            const bottomHtml =
-              `<hr style="margin-top: 15px; margin-bottom: 20px;">` +
-              compiledWrapperTemplate({ cardsHtml });
-            messageElement.insertAdjacentHTML("beforeend", bottomHtml);
+            if (lumiverseMode) {
+              // Lumiverse: Insert after .lcs-message-content as sibling (outside React's control)
+              const bottomHtml =
+                `<hr class="${TRACKER_DIVIDER_CLASS}" style="margin-top: 15px; margin-bottom: 20px;">` +
+                compiledWrapperTemplate({ cardsHtml });
+              messageElement.insertAdjacentHTML("afterend", bottomHtml);
+            } else {
+              // Standard ST: Insert inside the message content
+              const bottomHtml =
+                `<hr style="margin-top: 15px; margin-bottom: 20px;">` +
+                compiledWrapperTemplate({ cardsHtml });
+              messageElement.insertAdjacentHTML("beforeend", bottomHtml);
+            }
           }
           break;
         }
@@ -2009,7 +2068,10 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
     console.log(`[SST] [${MODULE_NAME}]`, "Removing container:", container);
     container.remove();
   });
-  
+
+  // Remove all tracker dividers (used in Lumiverse mode where tracker is a sibling)
+  document.querySelectorAll(`.${TRACKER_DIVIDER_CLASS}`).forEach((el) => el.remove());
+
   // Remove all sidebars
   removeGlobalSidebars();
   
