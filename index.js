@@ -253,10 +253,12 @@ jQuery(async () => {
     // DOM manipulation (pre.style.display="none") gets overwritten by React re-renders
     // during streaming (~30fps), causing a hide/show flickering cycle. A CSS rule is
     // persistent and survives React's dangerouslySetInnerHTML updates.
+    // Uses data-code-lang attribute added by LumiverseHelper's custom Marked renderer.
+    // Always injected (targets .lcs-message-content which only exists in Lumiverse).
     const updateLumiverseSimBlockCSS = (identifier) => {
       let style = document.getElementById("sst-lumiverse-hide-sim");
-      if (!isLumiverseActive()) {
-        // Remove the style if Lumiverse is not active
+      if (!get_settings("hideSimBlocks")) {
+        // Remove the style if hiding is disabled
         if (style) style.remove();
         return;
       }
@@ -265,14 +267,18 @@ jQuery(async () => {
         style.id = "sst-lumiverse-hide-sim";
         document.head.appendChild(style);
       }
-      style.textContent = `.lcs-message-content pre:has(code[class*="${identifier}"]) { display: none !important; }`;
+      // Target pre[data-code-lang] set by LumiverseHelper's Marked code renderer
+      style.textContent = `.lcs-message-content pre[data-code-lang="${identifier}"] { display: none !important; }`;
     };
 
-    // Initial CSS injection
+    // Initial CSS injection (always inject — selector only matches Lumiverse DOM)
     updateLumiverseSimBlockCSS(get_settings("codeBlockIdentifier"));
 
-    // Update CSS when identifier setting changes
+    // Update CSS when identifier or hideSimBlocks settings change
     jQuery("#codeBlockIdentifier").on("change input", () => {
+      updateLumiverseSimBlockCSS(get_settings("codeBlockIdentifier"));
+    });
+    jQuery("#hideSimBlocks").on("change", () => {
       updateLumiverseSimBlockCSS(get_settings("codeBlockIdentifier"));
     });
 
@@ -1347,6 +1353,20 @@ ${fieldsJson}    }
         log(`Processing delayed tracker render for swiped message ${mesId}`);
       }
 
+      // In Lumiverse mode, React renders asynchronously — the .lcs-message element
+      // for this mesId may not exist in the DOM yet when this event fires.
+      // Wait up to ~300ms (10 animation frames) for the element to appear.
+      if (isLumiverseActive() && !getMessageContent(mesId)) {
+        let retries = 0;
+        while (!getMessageContent(mesId) && retries < 10) {
+          await new Promise(resolve => requestAnimationFrame(resolve));
+          retries++;
+        }
+        if (!getMessageContent(mesId)) {
+          log(`Lumiverse DOM not ready for message ${mesId} after ${retries} frames, proceeding anyway`);
+        }
+      }
+
       // Render the tracker (this will use existing sim block if present)
       // Sidebar updates are now batched via RAF, so no redundant re-render needed
       renderTracker(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
@@ -1363,6 +1383,12 @@ ${fieldsJson}    }
     // Helper function to clean up and wrap sim blocks in all messages with hidden divs
     const wrapSimBlocksInChat = () => {
       if (!get_settings("isEnabled") || !get_settings("hideSimBlocks")) return;
+
+      // In Lumiverse mode, CSS handles code block hiding — skip wrapping entirely.
+      // Modifying message.mes and saving triggers React re-renders which destroy
+      // sibling-inserted tracker cards. The CSS rule on pre[data-code-lang] persists
+      // across React re-renders without touching the data layer.
+      if (isLumiverseActive()) return;
       
       const context = getContext();
       const chat = context.chat;
@@ -1428,21 +1454,27 @@ ${fieldsJson}    }
       }
     };
     
-    eventSource.on(event_types.CHAT_CHANGED, () => {
+    eventSource.on(event_types.CHAT_CHANGED, async () => {
       log("Chat changed, refreshing all cards and updating sidebars");
       // Clear generation flag since we're switching chats
       setGenerationInProgress(false);
-      
-      // Wrap sim blocks in the new chat
+
+      // Wrap sim blocks in the new chat (skipped in Lumiverse mode — CSS handles hiding)
       wrapSimBlocksInChat();
-      
+
       // Clear inline template cache when switching chats
       clearInlineTemplateCache();
-      
+
+      // In Lumiverse mode, React needs a couple frames to render the new chat's messages.
+      // Wait for the DOM to settle before querying for message elements.
+      if (isLumiverseActive()) {
+        await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      }
+
       // Just refresh all cards - this will update sidebars with new chat data
       // The refreshAllCards function will find the latest sim data in the new chat
       wrappedRefreshAllCards();
-      
+
       // Process all inline templates in the new chat
       processAllInlineTemplates(get_settings, getCurrentTemplateConfig);
     });

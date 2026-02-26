@@ -27,6 +27,25 @@ const MODULE_NAME = "silly-sim-tracker";
 const CONTAINER_ID = "silly-sim-tracker-container";
 const TRACKER_DIVIDER_CLASS = "sst-tracker-divider";
 
+/**
+ * Strip <div style="display: none;"> wrappers around sim blocks in message text.
+ * Standard ST mode wraps sim blocks in hidden divs for persistence. When searching
+ * for sim data, we need to see through these wrappers so the regex matches cleanly.
+ * Does NOT modify the original message — returns a clean copy for regex matching.
+ *
+ * @param {string} text - Raw message text (message.mes)
+ * @param {string} identifier - The code block identifier (e.g. "sim")
+ * @returns {string} Text with sim block wrappers stripped (bare ```sim...``` blocks)
+ */
+function stripSimBlockWrappers(text, identifier) {
+  if (!text) return text;
+  const wrappedRegex = new RegExp(
+    `<div style="display: none;">\\s*(\`\`\`${identifier}[\\s\\S]*?\`\`\`)\\s*</div>`,
+    'g'
+  );
+  return text.replace(wrappedRegex, '$1');
+}
+
 // Viewport change detection
 let viewportResizeTimeout = null;
 let lastViewportWidth = window.innerWidth;
@@ -1377,11 +1396,13 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
       // Find the most recent message with sim data
       const identifier = get_settings("codeBlockIdentifier");
       let mostRecentSimMessageId = null;
-      
+
       for (let i = context.chat.length - 1; i >= 0; i--) {
         const msg = context.chat[i];
-        if (msg) {
-          const dataMatch = msg.mes.match(new RegExp("```" + identifier + "[\\s\\S]*?```", "m"));
+        if (msg && msg.mes) {
+          // Strip hidden div wrappers so the regex matches both wrapped and unwrapped blocks
+          const cleanMes = stripSimBlockWrappers(msg.mes, identifier);
+          const dataMatch = cleanMes.match(new RegExp("```" + identifier + "[\\s\\S]*?```", "m"));
           if (dataMatch && dataMatch[0]) {
             mostRecentSimMessageId = i;
             break;
@@ -1421,9 +1442,11 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
     );
 
     // Parse the sim data from the original message content
+    // Strip any hidden div wrappers (from standard ST mode) so the regex matches cleanly
     const identifier = get_settings("codeBlockIdentifier");
+    const cleanMes = stripSimBlockWrappers(message.mes, identifier);
     const jsonRegex = new RegExp("```" + identifier + "[\\s\\S]*?```");
-    const match = message.mes.match(jsonRegex);
+    const match = cleanMes.match(jsonRegex);
 
     // Handle message formatting and sim block hiding
     // Lumiverse: Skip innerHTML replacement entirely — React manages message content
@@ -1775,7 +1798,9 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
     }
 
     // Parse the sim data from the original message content (not the hidden version)
-    const dataMatch = message.mes.match(
+    // Strip hidden div wrappers so the regex matches both wrapped and unwrapped blocks
+    const cleanMes = stripSimBlockWrappers(message.mes, identifier);
+    const dataMatch = cleanMes.match(
       new RegExp("```" + identifier + "[\\s\\S]*?```", "m")
     );
 
@@ -2098,11 +2123,13 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
     
     if (chat && Array.isArray(chat)) {
       // Iterate backwards through the chat to find the most recent message with sim data
+      const identifier = get_settings("codeBlockIdentifier");
       for (let i = chat.length - 1; i >= 0; i--) {
         const message = chat[i];
-        if (message) {
-          const identifier = get_settings("codeBlockIdentifier");
-          const dataMatch = message.mes.match(
+        if (message && message.mes) {
+          // Strip hidden div wrappers so the regex matches both wrapped and unwrapped blocks
+          const cleanMes = stripSimBlockWrappers(message.mes, identifier);
+          const dataMatch = cleanMes.match(
             new RegExp("```" + identifier + "[\\s\\S]*?```", "m")
           );
           if (dataMatch && dataMatch[0]) {
