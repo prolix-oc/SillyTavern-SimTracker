@@ -20,6 +20,15 @@ import {
   logElementMeasurements
 } from "./helpers.js";
 
+import {
+  getChatContainer,
+  getMessageContent,
+  closestMessageContent,
+  closestMessageWrapper,
+  getMessageIdFromElement,
+  findCodeBlocksByIdentifier,
+} from "./domBridge.js";
+
 // Import from our new modules
 import {
   renderTracker,
@@ -241,12 +250,12 @@ jQuery(async () => {
     
     const hideSimBlocks = () => {
       if (!get_settings("isEnabled") || !get_settings("hideSimBlocks")) return;
-      
+
       const identifier = get_settings("codeBlockIdentifier");
-      
-      // Find all code elements with the sim class pattern
-      const simCodeElements = queryAll(`#chat code[class*="${identifier}"]`);
-      
+
+      // Find all code elements with the sim class pattern (supports both ST and Lumiverse)
+      const simCodeElements = findCodeBlocksByIdentifier(identifier);
+
       simCodeElements.forEach((codeElement) => {
         // Find the parent pre element
         const pre = codeElement.closest("pre");
@@ -287,14 +296,14 @@ jQuery(async () => {
             
             // Only show "Preparing" text if we're actively generating
             if (isGenerating) {
-              const mesText = pre.closest(".mes_text");
+              const mesText = closestMessageContent(pre);
               if (mesText && !mesTextsWithPreparingText.has(mesText)) {
                 // Check if this message already has tracker cards
-                const parentMes = mesText.closest(".mes");
+                const parentMes = closestMessageWrapper(pre);
                 const hasTrackerCards = parentMes && parentMes.querySelector(`#${CONTAINER_ID}`);
-                
+
                 // Get the message ID to check if this is the actively generating message
-                const mesId = parentMes ? parentMes.getAttribute("mesid") : null;
+                const mesId = parentMes ? getMessageIdFromElement(parentMes) : null;
                 const isLastMessage = mesId !== null && lastRenderedMessageId !== null && parseInt(mesId) === lastRenderedMessageId;
                 
                 // Only show preparing text for the actively generating message without tracker cards
@@ -339,51 +348,33 @@ jQuery(async () => {
       hideSimBlocks();
     });
 
-    // Start observing the chat area
-    const chatElement = document.getElementById("chat");
+    // Start observing the chat area (supports both ST and Lumiverse DOM)
+    const chatElement = getChatContainer();
+    const observerTarget = chatElement || document.body;
+    observer.observe(observerTarget, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class']
+    });
+
     if (chatElement) {
-      observer.observe(chatElement, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['class']
-      });
-      
       // Initial sweep to hide any existing sim blocks
       hideSimBlocks();
-    } else {
-      // Fallback to body if chat element not found yet
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-        attributes: true,
-        attributeFilter: ['class']
-      });
     }
 
-    log("MutationObserver set up for in-flight sim block hiding.");
-    
+    log(`MutationObserver set up for in-flight sim block hiding (target: ${chatElement ? chatElement.id : 'body'}).`);
+
     // Set up inline templates MutationObserver
     log("Setting up inline templates observer...");
     const inlineTemplatesObserver = setupInlineTemplateObserver(get_settings, getCurrentTemplateConfig);
-    
-    // Start observing for inline templates (reuse chatElement if it exists, otherwise try again)
-    if (chatElement) {
-      inlineTemplatesObserver.observe(chatElement, {
-        childList: true,
-        subtree: true,
-        characterData: true
-      });
-      log("Inline templates observer started");
-    } else {
-      // Fallback to body if chat element not found yet
-      inlineTemplatesObserver.observe(document.body, {
-        childList: true,
-        subtree: true,
-        characterData: true
-      });
-      log("Inline templates observer started (fallback to body)");
-    }
+
+    inlineTemplatesObserver.observe(observerTarget, {
+      childList: true,
+      subtree: true,
+      characterData: true
+    });
+    log(`Inline templates observer started (target: ${chatElement ? chatElement.id : 'body'})`);
 
     log("Registering macros...");
 
@@ -941,18 +932,16 @@ jQuery(async () => {
             lastCharMessage.mes = lastCharMessage.mes.replace(simRegex, "").trim();
 
             // Update the message UI to show it's being regenerated
-            const messageElement = query(
-              `div[mesid="${lastCharMessageIndex}"] .mes_text`
-            );
-            if (messageElement) {
-              messageElement.innerHTML = messageFormatting(
+            const regenMsgEl = getMessageContent(lastCharMessageIndex);
+            if (regenMsgEl) {
+              regenMsgEl.innerHTML = messageFormatting(
                 lastCharMessage.mes,
                 lastCharMessage.name,
                 lastCharMessage.is_system,
                 lastCharMessage.is_user,
                 lastCharMessageIndex
               );
-              
+
               // Add visual feedback that generation is in progress
               const preparingText = document.createElement("div");
               preparingText.className = "sst-preparing-text sst-regen-preparing";
@@ -963,9 +952,9 @@ jQuery(async () => {
                 margin: 10px 0;
                 animation: sst-pulse 1.5s infinite;
               `;
-              messageElement.parentNode.insertBefore(
+              regenMsgEl.parentNode.insertBefore(
                 preparingText,
-                messageElement.nextSibling
+                regenMsgEl.nextSibling
               );
             }
 
@@ -998,11 +987,9 @@ jQuery(async () => {
               await context.saveChat();
               
               // Update the message in the UI
-              const messageElement = query(
-                `div[mesid="${lastCharMessageIndex}"] .mes_text`
-              );
-              if (messageElement) {
-                messageElement.innerHTML = messageFormatting(
+              const updatedMsgEl = getMessageContent(lastCharMessageIndex);
+              if (updatedMsgEl) {
+                updatedMsgEl.innerHTML = messageFormatting(
                   lastCharMessage.mes,
                   lastCharMessage.name,
                   lastCharMessage.is_system,
@@ -1250,12 +1237,10 @@ ${fieldsJson}    }
             
             lastCharMessage.mes += simBlock;
 
-            // Update the message in the UI
-            const messageElement = query(
-              `div[mesid="${lastCharMessageIndex}"] .mes_text`
-            );
-            if (messageElement) {
-              messageElement.innerHTML = messageFormatting(
+            // Update the message in the UI (supports both ST and Lumiverse)
+            const addMsgEl = getMessageContent(lastCharMessageIndex);
+            if (addMsgEl) {
+              addMsgEl.innerHTML = messageFormatting(
                 lastCharMessage.mes,
                 lastCharMessage.name,
                 lastCharMessage.is_system,
@@ -1325,12 +1310,12 @@ ${fieldsJson}    }
       // Sidebar updates are now batched via RAF, so no redundant re-render needed
       renderTracker(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
 
-      // Process inline templates for this message
-      const messageElement = document.querySelector(`div[mesid="${mesId}"] .mes_text`);
-      if (messageElement) {
+      // Process inline templates for this message (supports both ST and Lumiverse)
+      const inlineMsgEl = getMessageContent(mesId);
+      if (inlineMsgEl) {
         const templateConfig = getCurrentTemplateConfig();
         const isEnabled = get_settings("enableInlineTemplates");
-        processInlineTemplates(messageElement, templateConfig, isEnabled, get_settings);
+        processInlineTemplates(inlineMsgEl, templateConfig, isEnabled, get_settings);
       }
     });
 
@@ -1436,12 +1421,12 @@ ${fieldsJson}    }
       log(`Message ${mesId} was edited. Re-rendering tracker card.`);
       renderTrackerWithoutSim(mesId, get_settings, compiledWrapperTemplate, compiledCardTemplate, getReactionEmoji, darkenColor, lastSimJsonString);
       
-      // Process inline templates for the edited message
-      const messageElement = document.querySelector(`div[mesid="${mesId}"] .mes_text`);
-      if (messageElement) {
+      // Process inline templates for the edited message (supports both ST and Lumiverse)
+      const editedMsgEl = getMessageContent(mesId);
+      if (editedMsgEl) {
         const templateConfig = getCurrentTemplateConfig();
         const isEnabled = get_settings("enableInlineTemplates");
-        processInlineTemplates(messageElement, templateConfig, isEnabled, get_settings);
+        processInlineTemplates(editedMsgEl, templateConfig, isEnabled, get_settings);
       }
     });
 
@@ -1523,12 +1508,10 @@ ${fieldsJson}    }
                 // Save the updated chat
                 await context.saveChat();
                 
-                // Update the message in the UI
-                const messageElement = query(
-                  `div[mesid="${mesId}"] .mes_text`
-                );
-                if (messageElement) {
-                  messageElement.innerHTML = messageFormatting(
+                // Update the message in the UI (supports both ST and Lumiverse)
+                const secLlmMsgEl = getMessageContent(mesId);
+                if (secLlmMsgEl) {
+                  secLlmMsgEl.innerHTML = messageFormatting(
                     message.mes,
                     message.name,
                     message.is_system,
@@ -1536,7 +1519,7 @@ ${fieldsJson}    }
                     mesId
                   );
                 }
-                
+
                 log("Updated message with secondary LLM generated tracker block");
                 
                 // Re-render the tracker with the new sim block using renderTrackerWithoutSim
@@ -1580,7 +1563,7 @@ ${fieldsJson}    }
       // Clear any remaining preparing text when generation ends
       queryAll(".sst-preparing-text").forEach((element) => {
         const mesText = element.previousElementSibling;
-        if (mesText && mesText.classList.contains("mes_text")) {
+        if (mesText && (mesText.classList.contains("mes_text") || mesText.classList.contains("lcs-message-content"))) {
           mesTextsWithPreparingText.delete(mesText);
         }
         element.remove();

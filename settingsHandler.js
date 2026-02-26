@@ -207,6 +207,22 @@ const refresh_settings_ui = () => {
         break;
     }
   }
+
+  // If displayInstructionsPrompt is empty, populate from the first enabled inline pack
+  const currentPrompt = get_settings("displayInstructionsPrompt");
+  if (!currentPrompt || currentPrompt.trim() === "") {
+    const inlinePacks = get_settings("inlinePacks") || [];
+    const firstEnabledPack = inlinePacks.find(
+      (pack) => pack.enabled !== false && pack.displayInstructions && pack.displayInstructions.trim() !== ""
+    );
+    if (firstEnabledPack) {
+      const displayEl = settings_ui_map["displayInstructionsPrompt"];
+      if (displayEl) {
+        displayEl[0].val(firstEnabledPack.displayInstructions);
+        set_settings("displayInstructionsPrompt", firstEnabledPack.displayInstructions);
+      }
+    }
+  }
 };
 
 const bind_setting = (selector, key, type) => {
@@ -1255,6 +1271,9 @@ const handlePresetImport = (event, loadTemplate, refreshAllCards) => {
         await loadTemplate();
         refreshAllCards();
 
+        // Refresh UI to reflect imported preset values (e.g., displayInstructionsPrompt)
+        refresh_settings_ui();
+
         // Repopulate template dropdown to include the new preset
         await populateTemplateDropdown(get_settings);
 
@@ -1390,6 +1409,9 @@ const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
         await loadTemplate();
         refreshAllCards();
 
+        // Refresh UI to reflect applied preset values (e.g., displayInstructionsPrompt)
+        refresh_settings_ui();
+
         toastr.success(
           `Preset "${preset.templateName || "Unnamed"}" applied successfully!`
         );
@@ -1461,13 +1483,16 @@ const showManagePresetsModal = async (loadTemplate, refreshAllCards) => {
     $packsList.find(".sst-pack-toggle").on("change", function () {
       const index = $(this).data("index");
       const isEnabled = $(this).is(":checked");
-      
+
       inlinePacks[index].enabled = isEnabled;
       set_settings("inlinePacks", inlinePacks);
-      
+
       // Update the opacity
       $(this).closest(".sst-field-item").css("opacity", isEnabled ? "1" : "0.6");
-      
+
+      // Refresh display prompt in case it should update from packs
+      refresh_settings_ui();
+
       toastr.info(`Pack "${inlinePacks[index].templateName}" ${isEnabled ? 'enabled' : 'disabled'}`);
     });
 

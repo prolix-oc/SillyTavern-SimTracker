@@ -13,6 +13,14 @@ import {
   hasClass
 } from "./helpers.js";
 import DOMUtils from "./sthelpers/domUtils.js";
+import {
+  getMessageContent,
+  getMessageElement,
+  getAllMessages,
+  getMessageIdFromElement,
+  closestMessageWrapper,
+  getReasoningElement,
+} from "./domBridge.js";
 
 const MODULE_NAME = "silly-sim-tracker";
 const CONTAINER_ID = "silly-sim-tracker-container";
@@ -1389,7 +1397,8 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
       if (templatePosition === "TOP" || templatePosition === "BOTTOM") {
         // Remove containers from all other messages
         document.querySelectorAll(`#${CONTAINER_ID}`).forEach((container) => {
-          const containerMesId = container.closest('.mes')?.getAttribute('mesid');
+          const parentMsg = closestMessageWrapper(container);
+          const containerMesId = parentMsg ? getMessageIdFromElement(parentMsg) : null;
           if (containerMesId && parseInt(containerMesId) !== mesId) {
             console.log(`[SST] [${MODULE_NAME}]`, `Removing old positioned card from message ${containerMesId}`);
             container.remove();
@@ -1398,9 +1407,7 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
       }
     }
     
-    const messageElement = document.querySelector(
-      `div[mesid="${mesId}"] .mes_text`
-    );
+    const messageElement = getMessageContent(mesId);
     if (!messageElement) return;
 
     // Log message element dimensions for debugging layout issues
@@ -1629,25 +1636,21 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
 
       // Handle different positions
       switch (templatePosition) {
-        case "TOP":
+        case "TOP": {
           // Insert above the message content (inside the message block)
-          const reasoningElement = messageElement.querySelector(
-            ".mes_reasoning_details"
-          );
-          if (reasoningElement) {
+          const reasoningEl = getReasoningElement(messageElement);
+          const topHtml =
+            compiledWrapperTemplate({ cardsHtml }) +
+            `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
+          if (reasoningEl) {
             // Insert above reasoning details if they exist
-            const finalHtml =
-              compiledWrapperTemplate({ cardsHtml }) +
-              `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
-            reasoningElement.insertAdjacentHTML("beforebegin", finalHtml);
+            reasoningEl.insertAdjacentHTML("beforebegin", topHtml);
           } else {
             // If no reasoning details, insert at the beginning of the message
-            const finalHtml =
-              compiledWrapperTemplate({ cardsHtml }) +
-              `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
-            messageElement.insertAdjacentHTML("afterbegin", finalHtml);
+            messageElement.insertAdjacentHTML("afterbegin", topHtml);
           }
           break;
+        }
         case "LEFT":
           // Update the global left sidebar with the latest data
           updateLeftSidebar(compiledWrapperTemplate({ cardsHtml }));
@@ -1656,25 +1659,27 @@ const renderTracker = (mesId, get_settings, compiledWrapperTemplate, compiledCar
           // Update the global right sidebar with the latest data
           updateRightSidebar(compiledWrapperTemplate({ cardsHtml }));
           break;
-        case "MACRO":
+        case "MACRO": {
           // For MACRO position, replace the placeholder in the message
           const placeholder = messageElement.querySelector(
             "#sst-macro-placeholder"
           );
           if (placeholder) {
-            const finalHtml = compiledWrapperTemplate({ cardsHtml });
-            placeholder.insertAdjacentHTML("beforebegin", finalHtml);
+            const macroHtml = compiledWrapperTemplate({ cardsHtml });
+            placeholder.insertAdjacentHTML("beforebegin", macroHtml);
             placeholder.remove();
           }
           break;
+        }
         case "BOTTOM":
-        default:
+        default: {
           // Add a horizontal divider before the cards
-          const finalHtml =
+          const bottomHtml =
             `<hr style="margin-top: 15px; margin-bottom: 20px;">` +
             compiledWrapperTemplate({ cardsHtml });
-          messageElement.insertAdjacentHTML("beforeend", finalHtml);
+          messageElement.insertAdjacentHTML("beforeend", bottomHtml);
           break;
+        }
       }
     }
   } catch (error) {
@@ -1701,10 +1706,8 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
     // Use the template position from the templating module
     const templatePosition = currentTemplatePosition;
     
-    const messageElement = document.querySelector(
-      `div[mesid="${mesId}"] .mes_text`
-    );
-    
+    const messageElement = getMessageContent(mesId);
+
     // For non-positioned templates, we need the message element in DOM
     // For positioned templates (LEFT/RIGHT), we can proceed without it
     if (!messageElement && templatePosition !== "LEFT" && templatePosition !== "RIGHT") {
@@ -1935,27 +1938,21 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
       // Handle different positions
       console.log(`[SST] [${MODULE_NAME}]`, `Rendering tracker for position: ${templatePosition}, mesId: ${mesId}`);
       switch (templatePosition) {
-        case "TOP":
+        case "TOP": {
           // Insert above the message content (inside the message block)
           if (messageElement) {
-            const reasoningElement = messageElement.querySelector(
-              ".mes_reasoning_details"
-            );
-            if (reasoningElement) {
-              // Insert above reasoning details if they exist
-              const finalHtml =
-                compiledWrapperTemplate({ cardsHtml }) +
-                `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
-              reasoningElement.insertAdjacentHTML("beforebegin", finalHtml);
+            const reasoningEl = getReasoningElement(messageElement);
+            const topHtml =
+              compiledWrapperTemplate({ cardsHtml }) +
+              `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
+            if (reasoningEl) {
+              reasoningEl.insertAdjacentHTML("beforebegin", topHtml);
             } else {
-              // If no reasoning details, insert at the beginning of the message
-              const finalHtml =
-                compiledWrapperTemplate({ cardsHtml }) +
-                `<hr style="margin-top: 15px; margin-bottom: 20px;">`;
-              messageElement.insertAdjacentHTML("afterbegin", finalHtml);
+              messageElement.insertAdjacentHTML("afterbegin", topHtml);
             }
           }
           break;
+        }
         case "LEFT":
           // Update the global left sidebar with the latest data
           console.log(`[SST] [${MODULE_NAME}]`, `Calling updateLeftSidebar for mesId ${mesId}`);
@@ -1966,29 +1963,31 @@ const renderTrackerWithoutSim = (mesId, get_settings, compiledWrapperTemplate, c
           console.log(`[SST] [${MODULE_NAME}]`, `Calling updateRightSidebar for mesId ${mesId}`);
           updateRightSidebar(compiledWrapperTemplate({ cardsHtml }));
           break;
-        case "MACRO":
+        case "MACRO": {
           // For MACRO position, replace the placeholder in the message
           if (messageElement) {
             const placeholder = messageElement.querySelector(
               "#sst-macro-placeholder"
             );
             if (placeholder) {
-              const finalHtml = compiledWrapperTemplate({ cardsHtml });
-              placeholder.insertAdjacentHTML("beforebegin", finalHtml);
+              const macroHtml = compiledWrapperTemplate({ cardsHtml });
+              placeholder.insertAdjacentHTML("beforebegin", macroHtml);
               placeholder.remove();
             }
           }
           break;
+        }
         case "BOTTOM":
-        default:
+        default: {
           // Add a horizontal divider before the cards
           if (messageElement) {
-            const finalHtml =
+            const bottomHtml =
               `<hr style="margin-top: 15px; margin-bottom: 20px;">` +
               compiledWrapperTemplate({ cardsHtml });
-            messageElement.insertAdjacentHTML("beforeend", finalHtml);
+            messageElement.insertAdjacentHTML("beforeend", bottomHtml);
           }
           break;
+        }
       }
     }
   } catch (error) {
@@ -2018,8 +2017,8 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
   // with the viewport handler's ability to detect if templates use DOM helpers.
   // Cache clearing happens in the viewport handler only.
 
-  // Get all message divs currently in the chat DOM
-  const visibleMessages = document.querySelectorAll("div#chat .mes");
+  // Get all message divs currently in the chat DOM (supports both ST and Lumiverse)
+  const visibleMessages = getAllMessages();
   
   // For positioned templates (LEFT/RIGHT/TOP/BOTTOM), we only want to show the most recent sim data
   // So we need to find the last message with sim data first
@@ -2064,8 +2063,8 @@ const refreshAllCards = (get_settings, CONTAINER_ID, renderTrackerWithoutSim) =>
     }
   } else {
     // For non-positioned templates (MACRO), render all messages
-    visibleMessages.forEach((messageElement) => {
-      const mesId = messageElement.getAttribute("mesid");
+    visibleMessages.forEach((msgEl) => {
+      const mesId = getMessageIdFromElement(msgEl);
       if (mesId) {
         renderTrackerWithoutSim(parseInt(mesId, 10));
       }

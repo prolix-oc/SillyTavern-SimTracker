@@ -1,6 +1,11 @@
 // inlineTemplates.js - Inline template rendering module
 import DOMUtils from "./sthelpers/domUtils.js";
 import { query, queryAll } from "./helpers.js";
+import {
+  isMessageContentElement,
+  findMessageContentsInNode,
+  getAllMessageContents,
+} from "./domBridge.js";
 
 const MODULE_NAME = "silly-sim-tracker-inline";
 
@@ -330,19 +335,14 @@ export function setupInlineTemplateObserver(getSettings, getCurrentTemplateConfi
     mutations.forEach((mutation) => {
       mutation.addedNodes.forEach((node) => {
         if (node.nodeType !== Node.ELEMENT_NODE) return;
-        
-        // Check if this is a message text element or contains one
-        let messageElements = [];
-        if (node.classList && node.classList.contains('mes_text')) {
-          messageElements = [node];
-        } else {
-          messageElements = Array.from(queryAll('.mes_text', node));
-        }
-        
+
+        // Check if this is a message text element or contains one (supports both ST and Lumiverse)
+        const messageElements = findMessageContentsInNode(node);
+
         messageElements.forEach((messageElement) => {
           // Hide any partial inline markers during streaming
           hideStreamingInlineMarkers(messageElement, isEnabled);
-          
+
           // Also process any complete markers
           processInlineTemplates(messageElement, templateConfig, isEnabled, getSettings);
         });
@@ -375,9 +375,9 @@ export function processAllInlineTemplates(getSettings, getCurrentTemplateConfig)
   }
   
   console.log(`[SST] [${MODULE_NAME}]`, `Processing all inline templates in chat`);
-  
-  // Find all message elements in the chat
-  const messageElements = queryAll('#chat .mes_text');
+
+  // Find all message elements in the chat (supports both ST and Lumiverse)
+  const messageElements = getAllMessageContents();
   
   messageElements.forEach((messageElement) => {
     // First unhide any hidden markers
