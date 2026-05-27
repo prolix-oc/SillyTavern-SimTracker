@@ -1,3 +1,7 @@
+# Read-Only - No More Updates
+
+This extension has been sunset. All future updates, changes, templates, and more will shift focus to the [Lumiverse-based](https://github.com/prolix-oc/Lumiverse-SimTracker) version of the extension.
+
 # Silly Sim Tracker
 
 A powerful SillyTavern extension that dynamically renders visually appealing tracker cards based on JSON data embedded in character messages. Perfect for dating sims, RPGs, or any scenario where you need to track character stats, relationships, and story progression.
